@@ -62,7 +62,11 @@ export function explainError(err) {
 // ---------------------------------------------------------------------------
 // steps: one description of an action, turned into whatever the signer wants
 // ---------------------------------------------------------------------------
-const call = (method, args = {}, { deposit = 0n, gas = 30 } = {}) => ({ type: 'FunctionCall', method, args, deposit: BigInt(deposit), gas: teraToGas(gas) });
+// The gas limit is kept low on purpose. An account must be able to prepay the
+// whole limit, at a price padded for the worst case, before the call runs:
+// about 0.001 NEAR per Tgas, most of it refunded afterwards. These calls burn
+// well under 10 Tgas.
+const call = (method, args = {}, { deposit = 0n, gas = 20 } = {}) => ({ type: 'FunctionCall', method, args, deposit: BigInt(deposit), gas: teraToGas(gas) });
 const addAgentKey = (publicKey, contractId) => ({ type: 'AddKey', publicKey, contractId });
 const deleteKey = (publicKey) => ({ type: 'DeleteKey', publicKey });
 
@@ -207,7 +211,7 @@ export function createChain({ contractId, rpcUrl = 'https://test.rpc.fastnear.co
     // ---- the owner's actions --------------------------------------------
     // Anything attached above the mint fee lands in the new pass's balance.
     async mintPass(session, depositYocto) {
-      const done = await session.send(contractId, [call('mint_pass', {}, { deposit: depositYocto, gas: 50 })]);
+      const done = await session.send(contractId, [call('mint_pass', {}, { deposit: depositYocto, gas: 30 })]);
       return { ...done, passId: String(done.value) };
     },
     deposit: (session, passId, yocto) => session.send(contractId, [call('deposit', { pass_id: String(passId) }, { deposit: yocto })]),
