@@ -120,12 +120,15 @@ export const VEHICLES = {
 // the launcher overlay; `?lobby=https://...` overrides the base for a
 // deployed build. `building` is a POI name from nav.json; the pad lands on
 // the sidewalk at the side facing downtown.
-export const LOBBY_URL = new URLSearchParams(location.search).get('lobby') ?? 'http://localhost:5174';
+// A hosted build sets VITE_LOBBY_URL and VITE_ISLAND_URL; a relative value
+// such as `../island` keeps the venue on this page's own origin.
+const _env = import.meta.env ?? {};
+export const LOBBY_URL = new URLSearchParams(location.search).get('lobby') ?? _env.VITE_LOBBY_URL ?? 'http://localhost:5174';
 // Agent Island is its own app (apps/island). The start app hands the player's
 // pass and account down in this page's query string; pass them through so the
 // island knows which agent to follow.
 const _q = new URLSearchParams(location.search);
-export const ISLAND_URL = _q.get('island') ?? 'http://localhost:5173';
+export const ISLAND_URL = _q.get('island') ?? _env.VITE_ISLAND_URL ?? 'http://localhost:5173';
 const _handoff = ['pass', 'account', 'world']
   .filter((k) => _q.get(k))
   .map((k) => `${k}=${encodeURIComponent(_q.get(k))}`)
