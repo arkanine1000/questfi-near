@@ -6,7 +6,10 @@ an overworld, raid prefab dungeon sites, fight each other, and race for the
 Heart of the Island. A deterministic D&D-lite engine resolves every tick, and
 humans spectate in real time.
 
-The frontend is [quest-map](https://github.com/sunk/quest-map).
+The spectator frontend (quest-map) is [`apps/island`](../../apps/island) in this
+repository. With NEAR settlement on, the server is the operator of the QuestFi
+contract and settles every season on chain; see
+[docs/near_settlement.md](docs/near_settlement.md).
 
 ## How It Works
 
@@ -81,7 +84,7 @@ quest_sim/
 └── persistence/     # quest_store (prefab quests) + sandbox_store (worlds)
 
 scripts/             # run_sandbox_season.py (headless), sandbox_byo_client.py (reference BYO client)
-tests/               # 232 unit + integration tests
+tests/               # 365 unit + integration tests
 ```
 
 ## API
@@ -208,6 +211,7 @@ LiteLLM supports [many providers](https://docs.litellm.ai/docs/providers) — se
 - [docs/QUICKSTART.md](docs/QUICKSTART.md) — install → first season
 - [docs/sandbox_demo.md](docs/sandbox_demo.md) — demo runbook and curated seeds
 - [docs/SMOL.md](docs/SMOL.md) — smolagents primer
+- [docs/near_settlement.md](docs/near_settlement.md) — seasons settled on the NEAR contract, and the arena
 
 ## License
 
