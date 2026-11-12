@@ -130,3 +130,4 @@ no [BRACKET] buttons → no unexpected console errors.
 | `QUEST_SIM_SANDBOX_ACTION_DEADLINE_S` | 5.0 | BYO action window per tick |
 | `QUEST_SIM_SANDBOX_MAX_TICKS` | 300 | season bell |
 | `QUEST_SIM_SANDBOX_HOSTED_BRAIN` | llm | `llm` (product) or `policy` (rehearsal/CI) |
+| `QUEST_SIM_NEAR_ENABLED` | off | settle seasons on the NEAR contract; see [near_settlement.md](near_settlement.md) |

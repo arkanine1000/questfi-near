@@ -36,6 +36,9 @@ from quest_sim.engine.sandbox.runner import WorldRunner, build_tick_frame
 from quest_sim.engine.sandbox.tick import LOC_TRAIL_TICKS
 from quest_sim.models.events import EngineEvent, EngineEventType
 from quest_sim.models.sandbox import SandboxConfig, SandboxWorld, WorldPhase
+from quest_sim.near import bridge as near_bridge
+from quest_sim.near import get_settler
+from quest_sim.near.arena import get_arena
 from quest_sim.persistence import sandbox_store
 
 logger = logging.getLogger(__name__)
@@ -69,8 +72,28 @@ def _runner(world_id: str) -> WorldRunner:
         runner = WorldRunner(world, _data_dir())
         _install_llm_hook(runner)
         _install_commentator(runner)
+        _install_settler(runner)
         _runners[world_id] = runner
     return runner
+
+
+def _settler():
+    """The on-chain settler, or None when NEAR settlement is off."""
+    return get_settler(_get_settings())
+
+
+def _install_settler(runner: WorldRunner) -> None:
+    """Report each tick to the chain — only when settlement is on. The hook
+    only queues calls; the settler's own task sends them."""
+    settler = _settler()
+    if settler is None:
+        return
+    runner.on_tick = lambda world, frame: near_bridge.on_tick(settler, world, frame)
+
+
+def _near_status(world_id: str, settings) -> dict:
+    settler = get_settler(settings)
+    return settler.status(world_id) if settler is not None else {"enabled": False}
 
 
 def _install_llm_hook(runner: WorldRunner) -> None:
@@ -123,6 +146,10 @@ def _destroy_world(world_id: str) -> None:
     if runner is not None:
         runner.shutdown()  # clock + booth dark, spectators woken and released
     sandbox_store.delete_world(_data_dir(), world_id)
+    settler = _settler()
+    if settler is not None:
+        # A season that never settled is cancelled, refunding every stake.
+        near_bridge.on_world_removed(settler, world_id)
 
 
 def _world(world_id: str) -> SandboxWorld:
@@ -165,6 +192,9 @@ class JoinRequest(BaseModel):
     tactics: str | None = None  # optional self-description, shown to spectators
     code: str | None = None  # invite code, when the world requires one
     ready: bool = False  # "my driver is wired up" — a signal, not a start
+    # The agent pass this agent plays for. With NEAR settlement on, the pass
+    # must already have entered this season on chain (enter_season).
+    pass_id: str | None = Field(default=None, max_length=64)
 
 
 class ActionRequest(BaseModel):
@@ -186,6 +216,36 @@ class RunRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Lifecycle
 # ---------------------------------------------------------------------------
+
+
+def create_world(
+    config: SandboxConfig,
+    seed: int,
+    *,
+    require_invite: bool = False,
+    season_options: dict | None = None,
+) -> SandboxWorld:
+    """Build, register and persist a lobby — shared by POST /world/new and
+    the arena. ``season_options`` go to the settler's create_season."""
+    world = build_world(config, seed=seed)
+    if require_invite:
+        world.invite_code = _secrets.token_hex(4)
+    # Every world has a host: whoever opened it. Handed back once by
+    # POST /world/new — longer than the invite code because a machine
+    # carries it, not a human retyping it.
+    world.host_key = _secrets.token_urlsafe(24)
+    runner = WorldRunner(world, _data_dir())
+    _install_llm_hook(runner)
+    _install_commentator(runner)
+    _install_settler(runner)
+    _runners[world.world_id] = runner
+    sandbox_store.save_world(_data_dir(), world)
+    settler = _settler()
+    if settler is not None:
+        # queued, never awaited
+        near_bridge.on_world_created(settler, world, **(season_options or {}))
+    logger.info("world %s created (seed=%s, pool=%s)", world.world_id, seed, config.pool_size)
+    return world
 
 
 @world_router.post("/new")
@@ -217,19 +277,7 @@ async def new_world(
         max_ticks=req.max_ticks or settings.sandbox_max_ticks,
         hosted_brain=req.hosted_brain or settings.sandbox_hosted_brain,
     )
-    world = build_world(config, seed=seed)
-    if req.require_invite:
-        world.invite_code = _secrets.token_hex(4)
-    # Every world has a host: whoever opened it. Handed back once, below —
-    # longer than the invite code because a machine carries it, not a human
-    # retyping it.
-    world.host_key = _secrets.token_urlsafe(24)
-    runner = WorldRunner(world, _data_dir())
-    _install_llm_hook(runner)
-    _install_commentator(runner)
-    _runners[world.world_id] = runner
-    sandbox_store.save_world(_data_dir(), world)
-    logger.info("world %s created (seed=%s, pool=%s)", world.world_id, seed, config.pool_size)
+    world = create_world(config, seed, require_invite=req.require_invite)
     return {
         "world_id": world.world_id,
         "phase": world.phase.value,
@@ -551,7 +599,37 @@ async def world_invite(world_id: str, code: str | None = Query(default=None)):
     )
 
 
-def perform_join(
+def _check_pass_free(world: SandboxWorld, pass_id: str | None) -> None:
+    if pass_id and any(a.pass_id == pass_id for a in world.agents.values()):
+        raise HTTPException(
+            status_code=409, detail=f"Pass {pass_id} is already playing in this season"
+        )
+
+
+async def _check_pass_entered(world: SandboxWorld, pass_id: str) -> None:
+    """With settlement on, a player's pass must already be an entrant of
+    this season on chain: its stake is what the season pays out."""
+    settler = _settler()
+    if settler is None or not settler.tracks(world.world_id):
+        return
+    entered = await near_bridge.verify_entry(settler, world.world_id, pass_id)
+    if entered is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Could not reach the chain to check this pass's entry — try again shortly",
+        )
+    if not entered:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                f"Pass {pass_id} has not entered season {world.world_id} on chain. "
+                f"Call enter_season with pass_id \"{pass_id}\" and season_id "
+                f"\"{world.world_id}\" first, then join."
+            ),
+        )
+
+
+async def perform_join(
     world_id: str,
     *,
     name: str | None = None,
@@ -559,6 +637,7 @@ def perform_join(
     tactics: str | None = None,
     code: str | None = None,
     ready: bool = False,
+    pass_id: str | None = None,
 ) -> dict:
     """Join a lobby as an external agent — shared by the HTTP route and the
     MCP join_season tool so the two surfaces can never drift. Raises
@@ -568,6 +647,16 @@ def perform_join(
     _check_invite_code(world, code)
     if world.phase != WorldPhase.lobby:
         raise HTTPException(status_code=409, detail="The season has already started")
+    pass_id = (pass_id or "").strip() or None
+    if pass_id is not None and len(pass_id) > 64:
+        raise HTTPException(status_code=400, detail="pass_id is longer than 64 characters")
+    _check_pass_free(world, pass_id)
+    if pass_id is not None:
+        await _check_pass_entered(world, pass_id)
+        # the chain answered asynchronously: the lobby may have moved on
+        if world.phase != WorldPhase.lobby:
+            raise HTTPException(status_code=409, detail="The season has already started")
+        _check_pass_free(world, pass_id)
     try:
         agent = create_agent(
             world, name=name, preset=preset, brain="external",
@@ -576,6 +665,10 @@ def perform_join(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     agent.ready = ready
+    agent.pass_id = pass_id
+    settler = _settler()
+    if settler is not None and pass_id is not None:
+        settler.note_entrant(world.world_id, pass_id)  # verified above
 
     event = EngineEvent(
         event_type=EngineEventType.agent_joined,
@@ -597,6 +690,7 @@ def perform_join(
         "color": agent.color,
         "preset": agent.preset,
         "tactics": agent.persona or None,
+        "pass_id": agent.pass_id,
         "lobby": {
             "joined": len(world.agents),
             "pool_size": world.config.pool_size,
@@ -618,13 +712,14 @@ async def join_world(
     code: str | None = Query(default=None),
 ):
     req = req or JoinRequest()
-    return perform_join(
+    return await perform_join(
         world_id,
         name=req.name,
         preset=req.preset,
         tactics=req.tactics,
         code=req.code or code,
         ready=req.ready,
+        pass_id=req.pass_id,
     )
 
 
@@ -641,8 +736,31 @@ async def start_world(
     _check_host_key(world, _presented_key(x_host_key, host_key))
     if world.phase != WorldPhase.lobby:
         raise HTTPException(status_code=409, detail="The season has already started")
+    _check_not_arena(world_id)
+    return perform_start(runner)
 
+
+def _check_not_arena(world_id: str) -> None:
+    """Arena seasons keep their own clock: they start when the arena says
+    and tick only once the chain has the season running."""
+    arena = get_arena(_get_settings())
+    if arena is not None and arena.manages(world_id):
+        raise HTTPException(
+            status_code=409,
+            detail="This season is run by the arena — see GET /near/arena",
+        )
+
+
+def perform_start(runner: WorldRunner) -> dict:
+    """Backfill the roster and go live — shared by POST /start and the
+    arena. The caller has checked the world is still in its lobby."""
+    world = runner.world
     added = start_season(world)
+    settler = _settler()
+    if settler is not None:
+        # House passes are assigned before the save below, so they persist
+        # and ride the roster; the chain calls are only queued.
+        near_bridge.on_world_started(settler, world)
     events = [
         EngineEvent(
             event_type=EngineEventType.agent_joined,
@@ -711,6 +829,7 @@ async def manual_tick(
         raise HTTPException(status_code=409, detail=f"World is {runner.world.phase.value}")
     if runner.is_auto:
         raise HTTPException(status_code=409, detail="World is auto-running; pause first")
+    _check_not_arena(world_id)
     if wait_s is None:
         wait_s = min(runner.world.config.action_deadline_s, MANUAL_TICK_CAP_S)
     if wait_s <= 0:
@@ -733,6 +852,7 @@ async def run_world(
         raise HTTPException(status_code=409, detail=f"World is {runner.world.phase.value}")
     if runner.is_auto:
         raise HTTPException(status_code=409, detail="Already auto-running")
+    _check_not_arena(world_id)
     runner.start_auto(req.tick_seconds)
     return {"running": True, "tick_seconds": req.tick_seconds or runner.world.config.tick_seconds}
 
@@ -797,6 +917,9 @@ async def world_state(
         "winner": world.winner,
         "winner_name": world.winner_name,
         "win_reason": world.win_reason,
+        # On-chain settlement: whether it is on, the season's last known
+        # status, the call queue, and recent transaction hashes to link.
+        "near": _near_status(world.world_id, settings),
     }
 
 

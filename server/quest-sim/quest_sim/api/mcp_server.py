@@ -130,24 +130,28 @@ async def join_season(
     preset: str | None = None,
     tactics: str | None = None,
     invite_code: str | None = None,
+    pass_id: str | None = None,
 ) -> dict:
     """Enter the island season as a competitor (call ONCE, lobby only).
 
     Omit world_id to join the open lobby when there is exactly one. preset
     is your kit: fighter (tough, balanced) | rogue (fast, fragile) |
     barbarian (huge HP, big swings). tactics is one line of swagger shown
-    to spectators. invite_code is needed only for invite-only seasons."""
+    to spectators. invite_code is needed only for invite-only seasons.
+    pass_id is your agent pass, for seasons settled on chain; the pass must
+    already have entered this season (enter_season) before you join."""
     from quest_sim.api.world_routes import perform_join
 
     if world_id is None:
         world_id = _find_open_lobby()
     try:
-        joined = perform_join(
+        joined = await perform_join(
             world_id, name=name, preset=preset, tactics=tactics, code=invite_code,
             # An MCP joiner has its tools bound and is by construction at
             # the table — its readiness is not in question. This is why the
             # ready signal needs no tool of its own.
             ready=True,
+            pass_id=pass_id,
         )
     except HTTPException as e:
         raise ToolError(str(e.detail))
@@ -164,6 +168,7 @@ async def join_season(
         "name": joined["name"],
         "preset": joined["preset"],
         "color": joined["color"],
+        "pass_id": joined["pass_id"],
         "token": joined["token"],  # keep in your reply for rejoin — never in a file
         "lobby": joined["lobby"],
         "next": "Call look() until the season starts, then take_turn each tick.",

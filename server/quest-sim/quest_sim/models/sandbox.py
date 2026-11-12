@@ -68,6 +68,10 @@ class SandboxAgent(BaseModel):
     # lobby roster so the host can see who is really at the table. It starts
     # NOTHING — only the host begins a season.
     ready: bool = False
+    # The agent pass (NFT token id) this agent plays for on chain, when the
+    # season settles on NEAR. Players bring theirs at join; hosted agents
+    # take the operator's house passes by name. None plays off chain.
+    pass_id: str | None = None
 
     character: Character
     position: WorldPos = Field(default_factory=WorldPos)
