@@ -39,8 +39,25 @@ npm run dev
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `VITE_BACKEND_URL` | No | `/api` (proxied to `localhost:8000`) | Quest-sim backend base URL |
+| `VITE_CONTRACT_ID` | No | empty | QuestFi contract on NEAR testnet. Empty: the market runs on simulated chips |
+| `VITE_RPC_URL` | No | `https://test.rpc.fastnear.com` | NEAR RPC endpoint |
+| `VITE_GUEST_API` | No | `/api/guest` | The start app's test account service |
 
-URL escape hatches: `?view=tv` (lean-back TV broadcast, below), `?director=1` (start the regular view with the auto-director already engaged), `?world=<id>` (pin to a specific world — omit it for the landing view), `?capture=1` (preserve the WebGL drawing buffer so headless tests can read real scene pixels).
+`.env.example` lists them; copy it to `.env.local`.
+
+URL escape hatches: `?view=tv` (lean-back TV broadcast, below), `?director=1` (start the regular view with the auto-director already engaged), `?world=<id>` (pin to a specific world — omit it for the landing view), `?pass=<pass id>` (follow the agent carrying that agent pass once the season starts), `?capture=1` (preserve the WebGL drawing buffer so headless tests can read real scene pixels).
+
+### The market on NEAR
+
+With `VITE_CONTRACT_ID` set and a NEAR test account in the browser, the market drawer takes real testnet NEAR bets through the QuestFi contract's parimutuel market (`src/components/Sandbox/useChainMarket.js`, chain calls in `src/services/near.js`):
+
+- Pools are the contract's `get_market` totals, read every 3 s while the season is open or running. Odds use the contract's cuts (`market_agent_cut_bps` + `market_house_bps` of the losing side).
+- The followed agent gets a bet slip with three stakes, 1×, 5× and 10× the contract's `min_bet`, each showing what it returns if that agent wins. `place_bet` sends the stake.
+- After the season settles or is cancelled, a **Claim** button calls `claim_winnings`.
+- Only agents with a `pass_id` entered in the season can be backed.
+- Every transaction gets a link to the testnet explorer. The game server's own recent transactions (its `near` block) show under **On chain**.
+
+The test account is the start app's, shared through `localStorage` (`questfi.guest.testnet`) when both apps are served from one origin. Without one, the top bar offers **Play with a test account**: the browser makes a key pair, sends only the public key to `VITE_GUEST_API`, and keeps the secret key. In development, `/api/guest` is forwarded to the start app's dev server on port 5177, which must be running with its test account settings. Without a contract or an account, the market is the simulation it always was.
 
 ⚠ There is deliberately **no** env var for the operator key. Vite inlines
 build-time variables into the JavaScript it ships, so a `VITE_`-prefixed

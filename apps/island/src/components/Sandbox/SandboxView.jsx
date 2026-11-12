@@ -301,6 +301,23 @@ export default function SandboxView() {
     sendToTv({ type: 'follow', agentId: agent.agent_id });
   }, [setFollowedAgentId, flyToAgent]);
 
+  // ?pass=<id>: the page that opened the island (the start app, through
+  // Agent World) names the viewer's agent pass. Follow the agent carrying it
+  // as soon as it appears in the roster, once per season; any later pick is
+  // the viewer's own. In the lobby this already points the bet slip at it.
+  const passToFollow = useMemo(() => new URLSearchParams(window.location.search).get('pass'), []);
+  const passFollowedIn = useRef(null);
+  const userFollowRef = useRef(null);
+  useEffect(() => {
+    const worldId = world?.world_id;
+    if (!passToFollow || !worldId) return;
+    if (passFollowedIn.current === worldId) return;
+    const agent = roster.find((a) => a.alive && a.pass_id != null && String(a.pass_id) === passToFollow);
+    if (!agent) return;
+    passFollowedIn.current = worldId;
+    userFollowRef.current?.(agent);
+  }, [passToFollow, world?.world_id, roster]);
+
   // Underground follow hands the screen to the first-person crawler, which
   // brings its own HUD; on the surface the island map stays in view and the
   // overworld overlays (thought toasts) do that job instead.
@@ -339,6 +356,7 @@ export default function SandboxView() {
     if (directorOn) noteManual();
     handleFollow(agent);
   }, [directorOn, noteManual, handleFollow]);
+  userFollowRef.current = userFollow;
   const userDeselect = useCallback(() => {
     if (directorOn) noteManual();
     handleDeselect();
