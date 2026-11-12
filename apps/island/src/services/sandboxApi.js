@@ -116,6 +116,18 @@ export function startWorld(worldId) {
   return request(`/world/${worldId}/start`, { method: 'POST', worldId });
 }
 
+// --- the arena: seasons the server runs by itself ---
+
+/** The season open for entry, the one running and the last result. */
+export function getArena() {
+  return request('/near/arena');
+}
+
+/** Start the open season now instead of waiting out its countdown. */
+export function startArena() {
+  return request('/near/arena/start', { method: 'POST' });
+}
+
 // --- clock ---
 
 export function tickWorld(worldId) {

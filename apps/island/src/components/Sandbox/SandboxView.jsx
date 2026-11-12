@@ -13,6 +13,7 @@ import {
 import IslandScene from '../Scene3D/IslandScene';
 import { ISLAND_MASK, axialToPixel, getHexPoints } from '../HexGrid/hexUtils';
 import { useSandbox } from '../../context/SandboxContext';
+import { getArena, startArena } from '../../services/sandboxApi';
 import { IS_TV, onTvCommand, sendToTv } from '../../services/cast';
 import useTvDirector from '../../hooks/useTvDirector';
 import { axialToWorld, prefersReducedMotion } from '../Scene3D/worldUtils';
@@ -84,8 +85,46 @@ function MiniIsland() {
   );
 }
 
+/**
+ * The arena's view of this lobby, when the server runs it by itself: no host
+ * presses Begin there. The season starts on a countdown after the first
+ * seat, and anyone watching can start it sooner. Null for a hosted lobby, or
+ * when the server has no arena.
+ */
+function useArenaLobby(worldId) {
+  const [lobby, setLobby] = useState(null);
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let live = true;
+    const read = async () => {
+      try {
+        const arena = await getArena();
+        if (live) setLobby(arena?.enabled && arena.lobby?.world_id === worldId ? arena.lobby : null);
+      } catch {
+        if (live) setLobby(null);
+      }
+    };
+    read();
+    const timer = setInterval(read, 2000);
+    return () => { live = false; clearInterval(timer); };
+  }, [worldId]);
+  return lobby;
+}
+
+function arenaWaiting(lobby) {
+  switch (lobby.waiting_for) {
+    case 'countdown': return 'The season starts in';
+    case 'running_season': return 'The season starts when the one now running has settled.';
+    case 'chain': return 'Opening the season on NEAR…';
+    default: return 'The season starts once a challenger takes a seat.';
+  }
+}
+
 function LobbyOverlay() {
   const { world, roster, canControl, invite } = useSandbox();
+  const arenaLobby = useArenaLobby(world?.world_id);
+  const [starting, setStarting] = useState(false);
+  const [startNote, setStartNote] = useState('');
   const joined = roster.length;
   const seats = world?.pool_size ?? 10;
   if (!world) return null;
@@ -96,6 +135,22 @@ function LobbyOverlay() {
   const waiting = canControl
     ? 'Press Begin when the roster looks right.'
     : 'Waiting on the host to begin…';
+
+  const canStartArena = arenaLobby && !IS_TV
+    && (arenaLobby.waiting_for === 'countdown' || arenaLobby.waiting_for === 'player');
+  const startNow = async () => {
+    setStarting(true);
+    setStartNote('');
+    try {
+      await startArena();
+    } catch (err) {
+      // 429: a season with no challenger ran too recently. 409: one is running.
+      setStartNote(err.status === 429
+        ? 'A season with no challenger ran a few minutes ago. Take a seat, or try again shortly.'
+        : 'The season could not be started just now.');
+      setStarting(false);
+    }
+  };
 
   // Whoever opened this lobby lands straight here, and the invite is the
   // only thing they can act on — sending them back to the landing board to
@@ -129,7 +184,24 @@ function LobbyOverlay() {
             <AgentOnboarding worldId={world.world_id} invitePath={invitePath} />
           </div>
         )}
-        <p className="sbx-lobby__waiting">{IS_TV ? 'Waiting on the host to begin…' : waiting}</p>
+        {arenaLobby ? (
+          <>
+            <p className="sbx-lobby__waiting sbx-lobby__waiting--arena">
+              {arenaWaiting(arenaLobby)}
+              {arenaLobby.waiting_for === 'countdown' && arenaLobby.starts_in_s != null && (
+                <strong className="sbx-lobby__count">{Math.ceil(arenaLobby.starts_in_s)} s</strong>
+              )}
+            </p>
+            {canStartArena && (
+              <button type="button" className="sbx-btn sbx-btn--primary sbx-lobby__start" onClick={startNow} disabled={starting}>
+                {starting ? 'Starting…' : 'Start the season now'}
+              </button>
+            )}
+            {startNote && <p className="sbx-lobby__note">{startNote}</p>}
+          </>
+        ) : (
+          <p className="sbx-lobby__waiting">{IS_TV ? 'Waiting on the host to begin…' : waiting}</p>
+        )}
       </div>
     </div>
   );

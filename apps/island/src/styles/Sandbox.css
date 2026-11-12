@@ -903,6 +903,33 @@
   color: rgba(0, 255, 65, 0.7);
 }
 
+.sbx-lobby__waiting--arena {
+  font-size: 15px;
+  color: #c8ffd2;
+}
+
+.sbx-lobby__count {
+  margin-left: 10px;
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  color: #eafff1;
+  text-shadow: 0 0 16px rgba(0, 255, 65, 0.6);
+}
+
+.sbx-lobby__start {
+  padding: 10px 22px;
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sbx-lobby__note {
+  max-width: 420px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #ffd678;
+}
+
 .sbx-lobby__hint {
   max-width: 420px;
   font-size: 11px;
