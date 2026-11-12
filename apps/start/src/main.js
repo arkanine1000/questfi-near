@@ -2,15 +2,23 @@ import * as THREE from 'three';
 import { createPost } from './post.js';
 import { createCard, CARD_W } from './card.js';
 import { createStage } from './stage.js';
-import { PASS, WALLET, CLAIM, TIERS, ROSTER, BYO, MCP_COMMAND, DEPLOY_LOG, FIELD_EVENTS, WORLD_URL } from './config.js';
+import { PASS, WALLET, CLAIM, TIERS, ROSTER, BYO, MCP_COMMAND, DEPLOY_LOG, FIELD_EVENTS, WORLD_URL, MOCK, EMPTY_PASS } from './config.js';
+import { createLive } from './live.js';
+import { explorerTx } from './near.js';
 
-// QuestFi start app — FLOW MOCKUP. Nothing here talks to a chain or a
-// server: the wallet, balances, deploy log and field events are scripted in
-// config.js so the look and the sequence can be judged first.
+// QuestFi start app. It runs in one of two modes:
+// - live: the account, the pass, the agent key and every balance come from
+//   the contract on NEAR testnet (live.js, near.js).
+// - mock (`?mock`, or no contract configured): the wallet, balances, deploy
+//   log and field events are scripted in config.js.
+// The screen code below is shared; where the two differ, it branches on MOCK.
 
 const $ = (id) => document.getElementById(id);
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const near = (n) => `${n.toFixed(2)} NEAR`;
+const cap = (n) => (n < 1 ? n.toFixed(2) : n.toFixed(1));
+// account ids of test accounts are long; keep the ends
+const shortAccount = (id, max = 22) => (id.length > max ? `${id.slice(0, max - 9)}…${id.slice(-8)}` : id);
 
 // ---------------------------------------------------------------------------
 // state
@@ -24,8 +32,17 @@ const state = {
   claimed: false,
   flipped: false,
   policy: { perTx: 2.0, daily: 10.0 },
-  pass: { ...PASS },
+  pass: MOCK ? { ...PASS } : { ...EMPTY_PASS },
   log: [],
+  // live mode
+  hasPass: MOCK, // false until the account's pass is minted or found
+  session: null, // the account and how it signs
+  busy: null, // label of the action in flight
+  roster: MOCK ? ROSTER : [], // house agents, from the contract
+  limits: null, // slider ranges, from the contract's defaults
+  limitResults: [], // what the limits test came back with
+  policyDirty: false, // sliders moved but not stored yet
+  season: null, // the season the pass last entered
 };
 
 function setScreen(s) {
@@ -144,7 +161,7 @@ function redrawCard(force = false) {
   const locked = !state.unlocked;
   // drawing both faces is two large canvases plus texture uploads, so skip it
   // when nothing printed on the card has changed
-  const key = [p.level, p.xp, p.balance.toFixed(2), p.seasons, p.wins, p.kills, p.lifetime.toFixed(2),
+  const key = [p.id, p.level, p.xp, p.balance.toFixed(2), p.seasons, p.wins, p.kills, p.lifetime.toFixed(2),
     state.wallet?.account, state.agent?.name, locked, state.claimed, state.deployed].join('|');
   if (!force && key === lastCardKey) return;
   lastCardKey = key;
@@ -152,7 +169,7 @@ function redrawCard(force = false) {
     id: p.id,
     level: p.level,
     xpFrac: p.xp / p.xpPerLevel,
-    holder: state.wallet ? state.wallet.account.toUpperCase() : 'UNASSIGNED',
+    holder: state.wallet ? shortAccount(state.wallet.account).toUpperCase() : 'UNASSIGNED',
     agent: state.agent ? state.agent.name : '— —',
     balance: `${p.balance.toFixed(2)} N`,
     seasons: p.seasons,
@@ -181,8 +198,8 @@ function toast(text) {
   setTimeout(() => el.remove(), 2600);
 }
 
-function pushLog(src, text, amt = 0) {
-  state.log.unshift({ src, text, amt });
+function pushLog(src, text, amt = 0, { tone = null, link = null } = {}) {
+  state.log.unshift({ src, text, amt, tone, link });
   if (state.log.length > 40) state.log.pop();
   renderLog();
 }
@@ -199,11 +216,17 @@ function renderLog() {
   }
   for (const e of state.log) {
     const li = document.createElement('li');
+    if (e.tone) li.className = e.tone;
     const s = document.createElement('span');
     s.className = 'src';
     s.textContent = e.src;
-    const t = document.createElement('span');
+    const t = document.createElement(e.link ? 'a' : 'span');
     t.textContent = e.text;
+    if (e.link) {
+      t.href = e.link;
+      t.target = '_blank';
+      t.rel = 'noopener';
+    }
     const a = document.createElement('span');
     a.className = `amt${e.amt < 0 ? ' neg' : ''}`;
     a.textContent = e.amt ? `${e.amt > 0 ? '+' : ''}${e.amt.toFixed(2)}` : '';
@@ -215,10 +238,10 @@ function renderLog() {
 function renderRoster() {
   const root = $('roster');
   root.replaceChildren();
-  for (const a of ROSTER) {
+  for (const a of state.roster) {
     const b = document.createElement('button');
     b.className = `agent${state.agent?.key === a.key ? ' on' : ''}`;
-    b.disabled = state.deployed;
+    b.disabled = state.deployed || !!state.busy;
     const dot = document.createElement('span');
     dot.className = 'dot';
     dot.style.color = `#${a.tint.toString(16).padStart(6, '0')}`;
@@ -237,7 +260,7 @@ function renderRoster() {
     sm.textContent = 'NEAR / SEASON';
     pr.appendChild(sm);
     b.append(dot, mid, pr);
-    b.addEventListener('click', () => linkAgent({ ...a, rented: true }));
+    b.addEventListener('click', () => (MOCK ? linkAgent : live.linkAgent)({ ...a, rented: true }));
     root.appendChild(b);
   }
 }
@@ -266,36 +289,73 @@ function renderTrack() {
   }
 }
 
+function renderLimitResults() {
+  const ul = $('limit-result');
+  ul.replaceChildren();
+  for (const r of state.limitResults) {
+    const li = document.createElement('li');
+    if (r.unexpected) li.className = 'unexpected';
+    const b = document.createElement('b');
+    b.textContent = r.title;
+    const t = document.createElement('span');
+    t.textContent = r.text;
+    li.append(b, t);
+    if (r.link) {
+      const a = document.createElement('a');
+      a.href = r.link;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = ' View the refused transaction';
+      li.appendChild(a);
+    }
+    ul.appendChild(li);
+  }
+}
+
 function render() {
   const p = state.pass;
   const w = state.wallet;
+  const busy = state.busy;
 
   // pass
   $('pass-id').textContent = `#${p.id}`;
+  $('gate-sub').textContent = state.hasPass ? `PASS #${p.id} · NEAR TESTNET` : 'NEAR TESTNET';
   $('pass-level').textContent = p.level;
   $('pass-xp').textContent = `${p.xp} / ${p.xpPerLevel} XP`;
   renderTrack();
 
   // one-line summaries on the folded panels
   const sum = (id, text, todo = false) => { $(id).textContent = text; $(id).classList.toggle('todo', todo); };
-  sum('sum-wallet', w ? near(p.balance) : 'NOT CONNECTED', !w);
+  sum('sum-wallet', w ? near(p.balance) : MOCK ? 'NOT CONNECTED' : 'NO ACCOUNT', !w);
   sum('sum-link', state.agent ? state.agent.name : 'CHOOSE AGENT', !state.agent);
-  sum('sum-policy', `${state.policy.perTx.toFixed(1)} / ${state.policy.daily.toFixed(1)}`);
+  sum('sum-policy', `${cap(state.policy.perTx)} / ${cap(state.policy.daily)}`);
   const last = state.log[0];
   sum('sum-log', last ? `${last.text}${last.amt ? `  ${last.amt > 0 ? '+' : ''}${last.amt.toFixed(2)}` : ''}` : '—');
 
   // wallet
-  $('wallet-btn').textContent = w ? w.account : 'CONNECT NEAR WALLET';
-  $('wallet-btn').classList.toggle('on', !!w);
+  const wb = $('wallet-btn');
+  wb.textContent = w
+    ? shortAccount(w.account)
+    : MOCK
+      ? 'CONNECT NEAR WALLET'
+      : busy === 'CREATING TEST ACCOUNT' ? 'CREATING ACCOUNT…' : 'PLAY WITH A TEST ACCOUNT';
+  wb.classList.toggle('on', !!w);
   $('wallet-off').hidden = !!w;
   $('wallet-on').hidden = !w;
+  $('start-choices').hidden = MOCK || !!w;
+  $('guest-btn').disabled = $('connect-btn').disabled = !!busy;
   if (w) {
-    $('w-account').textContent = w.account;
+    $('w-account').textContent = shortAccount(w.account, 26);
+    $('w-account').title = w.account;
     $('w-near').textContent = near(w.near);
     $('w-pass').textContent = near(p.balance);
     $('w-life').textContent = near(p.lifetime);
     $('w-cut').textContent = near(p.marketCut);
   }
+  $('deposit-btn').disabled = $('withdraw-btn').disabled = !MOCK && (!state.hasPass || !!busy);
+  $('keep-btn').hidden = MOCK || !(w?.kind === 'guest' && state.hasPass);
+  $('disconnect-btn').hidden = MOCK || w?.kind !== 'wallet';
+  $('keep-btn').disabled = $('disconnect-btn').disabled = !!busy;
 
   // physical card claim
   const eligible = p.level >= CLAIM.level;
@@ -304,15 +364,28 @@ function render() {
   $('slab').classList.toggle('ready', eligible && !state.claimed);
   syncSlabPreview(slabPreview.classList.contains('show'));
   const cb = $('claim-btn');
-  cb.disabled = !eligible || !w || state.claimed;
-  cb.textContent = state.claimed ? 'CLAIMED' : eligible ? (w ? `CLAIM · BURN ${CLAIM.burn.toFixed(1)} NEAR` : 'CONNECT WALLET') : 'LOCKED';
+  cb.disabled = !eligible || !w || state.claimed || !!busy;
+  cb.textContent = state.claimed ? 'CLAIMED' : eligible ? (w ? `CLAIM · BURN ${cap(CLAIM.burn)} NEAR` : 'CONNECT WALLET') : 'LOCKED';
 
   // policy
-  $('pol-tx').value = state.policy.perTx;
-  $('pol-day').value = state.policy.daily;
+  const tx = $('pol-tx');
+  const day = $('pol-day');
+  if (state.limits) {
+    for (const [el, r] of [[tx, state.limits.tx], [day, state.limits.day]]) {
+      el.min = r.min;
+      el.max = r.max;
+      el.step = r.step;
+    }
+  }
+  tx.value = state.policy.perTx;
+  day.value = state.policy.daily;
   $('pol-tx-v').textContent = near(state.policy.perTx);
   $('pol-day-v').textContent = near(state.policy.daily);
-  $('pol-tx').disabled = $('pol-day').disabled = state.deployed;
+  tx.disabled = day.disabled = state.deployed || !!busy || (!MOCK && !state.hasPass);
+  $('limit-test').hidden = MOCK || !state.hasPass || !state.agent;
+  $('test-limit').disabled = !!busy;
+  $('test-limit').textContent = busy === 'TESTING THE LIMITS' ? 'TESTING…' : 'TEST THE LIMITS';
+  renderLimitResults();
 
   // centre
   const a = state.agent;
@@ -328,16 +401,33 @@ function render() {
         : 'YOUR AGENT · LINKED OVER MCP · STANDING BY';
 
   const db = $('deploy-btn');
-  db.textContent = state.deployed ? 'RECALL AGENT' : 'DEPLOY TO AGENT WORLD';
-  db.disabled = !state.deployed && !(a && w);
+  db.classList.toggle('busy', !!busy);
+  if (MOCK) {
+    db.textContent = state.deployed ? 'RECALL AGENT' : 'DEPLOY TO AGENT WORLD';
+    db.disabled = !state.deployed && !(a && w);
+  } else if (busy) {
+    db.textContent = `${busy}…`;
+    db.disabled = true;
+  } else if (w && !state.hasPass) {
+    db.textContent = 'MINT AGENT PASS';
+    db.disabled = false;
+  } else if (state.deployed) {
+    db.textContent = 'OPEN AGENT WORLD';
+    db.disabled = false;
+  } else {
+    db.textContent = 'DEPLOY TO AGENT WORLD';
+    db.disabled = !(a && w && state.hasPass);
+  }
 
-  $('byo-link').disabled = state.deployed;
+  $('byo-link').disabled = state.deployed || !!busy;
+  $('unlink-btn').hidden = MOCK || !a || state.deployed;
+  $('unlink-btn').disabled = !!busy;
   renderRoster();
   redrawCard();
 }
 
 // ---------------------------------------------------------------------------
-// actions (all simulated)
+// actions of the scripted mode (the live ones are in live.js)
 // ---------------------------------------------------------------------------
 function linkAgent(def) {
   if (state.deployed) return;
@@ -444,7 +534,7 @@ function finishDeploy(enterWorld) {
   $('deploy').hidden = true;
   setScreen('manage');
   stage.beamIn();
-  startField();
+  if (MOCK) startField();
   layoutCard();
   render();
   if (enterWorld) openWorld();
@@ -464,6 +554,7 @@ function openWorld() {
   const url = new URL(WORLD_URL, location.href);
   url.searchParams.set('pass', state.pass.id);
   if (state.wallet) url.searchParams.set('account', state.wallet.account);
+  if (state.season) url.searchParams.set('world', state.season);
   $('world-frame').src = url.href;
   $('world').hidden = false;
 }
@@ -472,33 +563,130 @@ function closeWorld() {
   $('world').hidden = true;
 }
 
-function openClaim() {
-  const m = $('modal');
-  $('modal-title').textContent = 'CLAIM PHYSICAL CARD';
-  $('modal-body').textContent = `This burns ${near(CLAIM.burn)} from pass #${state.pass.id} and issues a claim ticket for the printed card of this agent. Simulated: nothing is signed or sent.`;
-  $('modal-ok').textContent = `BURN ${near(CLAIM.burn)}`;
-  $('modal-ok').hidden = false;
-  $('modal-cancel').textContent = 'CANCEL';
-  m.hidden = false;
+// One dialog for confirmations, results and amounts. Resolves to true (or
+// the typed text when it has an input) on OK, and to null on cancel.
+let modalDone = null;
+function modal({ title, body = '', code = null, link = null, input = null, ok = 'OK', cancel = 'CANCEL' }) {
+  closeModal(null);
+  $('modal-title').textContent = title;
+  const box = $('modal-body');
+  box.replaceChildren();
+  if (code) {
+    const c = document.createElement('div');
+    c.className = 'code';
+    c.textContent = code;
+    box.appendChild(c);
+  }
+  const text = document.createElement('div');
+  text.textContent = body;
+  box.appendChild(text);
+  if (link) {
+    const a = document.createElement('a');
+    a.href = link;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.textContent = 'View the transaction';
+    box.appendChild(a);
+  }
+  $('modal-field').hidden = !input;
+  if (input) {
+    $('modal-label').textContent = input.label;
+    $('modal-input').value = input.value ?? '';
+    setTimeout(() => $('modal-input').select(), 0);
+  }
+  $('modal-ok').hidden = !ok;
+  if (ok) $('modal-ok').textContent = ok;
+  $('modal-cancel').textContent = cancel;
+  $('modal').hidden = false;
+  return new Promise((resolve) => { modalDone = resolve; });
 }
-function confirmClaim() {
-  if (state.claimed) return;
+function closeModal(result) {
+  $('modal').hidden = true;
+  const done = modalDone;
+  modalDone = null;
+  done?.(result);
+}
+
+async function openClaim() {
+  const yes = await modal({
+    title: 'CLAIM PHYSICAL CARD',
+    body: `This burns ${near(CLAIM.burn)} from pass #${state.pass.id} and issues a claim ticket for the printed card of this agent. Simulated: nothing is signed or sent.`,
+    ok: `BURN ${near(CLAIM.burn)}`,
+  });
+  if (!yes || state.claimed) return;
   state.pass.balance -= CLAIM.burn;
   state.claimed = true;
   pushLog('CLAIM', 'Burned for physical card claim', -CLAIM.burn);
-  $('modal-title').textContent = 'CLAIM TICKET ISSUED';
-  const body = $('modal-body');
-  body.replaceChildren();
-  const code = document.createElement('div');
-  code.className = 'code';
-  code.textContent = `QF-TCG-${state.pass.id}-A`;
-  const note = document.createElement('div');
-  note.textContent = 'The pass now records the claim. Shipping is handled off-chain against this ticket.';
-  body.append(code, note);
-  $('modal-ok').hidden = true;
-  $('modal-cancel').textContent = 'CLOSE';
   render();
+  modal({
+    title: 'CLAIM TICKET ISSUED',
+    code: `QF-TCG-${state.pass.id}-A`,
+    body: 'The pass now records the claim. Shipping is handled off-chain against this ticket.',
+    ok: null,
+    cancel: 'CLOSE',
+  });
 }
+
+// The deploy terminal as the live build drives it: one line per real step.
+const term = {
+  open() {
+    setScreen('deploy');
+    layoutCard();
+    $('deploy-log').replaceChildren();
+    $('deploy-actions').hidden = true;
+    $('deploy').hidden = false;
+    return term;
+  },
+  line(text) {
+    const li = document.createElement('li');
+    li.textContent = text;
+    $('deploy-log').appendChild(li);
+    return {
+      ok(txHash = null) {
+        li.classList.add('ok');
+        if (txHash) li.appendChild(txLink(txHash));
+      },
+      fail() { li.classList.add('fail'); },
+    };
+  },
+  note(text, link = null) {
+    const li = document.createElement('li');
+    li.className = 'note';
+    li.textContent = text;
+    if (link) li.appendChild(txLink(link.split('/').pop()));
+    $('deploy-log').appendChild(li);
+  },
+  async done(ok) {
+    $('enter-world').hidden = !ok;
+    $('stay-here').textContent = ok ? 'WATCH FROM HERE' : 'BACK';
+    if (ok) {
+      const up = await worldReachable();
+      $('enter-world').disabled = !up;
+      $('world-note').textContent = up
+        ? 'Uplink ready. Agent World opens in orbit over the city.'
+        : 'Agent World is not reachable from this page. The agent is playing all the same.';
+    } else {
+      $('world-note').textContent = 'The deploy stopped at the step marked failed.';
+    }
+    $('deploy-actions').hidden = false;
+  },
+};
+function txLink(hash) {
+  const a = document.createElement('a');
+  a.href = explorerTx(hash);
+  a.target = '_blank';
+  a.rel = 'noopener';
+  a.textContent = `tx ${hash.slice(0, 8)}…`;
+  return a;
+}
+
+function openFold(name) {
+  const panel = document.querySelector(`[data-fold="${name}"]`);
+  panel.parentElement.querySelectorAll('.fold.open').forEach((el) => el.classList.remove('open'));
+  panel.classList.add('open');
+  panel.querySelector('.fold-head').setAttribute('aria-expanded', 'true');
+}
+const closeFold = (name) => document.querySelector(`[data-fold="${name}"]`).classList.remove('open');
 
 async function authenticate() {
   if (state.screen !== 'card') return;
@@ -521,20 +709,44 @@ async function authenticate() {
 // ---------------------------------------------------------------------------
 // wiring
 // ---------------------------------------------------------------------------
+const live = MOCK ? null : createLive({ state, render, pushLog, toast, stage, modal, term, closeFold });
+
 $('mcp-cmd').textContent = MCP_COMMAND;
-$('wallet-btn').addEventListener('click', toggleWallet);
-$('deploy-btn').addEventListener('click', () => (state.deployed ? recall() : deploy()));
+$('wallet-btn').addEventListener('click', () => {
+  if (MOCK) return toggleWallet();
+  if (state.wallet) return openFold('wallet');
+  return live.startGuest();
+});
+$('deploy-btn').addEventListener('click', () => {
+  if (MOCK) return state.deployed ? recall() : deploy();
+  if (!state.hasPass) return live.mint();
+  return state.deployed ? openWorld() : live.deploy();
+});
 $('enter-world').addEventListener('click', () => finishDeploy(true));
 $('stay-here').addEventListener('click', () => finishDeploy(false));
 $('world-back').addEventListener('click', closeWorld);
-$('claim-btn').addEventListener('click', openClaim);
-$('modal-ok').addEventListener('click', confirmClaim);
-$('modal-cancel').addEventListener('click', () => { $('modal').hidden = true; });
+$('claim-btn').addEventListener('click', () => (MOCK ? openClaim() : live.claim()));
+$('modal-ok').addEventListener('click', () => closeModal($('modal-field').hidden ? true : $('modal-input').value));
+$('modal-cancel').addEventListener('click', () => closeModal(null));
+$('modal-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') closeModal($('modal-input').value); });
 $('byo-link').addEventListener('click', () => {
   const name = ($('byo-name').value.trim() || BYO.name).toUpperCase();
-  linkAgent({ ...BYO, name, rented: false });
+  (MOCK ? linkAgent : live.linkAgent)({ ...BYO, name, rented: false });
 });
-const policySummary = () => { $('sum-policy').textContent = `${state.policy.perTx.toFixed(1)} / ${state.policy.daily.toFixed(1)}`; };
+if (live) {
+  $('guest-btn').addEventListener('click', live.startGuest);
+  $('connect-btn').addEventListener('click', live.connectWallet);
+  $('disconnect-btn').addEventListener('click', live.disconnect);
+  $('keep-btn').addEventListener('click', live.keep);
+  $('unlink-btn').addEventListener('click', live.unlink);
+  $('test-limit').addEventListener('click', live.testLimits);
+  $('deposit-btn').addEventListener('click', live.deposit);
+  $('withdraw-btn').addEventListener('click', live.withdraw);
+  // a slider let go: store the caps on the pass
+  $('pol-tx').addEventListener('change', live.commitPolicy);
+  $('pol-day').addEventListener('change', live.commitPolicy);
+}
+const policySummary = () => { state.policyDirty = true; $('sum-policy').textContent = `${cap(state.policy.perTx)} / ${cap(state.policy.daily)}`; };
 $('pol-tx').addEventListener('input', (e) => { state.policy.perTx = +e.target.value; $('pol-tx-v').textContent = near(state.policy.perTx); policySummary(); });
 $('pol-day').addEventListener('input', (e) => { state.policy.daily = +e.target.value; $('pol-day-v').textContent = near(state.policy.daily); policySummary(); });
 // folding panels: opening one closes the others in the same column
@@ -550,7 +762,7 @@ document.querySelectorAll('.tab').forEach((tab) => tab.addEventListener('click',
   $('tab-rent').hidden = tab.dataset.tab !== 'rent';
   $('tab-byo').hidden = tab.dataset.tab !== 'byo';
 }));
-document.querySelectorAll('[data-mock]').forEach((b) => b.addEventListener('click', () => toast(`${b.dataset.mock.toUpperCase()} · NOT WIRED YET`)));
+if (MOCK) document.querySelectorAll('[data-mock]').forEach((b) => b.addEventListener('click', () => toast(`${b.dataset.mock.toUpperCase()} · NOT WIRED YET`)));
 // graded slab: leans toward the pointer, foil and glare follow it, click flips
 const slabEl = $('slab');
 
@@ -608,7 +820,7 @@ slabEl.addEventListener('click', () => {
 
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (!$('modal').hidden) $('modal').hidden = true;
+    if (!$('modal').hidden) closeModal(null);
     else if (!$('world').hidden) closeWorld();
   }
   if ((e.key === 'Enter' || e.key === ' ') && state.screen === 'card') authenticate();
@@ -745,6 +957,10 @@ function frame() {
 render();
 document.fonts?.ready.then(() => redrawCard(true));
 frame();
+if (live) {
+  $('deploy-mode').textContent = 'NEAR TESTNET';
+  live.boot();
+}
 
 // Model loading is kept away from the transition, because parsing blocks the
 // main thread: the mannequin every agent shares loads now, behind the card

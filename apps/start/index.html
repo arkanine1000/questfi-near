@@ -21,7 +21,7 @@
         <h1>QUESTFI <span>//</span> AGENT ACCESS</h1>      </header>
       <footer class="gate-foot">
         <div id="gate-hint">CLICK THE CARD TO AUTHENTICATE</div>
-        <div class="gate-sub">PASS #0042 · NEAR TESTNET</div>
+        <div id="gate-sub" class="gate-sub">PASS #0042 · NEAR TESTNET</div>
       </footer>
     </section>
 
@@ -96,7 +96,13 @@
         <div class="panel fold" data-fold="wallet">
           <button class="fold-head" title="WALLET" aria-label="WALLET" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h15a3 3 0 0 1 3 3v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zm0 0V6a2 2 0 0 1 2-2h11"/><circle cx="16.5" cy="14" r="1.2"/></svg><span>WALLET</span><b id="sum-wallet"></b><i></i></button>
           <div class="fold-body">
-          <div id="wallet-off" class="muted">No wallet connected. The pass and its earnings belong to whichever NEAR account holds it.</div>
+          <div id="wallet-off">
+            <div class="muted">No account yet. The pass and its earnings belong to whichever NEAR account holds it.</div>
+            <div id="start-choices" hidden>
+              <button id="guest-btn" class="btn wide">PLAY WITH A TEST ACCOUNT</button>
+              <button id="connect-btn" class="btn wide quiet">CONNECT A NEAR WALLET</button>
+            </div>
+          </div>
           <div id="wallet-on" hidden>
             <div class="row"><span>ACCOUNT</span><b id="w-account"></b></div>
             <div class="row"><span>WALLET BALANCE</span><b id="w-near"></b></div>
@@ -104,9 +110,11 @@
             <div class="row"><span>LIFETIME PROFIT</span><b id="w-life"></b></div>
             <div class="row"><span>MARKET CUT EARNED</span><b id="w-cut"></b></div>
             <div class="btn-row">
-              <button class="btn small" data-mock="Deposit to pass">DEPOSIT</button>
-              <button class="btn small" data-mock="Withdraw to wallet">WITHDRAW</button>
+              <button id="deposit-btn" class="btn small" data-mock="Deposit to pass">DEPOSIT</button>
+              <button id="withdraw-btn" class="btn small" data-mock="Withdraw to wallet">WITHDRAW</button>
             </div>
+            <button id="keep-btn" class="btn wide" hidden>MOVE PASS TO MY WALLET</button>
+            <button id="disconnect-btn" class="btn wide quiet" hidden>DISCONNECT WALLET</button>
           </div>
           </div>
         </div>
@@ -120,6 +128,7 @@
           </div>
           <div id="tab-rent" class="tab-body">
             <div id="roster"></div>
+            <button id="unlink-btn" class="btn wide quiet" hidden>UNLINK AGENT</button>
           </div>
           <div id="tab-byo" class="tab-body" hidden>
             <div class="muted">Point any MCP-capable agent at the QuestFi server, then link it to this pass.</div>
@@ -138,6 +147,10 @@
           <label class="slider"><span>DAILY LIMIT</span><b id="pol-day-v"></b>
             <input id="pol-day" type="range" min="1" max="25" step="0.5" /></label>
           <div class="muted">The agent's key can only call game methods. It can never withdraw from the pass.</div>
+          <div id="limit-test" hidden>
+            <button id="test-limit" class="btn wide">TEST THE LIMITS</button>
+            <ul id="limit-result"></ul>
+          </div>
           </div>
         </div>
 
@@ -160,7 +173,7 @@
     <!-- ============ deploy sequence ============ -->
     <section id="deploy" hidden>
       <div class="term">
-        <div class="term-head">DEPLOYMENT <span>SIMULATED</span></div>
+        <div class="term-head">DEPLOYMENT <span id="deploy-mode">SIMULATED</span></div>
         <ul id="deploy-log"></ul>
         <div id="deploy-actions" hidden>
           <div id="world-note" class="muted"></div>
@@ -186,6 +199,7 @@
       <div class="modal-box">
         <h2 id="modal-title"></h2>
         <div id="modal-body"></div>
+        <label id="modal-field" class="field" hidden><span id="modal-label"></span><input id="modal-input" inputmode="decimal" autocomplete="off" /></label>
         <div class="btn-row">
           <button id="modal-ok" class="btn big"></button>
           <button id="modal-cancel" class="btn">CANCEL</button>

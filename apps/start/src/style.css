@@ -521,3 +521,23 @@ pre#mcp-cmd {
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ---------- live build: accounts, limits test, chain links ---------- */
+.btn.quiet { background: transparent; border-color: rgba(53, 255, 125, 0.28); color: var(--green-soft); }
+.btn.busy { animation: pulse 1.1s ease-in-out infinite; }
+#start-choices { margin-top: 4px; }
+#keep-btn { border-color: var(--amber); color: var(--amber); }
+#modal-field { margin-top: 14px; }
+#log li.warn { color: var(--amber); }
+#log li.warn .src { color: var(--amber); }
+#log li.bad { color: #ff8a7a; }
+#log a, #deploy-log a, #limit-result a { color: inherit; text-decoration: underline; text-decoration-color: rgba(53, 255, 125, 0.5); text-underline-offset: 3px; }
+#deploy-log li.fail { color: #ff8a7a; }
+#deploy-log li.fail::after { content: '  failed'; color: #ff8a7a; }
+#deploy-log li.note { color: var(--amber); }
+#deploy-log li.note::before { content: '  '; }
+#deploy-log a { margin-left: 10px; font-size: 16px; color: var(--green-soft); }
+#limit-result { list-style: none; margin-top: 10px; }
+#limit-result li { padding: 8px 0; border-top: 1px solid rgba(53, 255, 125, 0.14); font-size: 13px; line-height: 1.45; color: #dfffe8; }
+#limit-result li b { display: block; font-family: 'VT323', monospace; font-size: 21px; font-weight: 400; letter-spacing: 0.04em; color: var(--amber); }
+#limit-result li.unexpected b { color: #ff8a7a; }
