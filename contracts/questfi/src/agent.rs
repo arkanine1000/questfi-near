@@ -96,6 +96,22 @@ impl Contract {
         self.clear_agent_link(&pass_id, "owner");
     }
 
+    /// Replaces the public key recorded for the linked agent, for an owner
+    /// who issued the agent a new key. The rest of the link stays as it is
+    /// and no rental is charged. Allowed during a season, since the agent
+    /// itself does not change.
+    #[payable]
+    pub fn set_agent_key(&mut self, pass_id: TokenId, public_key: PublicKey) {
+        assert_one_yocto();
+        let owner = self.assert_pass_owner(&pass_id);
+        let mut pass = self.pass(&pass_id);
+        let link = pass.agent.as_mut().unwrap_or_else(|| env::panic_str("no agent is linked to this pass"));
+        link.public_key = Some(public_key.clone());
+        self.save_pass(&pass_id, pass);
+        self.push_activity(&pass_id, "key", "Agent key replaced".to_string(), 0, false);
+        emit("agent_key_set", json!({ "pass_id": pass_id, "account_id": owner, "public_key": public_key }));
+    }
+
     /// Replaces the pass's caps. Does not reset what was spent today.
     #[payable]
     pub fn set_policy(&mut self, pass_id: TokenId, per_call_cap: U128, daily_limit: U128) {

@@ -229,3 +229,62 @@ fn pay_agent_moves_balance_under_the_policy() {
     t.fails(&alice(), 0, "amount must be above 0", |c| c.pay_agent(a.clone(), b.clone(), U128(0), None));
     t.fails(&bob(), 0, ERR_NOT_PASS_OWNER, |c| c.pay_agent(a.clone(), b.clone(), U128(1), None));
 }
+
+#[test]
+fn set_agent_key_replaces_only_the_key() {
+    let mut t = T::new();
+    roster(&mut t);
+    let a = t.mint(&alice(), 5 * N);
+    let b = t.mint(&bob(), 5 * N);
+    t.call(&alice(), 400 * MN, |c| {
+        c.link_agent(a.clone(), AgentKind::Rented, "".into(), Some("mimir".into()), Some(agent_pk()))
+    });
+    t.create("s1", N);
+    t.call_pk(&alice(), 0, &agent_pk(), |c| c.enter_season(a.clone(), "s1".into()));
+    assert_eq!(event("season_entered")["signed_by_agent_key"], true);
+    let balance = t.balance(&a);
+
+    // Allowed mid-season; no rental charged again.
+    t.call(&alice(), 1, |c| c.set_agent_key(a.clone(), other_pk()));
+    assert_eq!(t.sent_to(&treasury()), 0);
+    let ev = event("agent_key_set");
+    assert_eq!((ev["pass_id"].as_str(), ev["account_id"].as_str()), (Some("1"), Some("alice.near")));
+    assert_eq!(ev["public_key"], other_pk().to_string().as_str());
+    let p = t.pass(&a);
+    assert_eq!(
+        p.agent,
+        Some(AgentLink {
+            kind: AgentKind::Rented,
+            name: "MIMIR".into(),
+            roster_id: Some("mimir".into()),
+            public_key: Some(other_pk())
+        })
+    );
+    assert_eq!(p.balance.0, balance);
+    assert_eq!(p.active_season.as_deref(), Some("s1"));
+    let act = &t.view(|c| c.get_activity(a.clone(), None, Some(1)))[0];
+    assert_eq!((act.kind.as_str(), act.text.as_str(), act.amount.0), ("key", "Agent key replaced", 0));
+
+    // signed_by_agent_key follows the new key, not the old one.
+    t.call_pk(&alice(), 0, &other_pk(), |c| c.pay_agent(a.clone(), b.clone(), U128(1), None));
+    assert_eq!(event("agent_payment")["signed_by_agent_key"], true);
+    t.call_pk(&alice(), 0, &agent_pk(), |c| c.pay_agent(a.clone(), b.clone(), U128(1), None));
+    assert_eq!(event("agent_payment")["signed_by_agent_key"], false);
+}
+
+#[test]
+fn set_agent_key_is_refused_without_owner_yocto_or_link() {
+    let mut t = T::new();
+    let a = t.mint(&alice(), N);
+    t.fails(&alice(), 1, "no agent is linked", |c| c.set_agent_key(a.clone(), other_pk()));
+    link_byo(&mut t, &alice(), &a);
+    t.fails(&bob(), 1, ERR_NOT_PASS_OWNER, |c| c.set_agent_key(a.clone(), other_pk()));
+    t.fails(&alice(), 0, "exactly 1 yoctoNEAR", |c| c.set_agent_key(a.clone(), other_pk()));
+    t.fails(&alice(), 2, "exactly 1 yoctoNEAR", |c| c.set_agent_key(a.clone(), other_pk()));
+    t.fails(&alice(), 1, ERR_PASS_NOT_FOUND, |c| c.set_agent_key("9".into(), other_pk()));
+    assert_eq!(t.pass(&a).agent.unwrap().public_key, Some(agent_pk()));
+    // A transfer clears the link, so the new owner must link before setting a key.
+    t.call(&alice(), 1, |c| c.nft_transfer(bob(), a.clone(), None, None));
+    t.fails(&alice(), 1, ERR_NOT_PASS_OWNER, |c| c.set_agent_key(a.clone(), other_pk()));
+    t.fails(&bob(), 1, "no agent is linked", |c| c.set_agent_key(a.clone(), other_pk()));
+}

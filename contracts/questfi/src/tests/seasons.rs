@@ -46,7 +46,10 @@ fn happy_path_three_enter_one_kill_settle() {
     assert_eq!(t.pass(&b).active_season, None);
     assert_eq!(t.season("s1").pot.0, 2 * N + N / 2);
     let death = &t.view(|c| c.get_activity(b.clone(), None, Some(1)))[0];
-    assert_eq!((death.kind.as_str(), death.amount.0, death.negative), ("death", N / 2, true));
+    // The victim's line carries no amount: its stake left the balance at entry.
+    assert_eq!((death.kind.as_str(), death.amount.0, death.negative), ("death", 0, false));
+    let bounty = &t.view(|c| c.get_activity(a.clone(), None, Some(1)))[0];
+    assert_eq!((bounty.kind.as_str(), bounty.amount.0, bounty.negative), ("kill", N / 2, false));
 
     t.settle("s1", Some(&a));
     assert_eq!(t.sent_to(&treasury()), 0);
@@ -67,7 +70,7 @@ fn happy_path_three_enter_one_kill_settle() {
     assert!(acct.solvent);
     // JSON names of the season view.
     let json = near_sdk::serde_json::to_value(t.season("s1")).unwrap();
-    assert_eq!(json["status"], "settled");
+    assert_eq!(json["status"], "Settled");
     assert_eq!(json["entry_stake"], N.to_string());
     assert_eq!(json["entrants"][1]["alive"], false);
 }
@@ -356,4 +359,25 @@ fn season_view_names_the_linked_agents() {
     assert_eq!(names, vec!["SCOUT".to_string(), String::new()]);
     let s = t.season("s1");
     assert_eq!((s.season_id.as_str(), s.market_open, s.next_seq, s.winner), ("s1", true, 0, None));
+}
+
+#[test]
+fn season_status_is_pascal_case_in_json() {
+    use near_sdk::serde_json::to_value;
+    let all = [SeasonStatus::Open, SeasonStatus::Running, SeasonStatus::Settled, SeasonStatus::Cancelled];
+    let names: Vec<Value> = all.iter().map(|s| to_value(s).unwrap()).collect();
+    assert_eq!(names, vec![json!("Open"), json!("Running"), json!("Settled"), json!("Cancelled")]);
+    // Agent kinds stay lowercase.
+    assert_eq!(to_value(AgentKind::Rented).unwrap(), json!("rented"));
+    assert_eq!(to_value(AgentKind::Byo).unwrap(), json!("byo"));
+
+    let mut t = T::new();
+    let (_a, _b, _c) = three_in(&mut t, "s1", N, 5 * N);
+    let status = |t: &T| to_value(t.season("s1")).unwrap()["status"].clone();
+    let market_status = |t: &T| to_value(t.view(|x| x.get_market("s1".into())).unwrap()).unwrap()["status"].clone();
+    assert_eq!((status(&t), market_status(&t)), (json!("Open"), json!("Open")));
+    t.start("s1");
+    assert_eq!(status(&t), json!("Running"));
+    t.call(&operator(), 0, |x| x.cancel_season("s1".into()));
+    assert_eq!((status(&t), market_status(&t)), (json!("Cancelled"), json!("Cancelled")));
 }

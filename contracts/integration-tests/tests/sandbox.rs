@@ -325,7 +325,7 @@ async fn a_whole_season_settles_and_the_contract_stays_solvent() -> anyhow::Resu
     let m: Value = view(&env.contract, "get_market", json!({ "season_id": season })).await?;
     ensure!(n(&m["distributable"]) == 4_860 * MN && m["settled"] == true && m["open"] == false, "{m}");
     let s: Value = view(&env.contract, "get_season", json!({ "season_id": season })).await?;
-    ensure!(s["status"] == "settled" && s["winner"] == *a && n(&s["pot"]) == 0, "{s}");
+    ensure!(s["status"] == "Settled" && s["winner"] == *a && n(&s["pot"]) == 0, "{s}");
 
     let bets: Value = view(&env.contract, "get_bets", json!({ "season_id": season, "account_id": dave.id() })).await?;
     ensure!(n(&bets["claimable"]) == 2_430 * MN, "{bets}");

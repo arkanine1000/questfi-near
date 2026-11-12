@@ -95,6 +95,7 @@ impl Config {
     }
 }
 
+/// In JSON in lowercase: "rented", "byo".
 #[near(serializers = [borsh, json])]
 #[serde(rename_all = "lowercase")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -194,8 +195,8 @@ pub struct RosterAgent {
     pub price: u128,
 }
 
+/// In JSON as written here: "Open", "Running", "Settled", "Cancelled".
 #[near(serializers = [borsh, json])]
-#[serde(rename_all = "lowercase")]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SeasonStatus {
     Open,

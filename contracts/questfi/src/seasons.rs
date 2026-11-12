@@ -341,7 +341,9 @@ impl Contract {
             Some(k) => format!("pass #{k}"),
             None => "a monster".to_string(),
         };
-        self.push_activity(&victim, "death", format!("Killed by {by} in {season_id}"), bounty, bounty > 0);
+        // Amount 0: the stake left the balance at entry and shows there; the
+        // bounty is on the killer's line.
+        self.push_activity(&victim, "death", format!("Killed by {by} in {season_id}"), 0, false);
         emit("kill", json!({ "season_id": season_id, "killer": killer_id, "victim": victim, "amount": amt(bounty) }));
         Ok(())
     }
