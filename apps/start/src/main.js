@@ -747,9 +747,6 @@ document.fonts?.ready.then(() => redrawCard(true));
 frame();
 
 // Model loading is kept away from the transition, because parsing blocks the
-// main thread: the small mannequin loads now, behind the card screen, and the
-// two heavy FBX agents load when the Agent Link menu is first opened.
-stage.preload(ROSTER.find((a) => a.model === 'crew'));
-document.querySelector('[data-fold="link"] .fold-head').addEventListener('click', () => {
-  ROSTER.filter((a) => a.model !== 'crew').forEach((a) => stage.preload(a));
-}, { once: true });
+// main thread: the mannequin every agent shares loads now, behind the card
+// screen.
+stage.preload();

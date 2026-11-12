@@ -33,15 +33,16 @@ export const TIERS = [
   { level: 5, label: 'TCG', final: true },
 ];
 
-// House agents you can rent. `model` is 'crew' (animated mannequin) or an FBX.
+// House agents you can rent. Every agent is the same animated mannequin; they
+// are told apart by `tint`.
 export const ROSTER = [
-  { key: 'mimir', name: 'MIMIR', blurb: 'Market oracle. Plays the odds, loots late.', price: 0.4, model: 'crew', tint: 0x49ff8c },
-  { key: 'cassandra', name: 'CASSANDRA', blurb: 'Sees the loss coming. Goes in anyway.', price: 0.4, model: 'crew', tint: 0xe06bc0 },
-  { key: 'roko', name: 'ROKO', blurb: 'Berserker. First into every dungeon.', price: 0.6, model: 'models/viking.fbx', tint: 0xc8ff6a },
-  { key: 'aegis', name: 'AEGIS', blurb: 'Armoured and patient. Wins by outlasting.', price: 0.6, model: 'models/knight.fbx', tint: 0x54f0d8 },
+  { key: 'mimir', name: 'MIMIR', blurb: 'Market oracle. Plays the odds, loots late.', price: 0.4, tint: 0x49ff8c },
+  { key: 'cassandra', name: 'CASSANDRA', blurb: 'Sees the loss coming. Goes in anyway.', price: 0.4, tint: 0xe06bc0 },
+  { key: 'roko', name: 'ROKO', blurb: 'Berserker. First into every dungeon.', price: 0.6, tint: 0xc8ff6a },
+  { key: 'aegis', name: 'AEGIS', blurb: 'Armoured and patient. Wins by outlasting.', price: 0.6, tint: 0x54f0d8 },
 ];
 
-export const BYO = { key: 'byo', name: 'CLAUDE-CODE', model: 'crew', tint: 0xffb54a };
+export const BYO = { key: 'byo', name: 'CLAUDE-CODE', tint: 0xffb54a };
 
 export const MCP_COMMAND = 'claude mcp add --transport http questfi https://<host>/mcp/';
 

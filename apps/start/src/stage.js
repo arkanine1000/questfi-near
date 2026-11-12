@@ -1,11 +1,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { clone as skeletonClone } from 'three/addons/utils/SkeletonUtils.js';
-import { applyHoloToRig, applyHoloToMesh, holoFillMaterial, holoWireMaterial } from './holo.js';
+import { applyHoloToRig, holoFillMaterial } from './holo.js';
 
-// The agent on its projector pad. Models are the lobby's: the animated crew
-// mannequin (tinted per agent) and the dropped FBX characters.
+// The agent on its projector pad. Every agent is the lobby's animated crew
+// mannequin, tinted per agent.
 
 const AGENT_HEIGHT = 1.8;
 const GREEN = 0x35ff7d;
@@ -135,18 +134,14 @@ export function createStage(scene) {
   group.add(holder);
 
   // ---- models -------------------------------------------------------------
-  const sources = new Map(); // url -> Promise
+  let crew = null; // Promise of the one model every agent shares
   const built = new Map(); // agent key -> { root, mixer }
   let token = 0;
   let current = null;
 
-  function source(def) {
-    const url = def.model === 'crew' ? 'models/crew.glb' : def.model;
-    if (!sources.has(url)) {
-      const loader = url.endsWith('.glb') ? new GLTFLoader() : new FBXLoader();
-      sources.set(url, loader.loadAsync(url));
-    }
-    return sources.get(url);
+  function source() {
+    crew ??= new GLTFLoader().loadAsync('models/crew.glb');
+    return crew;
   }
 
   function buildCrew(gltf, def) {
@@ -185,34 +180,6 @@ export function createStage(scene) {
     return { root, mixer };
   }
 
-  function buildFbx(fbx, def) {
-    const root = new THREE.Group();
-    root.add(fbx);
-    fbx.scale.setScalar(0.01); // authored in centimetres
-    let box = new THREE.Box3().setFromObject(root);
-    let h = box.max.y - box.min.y;
-    if (!(h > 0.6 && h < 3.2)) {
-      fbx.scale.multiplyScalar(AGENT_HEIGHT / (h || 1));
-      box = new THREE.Box3().setFromObject(root);
-    }
-    fbx.position.y -= box.min.y;
-    fbx.position.x -= (box.min.x + box.max.x) / 2;
-    fbx.position.z -= (box.min.z + box.max.z) / 2;
-
-    let skinned = false;
-    fbx.traverse((o) => { if (o.isSkinnedMesh) skinned = true; });
-    if (skinned) {
-      applyHoloToRig(fbx, def.tint, { intensity: 0.1, wire: 0.07 });
-    } else {
-      const fill = holoFillMaterial(def.tint, { intensity: 0.18, base: 0.14 });
-      const wire = holoWireMaterial(def.tint, 0.3);
-      const meshes = [];
-      fbx.traverse((o) => { if (o.isMesh) meshes.push(o); });
-      meshes.forEach((o) => applyHoloToMesh(o, fill, wire));
-    }
-    return { root, mixer: null };
-  }
-
   async function setAgent(def) {
     const my = ++token;
     if (!def) {
@@ -224,11 +191,10 @@ export function createStage(scene) {
     let entry = built.get(def.key);
     if (!entry) {
       try {
-        const src = await source(def);
-        entry = def.model === 'crew' ? buildCrew(src, def) : buildFbx(src, def);
+        entry = buildCrew(await source(), def);
         built.set(def.key, entry);
       } catch (err) {
-        console.error('[stage] model failed to load:', def.model, err);
+        console.error('[stage] model failed to load:', err);
         return;
       }
     }
@@ -312,7 +278,7 @@ export function createStage(scene) {
     group,
     setAgent,
     update,
-    preload: (def) => source(def).catch(() => {}),
+    preload: () => source().catch(() => {}),
     dragStart,
     drag,
     dragEnd,
