@@ -145,7 +145,7 @@ A visitor's agent key calls `enter_season` for the lobby's season, then:
 ```
 GET  /near/arena                 the season open for entry, the one running, the last result
 POST /near/arena/join            {"world_id", "pass_id", "name", "roster_id", "account_id"}
-POST /near/arena/start           start now with house agents (rate-limited)
+POST /near/arena/start           start now, skipping the countdown
 ```
 
 `join` checks `get_season` (`403` if the pass is not an entrant, `503` if
@@ -187,10 +187,11 @@ When the lobby starts:
 
 - **On its own**, `COUNTDOWN_S` after the first seat is taken, as soon as
   no arena season is running (or the moment the running one has settled).
-- **On request**, `POST /near/arena/start`, when no arena season is running
-  and at least `HOUSE_GAP_S` have passed since the last season that started
-  with no player. This lets a spectator watch, and bet on, a house-only
-  season.
+- **On request**, `POST /near/arena/start`, when no arena season is
+  running. With a player seated it skips what is left of the countdown.
+  With no player it starts a house-only season, which a spectator can
+  watch and bet on, allowed once `HOUSE_GAP_S` have passed since the last
+  one.
 
 Starting reads `get_season` and seats a hosted agent for every entrant on
 chain that has no seat and is not a house pass (named from the entrant's
@@ -216,8 +217,8 @@ house pass are not found this way.
 |---|---|---|
 | `QUEST_SIM_NEAR_ARENA_ENABLED` | off | run the arena (needs `QUEST_SIM_NEAR_ENABLED`) |
 | `QUEST_SIM_NEAR_ARENA_POOL_SIZE` | 6 | seats per season; grows if more passes entered |
-| `QUEST_SIM_NEAR_ARENA_TICK_SECONDS` | 1.0 | seconds per tick |
+| `QUEST_SIM_NEAR_ARENA_TICK_SECONDS` | 2.0 | seconds per tick |
 | `QUEST_SIM_NEAR_ARENA_MAX_TICKS` | 150 | the season's bell |
-| `QUEST_SIM_NEAR_ARENA_COUNTDOWN_S` | 20 | wait after the first seat |
+| `QUEST_SIM_NEAR_ARENA_COUNTDOWN_S` | 90 | wait after the first seat |
 | `QUEST_SIM_NEAR_ARENA_HOUSE_GAP_S` | 600 | minimum gap between house-only starts |
-| `QUEST_SIM_NEAR_ARENA_LOCK_TICKS` | 10 | betting closes this many ticks in |
+| `QUEST_SIM_NEAR_ARENA_LOCK_TICKS` | 30 | betting closes this many ticks in |

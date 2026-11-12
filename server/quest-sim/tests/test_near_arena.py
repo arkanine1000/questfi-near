@@ -304,6 +304,25 @@ def test_a_house_start_respects_the_gap_and_one_season_at_a_time(tmp_path, monke
         assert 0 < arena_state(client)["house_start_in_s"] <= 60
 
 
+def test_a_start_request_with_a_player_seated_skips_the_countdown_and_the_gap(tmp_path, monkeypatch):
+    with arena_app(tmp_path, monkeypatch, house_gap_s=60.0, countdown_s=600.0) as (client, arena, settler, fake):
+        ready_lobby(client)
+        assert client.post("/near/arena/start").status_code == 200  # a house season
+        wait_for(lambda: arena_state(client)["last"], timeout=20, what="the house season")
+
+        wid = ready_lobby(client)
+        assert client.post("/near/arena/start").status_code == 429  # inside the house gap
+        fake.add_entrant(wid, "101", "ROKO")
+        assert join(client, wid, "101", name="ROKO", roster_id="roko").status_code == 200
+        assert arena_state(client)["lobby"]["waiting_for"] == "countdown"
+
+        started = client.post("/near/arena/start")
+        assert started.status_code == 200, started.text
+        assert started.json()["world_id"] == wid
+        assert any(a["name"] == "ROKO" for a in started.json()["roster"])
+        assert arena.last_house_start_at is not None  # unchanged by a season with a player
+
+
 def test_only_the_latest_finished_world_is_kept(tmp_path, monkeypatch):
     from quest_sim.api import world_routes
 

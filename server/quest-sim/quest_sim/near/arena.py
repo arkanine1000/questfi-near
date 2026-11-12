@@ -7,8 +7,9 @@ already created on chain) and runs at most one season at a time:
 * A visitor's agent key calls ``enter_season`` on chain; then
   ``POST /near/arena/join`` seats a hosted agent for that pass in the lobby.
 * The lobby starts ``countdown_s`` after its first seat, as soon as no
-  arena season is running. ``POST /near/arena/start`` starts it with house
-  agents only, at most once per ``house_gap_s``.
+  arena season is running. ``POST /near/arena/start`` starts it at once:
+  with a player seated it only skips the countdown; with none it is a
+  house-only season, allowed at most once per ``house_gap_s``.
 * Starting reads ``get_season`` and gives a seat to every entrant on chain
   that has none, so every stake has an agent playing for it; backfills
   the house cast; queues the house entries and ``start_season``; and only
@@ -77,11 +78,11 @@ class Arena:
         settler: Settler,
         *,
         pool_size: int = 6,
-        tick_seconds: float = 1.0,
+        tick_seconds: float = 2.0,
         max_ticks: int = 150,
-        countdown_s: float = 20.0,
+        countdown_s: float = 90.0,
         house_gap_s: float = 600.0,
-        lock_ticks: int = 10,
+        lock_ticks: int = 30,
         num_sites: int = 6,
         action_deadline_s: float = 5.0,
         poll_s: float = 0.5,
@@ -393,7 +394,8 @@ class Arena:
         return max(0.0, self.house_gap_s - (self._now() - self.last_house_start_at))
 
     async def start_lobby(self, *, requested: bool) -> dict:
-        """Start the lobby: on its countdown, or on request (house start)."""
+        """Start the lobby: on its countdown, or on request. A request with
+        a player seated skips the countdown; with none it is a house start."""
         self.ensure_started()
         async with self._start_lock:
             lobby_id = self.lobby_id
@@ -404,7 +406,9 @@ class Arena:
                 raise ArenaRefusal(409, f"Season {self.running_id} is still running")
             if not self._chain_ready(lobby_id):
                 raise ArenaRefusal(409, f"Season {lobby_id} is not open on chain yet")
-            if requested and self._house_wait_s() > 0:
+            # The house gap limits seasons nobody staked on. Once a player
+            # has a seat, a request only skips the countdown.
+            if requested and not world.agents and self._house_wait_s() > 0:
                 raise ArenaRefusal(
                     429,
                     f"A house season can start again in {self._house_wait_s():.0f}s",

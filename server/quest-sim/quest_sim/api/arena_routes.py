@@ -64,9 +64,10 @@ async def arena_join(req: ArenaJoinRequest):
 
 @arena_router.post("/arena/start")
 async def arena_start():
-    """Start the lobby now, house agents filling every empty seat. Refused
-    while a season runs, and within the house gap of the last season that
-    started with no player."""
+    """Start the lobby now, house agents filling every empty seat. With a
+    player seated this only skips the countdown. With none it is a
+    house-only season, refused within the house gap of the last one.
+    Always refused while a season runs."""
     arena = _require_arena()
     try:
         return await arena.start_lobby(requested=True)
