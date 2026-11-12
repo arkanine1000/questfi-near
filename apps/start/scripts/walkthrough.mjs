@@ -12,9 +12,11 @@
 //              account. Without it, QUESTFI_GUEST_PARENT_ID and
 //              QUESTFI_GUEST_PARENT_KEY must be set and the account is made
 //              here.
-// --game       the game server; the open season is asked of it. Without it,
-//              pass --season <id>, or set QUESTFI_OPERATOR_ID and
-//              QUESTFI_OPERATOR_KEY to have a season created for the run.
+// --game       the game server; the open season is asked of it, the agent is
+//              seated there, and the run waits for the season to play and
+//              settle (a few minutes). Without it, pass --season <id>, or set
+//              QUESTFI_OPERATOR_ID and QUESTFI_OPERATOR_KEY to have a season
+//              created, entered and cancelled for the run.
 // --keep       print the test account's id at the end (its key is discarded
 //              either way; nothing secret is ever printed).
 //
@@ -129,8 +131,9 @@ await step('the owner deposits and withdraws', async () => {
 });
 
 let agent;
+let pick;
 await step('it links a house agent and issues the agent key', async () => {
-  const pick = roster[0];
+  pick = roster[0];
   const linked = await chain.linkAgent(owner, { passId, kind: 'rented', name: pick.name, rosterId: pick.roster_id, priceYocto: BigInt(pick.price) });
   agent = chain.agent(owner.accountId, linked.agentSecretKey);
   const key = await chain.accessKey(owner.accountId, linked.publicKey);
@@ -208,6 +211,32 @@ if (seasonId && !failed) {
   });
 } else if (!seasonId) {
   console.log('skip  no season to enter: give --game <url> or --season <id>');
+}
+
+if (gameUrl && seasonId && !failed) {
+  await step('the game server seats the agent', async () => {
+    const seat = await createGame(gameUrl).join(seasonId, { passId, name: pick.name, rosterId: pick.roster_id, accountId: owner.accountId });
+    const when = seat.starts_in_s == null ? 'when the season before it has settled' : `in about ${Math.round(seat.starts_in_s)} s`;
+    return `${seat.name} has a seat in ${seat.world_id}; the season starts ${when}`;
+  });
+
+  await step('the season plays and settles on chain', async () => {
+    const until = Date.now() + 10 * 60_000;
+    let season;
+    for (;;) {
+      season = await chain.getSeason(seasonId);
+      if (season.status === 'Settled' || season.status === 'Cancelled') break;
+      expect(Date.now() < until, `season ${seasonId} is still ${season.status} after 10 minutes`);
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+    expect(season.status === 'Settled', `the season was ${season.status}`);
+    const pass = await chain.getPass(passId);
+    expect(pass.active_season === null, 'the pass is still marked as in the season');
+    const lines = (await chain.getActivity(passId, 0, 8))
+      .filter((a) => ['kill', 'death', 'win', 'loot', 'market_cut'].includes(a.kind))
+      .map((a) => `${a.kind}: ${a.text}${BigInt(a.amount) > 0n ? ` (${a.negative ? '-' : '+'}${near(a.amount)})` : ''}`);
+    return [`won by pass #${season.winner ?? 'nobody'}; this pass: balance ${near(pass.balance)}, kills ${pass.kills}, wins ${pass.wins}, level ${pass.level}`, ...lines].join('\n');
+  });
 }
 
 if (operator && seasonId && !failed) {
