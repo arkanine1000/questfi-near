@@ -117,7 +117,7 @@ the globe so the right coastline sits underneath.
   stars fade in. Orbit is 19–31 draw calls against ~1,800 in the street. The
   agents never pause. Traffic runs at full rate below 3 km, a quarter rate in
   the Regional band, and stops above it.
-- **Beacons** (`src/globe/beacon.js`): a pillar, pulsing rings and a label with
+- **Beacons** (`src/globe/markers.js`): a pillar, pulsing rings and a label with
   the live agent count, scaled with altitude. One per site, so a second city
   is data, not code.
 - **Cinematic** (`src/globe/cinematic.js`): `?cinematic=1` hides the UI,
