@@ -1,5 +1,5 @@
-//! The spectator market, including the worked example of the spec to the
-//! yocto.
+//! The spectator market, including the worked example in contracts/README.md
+//! to the yocto.
 
 use super::*;
 

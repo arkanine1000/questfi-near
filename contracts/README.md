@@ -14,7 +14,8 @@ passes stake into its pot, the operator reports kills and loot, and settles
 it. A kill pays the killer half of the victim's stake at once; the winner's
 pass takes what is left of the pot. Spectators bet on entrants in a
 parimutuel market; the winning pass takes a cut of the losing bets. At level
-5 the owner can burn 2 NEAR from the pass balance to claim a physical card.
+5 the owner can burn 2 NEAR (`claim_burn`) from the pass balance to claim a
+physical card.
 
 ## Two limits on an agent
 
@@ -155,7 +156,9 @@ one.
 | `add_operator`, `remove_operator` | Adm | 0 | `{"account_id":"server.testnet"}` |
 | `set_roster` | Adm | 0 | `{"roster_id":"mimir","name":"MIMIR","blurb":"...","price":"400000000000000000000000"}` (adds or edits) |
 
-`Config` with its defaults (`get_config` returns this shape):
+`Config` with its defaults (`get_config` returns this shape). The deployed
+contract, `pass.questfi.testnet`, runs with a tenth of the default caps and
+card burn, to fit the testnet faucet; `get_config` on it shows its values.
 
 ```json
 {
@@ -261,7 +264,7 @@ signed with the public key recorded on the pass.
   another).
 - Loot: `min(xp, xp_loot_max)` XP; text cut to 80 characters. No money moves.
 
-Settlement (`docs/BUILD_SPEC.md`, section 4.6):
+Settlement:
 
 - The winner must be an entrant, alive or dead. Its pass gets the whole
   remaining pot, `wins += 1`, `xp += xp_win`. With `winner_pass: null` the pot
