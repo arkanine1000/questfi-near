@@ -258,13 +258,31 @@ export function createLive(ui) {
     });
 
   // ---- the pass ---------------------------------------------------------
-  // The mint carries a first deposit: one and a half per-call caps, or less
-  // when the account could not also pay for an agent and gas afterwards.
+  // What the account keeps back for gas and for its own storage.
+  const RESERVE = toYocto('0.03');
+
+  // The account pays rentals and gas; the pass holds most of the visitor's
+  // NEAR. When the account is short for a payment and the pass can cover it,
+  // the difference is moved out of the pass first, as an owner's withdrawal.
+  async function coverFromPass(needYocto, what) {
+    const need = BigInt(needYocto) + RESERVE;
+    const have = await chain.balanceOf(state.session.accountId);
+    const short = need - have;
+    if (short <= 0n) return;
+    if (!state.hasPass || state.pass.balanceYocto < short) {
+      throw new Error(`The account holds ${fmt(fromYocto(have))} NEAR and ${what} takes about ${fmt(fromYocto(need))} with gas. The pass cannot cover the difference.`);
+    }
+    const moved = await chain.withdraw(state.session, state.pass.id, short);
+    logOwn('withdraw', 'WALLET', `Moved ${fmt(fromYocto(short))} NEAR from the pass to the account for ${what}`, explorerTx(moved.txHash));
+  }
+
+  // The mint carries a first deposit of one per-call cap, or less when that
+  // would leave the account too little for an agent's rental, bets and gas.
   const mint = () =>
     run('MINTING PASS', async () => {
       const fee = BigInt(config.mint_storage_fee);
-      const wanted = (BigInt(config.default_per_call_cap) * 3n) / 2n;
-      const spare = (await chain.balanceOf(state.session.accountId)) - fee - toYocto('0.12');
+      const wanted = BigInt(config.default_per_call_cap);
+      const spare = (await chain.balanceOf(state.session.accountId)) - fee - toYocto('0.2');
       const first = spare < wanted ? (spare > 0n ? spare : 0n) : wanted;
       const done = await chain.mintPass(state.session, fee + first);
       logOwn('mint', 'PASS', `Minted pass #${done.passId} with ${fmt(fromYocto(first))} NEAR inside`, explorerTx(done.txHash));
@@ -351,6 +369,7 @@ export function createLive(ui) {
       const previous = state.agent;
       ui.stage.setAgent(def); // on stage while the transactions confirm
       try {
+        await coverFromPass(def.rented ? def.priceYocto : 0n, def.rented ? `${def.name}'s rental` : 'linking the agent');
         const linked = await chain.linkAgent(state.session, {
           passId: state.pass.id,
           kind: def.rented ? 'rented' : 'byo',

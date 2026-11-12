@@ -40,6 +40,7 @@ export const explorerAccount = (id) => `https://testnet.nearblocks.io/address/${
 // - 'protocol': the access key itself is not allowed to send this
 //               transaction, so it never reached the contract
 // - 'contract': any other panic in the contract
+// - 'funds':    the signing account cannot pay for the transaction
 // - 'other':    network trouble and the rest
 export function explainError(err) {
   const name = String(err?.name ?? '');
@@ -50,6 +51,9 @@ export function explainError(err) {
   const policy = /POLICY: [^"\\,}]+/.exec(message);
   if (policy) return { kind: 'policy', text: policy[0].trim(), name, txHash };
   if (name.startsWith('AccessKey')) return { kind: 'protocol', text: message, name: name.replace(/ActionError$/, ''), txHash: null };
+  if (/NotEnoughBalance|LackBalanceForState|enough balance/i.test(`${name} ${message}`)) {
+    return { kind: 'funds', text: 'The account does not hold enough NEAR for this and its gas. Withdraw some from the pass, then try again.', name, txHash: null };
+  }
   const panic = /Smart contract panicked: ([^"\\]+)/.exec(message);
   if (panic) return { kind: 'contract', text: panic[1].trim(), name, txHash };
   return { kind: 'other', text: message, name, txHash };
