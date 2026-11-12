@@ -15,7 +15,7 @@ import json
 import httpx
 import pytest
 
-from quest_sim.near.client import ContractError, TransportError
+from quest_sim.near.client import ContractError, TransportError, explorer_tx_url
 from quest_sim.near.rpc import NearRpcClient
 from quest_sim.near.tx import (
     KeyPair,
@@ -106,6 +106,11 @@ def test_key_parsing_accepts_both_lengths_and_never_echoes_the_secret():
         with pytest.raises(ValueError) as info:
             KeyPair.from_secret(bad)
         assert bad.split(":")[-1] not in str(info.value)
+
+
+def test_explorer_links_follow_the_network():
+    assert explorer_tx_url("questfi.testnet", "abc") == "https://testnet.nearblocks.io/txns/abc"
+    assert explorer_tx_url("questfi.near", "abc") == "https://nearblocks.io/txns/abc"
 
 
 def test_base58_keeps_leading_zero_bytes():

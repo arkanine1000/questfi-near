@@ -28,6 +28,13 @@ TGAS = 10**12
 DEFAULT_GAS = 100 * TGAS
 
 
+def explorer_tx_url(account_id: str | None, tx_hash: str) -> str:
+    """A transaction's page on nearblocks. The network is read off the
+    account the transaction went to: ``*.testnet`` means testnet."""
+    host = "testnet.nearblocks.io" if (account_id or "").endswith(".testnet") else "nearblocks.io"
+    return f"https://{host}/txns/{tx_hash}"
+
+
 class NearError(Exception):
     def __init__(self, message: str, *, tx_hash: str | None = None):
         super().__init__(message)

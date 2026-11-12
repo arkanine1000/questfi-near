@@ -28,13 +28,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from quest_sim.config import Settings
-from quest_sim.near.client import ContractError, NearError
+from quest_sim.near.client import ContractError, NearError, explorer_tx_url
 from quest_sim.near.rpc import NearRpcClient
-
-
-def _explorer(rpc_url: str, tx_hash: str) -> str:
-    host = "testnet.nearblocks.io" if "testnet" in rpc_url else "nearblocks.io"
-    return f"https://{host}/txns/{tx_hash}"
 
 
 def _json_arg(text: str) -> dict:
@@ -106,7 +101,8 @@ async def run(args: argparse.Namespace) -> int:
         except ContractError as e:
             print(f"REJECTED by the contract: {e}")
             if e.tx_hash:
-                print(f"tx        {e.tx_hash}\nexplorer  {_explorer(settings.near_rpc_url, e.tx_hash)}")
+                link = explorer_tx_url(settings.near_contract_id, e.tx_hash)
+                print(f"tx        {e.tx_hash}\nexplorer  {link}")
             return 1
         except NearError as e:
             print(f"NOT CONFIRMED: {type(e).__name__}: {e}")
@@ -115,7 +111,7 @@ async def run(args: argparse.Namespace) -> int:
             return 1
         print("ok")
         print(f"tx        {result.tx_hash}")
-        print(f"explorer  {_explorer(settings.near_rpc_url, result.tx_hash)}")
+        print(f"explorer  {explorer_tx_url(settings.near_contract_id, result.tx_hash)}")
         print(f"returned  {json.dumps(result.value)}")
         for line in result.logs:
             print(f"log       {line}")

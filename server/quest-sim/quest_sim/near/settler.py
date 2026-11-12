@@ -56,6 +56,7 @@ from quest_sim.near.client import (
     NearError,
     TransportError,
     TxResult,
+    explorer_tx_url,
 )
 
 logger = logging.getLogger(__name__)
@@ -737,6 +738,9 @@ class Settler:
             "last_error": ledger.last_error,
             "chain_error": self.chain_error,
             "failed_calls": sum(1 for op in ledger.ops if op.state == "failed"),
-            "recent_txs": list(ledger.recent_txs),
+            "recent_txs": [
+                {**tx, "url": explorer_tx_url(self.contract_id, tx["tx_hash"])}
+                for tx in ledger.recent_txs
+            ],
         })
         return block
