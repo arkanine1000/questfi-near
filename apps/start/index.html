@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#020a05" />
+    <link rel="icon" type="image/png" href="./img/logo.png" />
+    <title>QuestFi — Agent Access</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=VT323&display=swap" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body data-screen="card">
+    <canvas id="scene"></canvas>
+
+    <!-- ============ SCREEN 1: the access card ============ -->
+    <section id="gate">
+      <header class="gate-head">
+        <img src="./img/logo.png" alt="" />
+        <h1>QUESTFI <span>//</span> AGENT ACCESS</h1>      </header>
+      <footer class="gate-foot">
+        <div id="gate-hint">CLICK THE CARD TO AUTHENTICATE</div>
+        <div class="gate-sub">PASS #0042 · NEAR TESTNET</div>
+      </footer>
+    </section>
+
+    <!-- ============ SCREEN 2: agent management ============ -->
+    <section id="manage">
+      <header id="topbar">
+        <div class="brand"><img src="./img/logo.png" alt="" /><span>QUESTFI <i>//</i> AGENT MANAGEMENT</span></div>
+        <button id="wallet-btn" class="btn">CONNECT NEAR WALLET</button>
+      </header>
+
+      <aside id="left" class="col">
+        <div class="card-slot" aria-hidden="true"></div>
+        <div class="pass-tag"><span>AGENT PASS</span><b id="pass-id">#0042</b></div>
+
+        <!-- battle pass: the physical card is the headline reward, the level track sits under it -->
+        <div class="panel bp">
+          <div class="claim-grid">
+            <!-- graded slab, ported from the landing page's mint section -->
+            <div id="slab" class="slab-wrap locked" title="Click to flip">
+              <div class="slab-sway">
+              <div class="slab">
+                <span class="slab-edge" style="transform: translateZ(-3px)"></span>
+                <span class="slab-edge" style="transform: translateZ(-1.5px)"></span>
+                <span class="slab-edge" style="transform: translateZ(0)"></span>
+                <span class="slab-edge" style="transform: translateZ(1.5px)"></span>
+                <span class="slab-edge" style="transform: translateZ(3px)"></span>
+                <div class="slab-face slab-front">
+                  <div class="slab-label">
+                    <div class="slab-label-main">
+                      <span class="slab-brand">QFI GRADED</span>
+                      <span class="slab-name">MIMIR</span>
+                      <span class="slab-meta">QUESTFI GENESIS #002</span>
+                      <span class="slab-meta">AGENT · TECH</span>
+                    </div>
+                    <div class="slab-grade">
+                      <span class="slab-grade-label">GEM MINT</span>
+                      <span class="slab-grade-num">10</span>
+                    </div>
+                    <div class="slab-label-foot">
+                      <span class="slab-barcode"></span>
+                      <span class="slab-cert">CERT 07777002</span>
+                    </div>
+                  </div>
+                  <div class="slab-well">
+                    <img src="./img/tcg/mimir.webp" alt="Mimir card, graded gem mint 10" draggable="false" />
+                    <span class="slab-foil" aria-hidden="true"></span>
+                    <span class="slab-glare" aria-hidden="true"></span>
+                  </div>
+                </div>
+                <div class="slab-face slab-back">
+                  <div class="slab-label slab-label-back">
+                    <span class="slab-holo"></span>
+                    <span class="slab-cert">QFI AUTHENTIC · 07777002</span>
+                  </div>
+                  <div class="slab-well"><img src="./img/tcg/card-back.webp" alt="" draggable="false" /></div>
+                </div>
+              </div>
+              <span class="slab-lock">LOCKED</span>
+              </div>
+            </div>
+            <div class="claim-side">
+              <div class="bp-reward"><span id="bp-reward-tier">LEVEL 5 REWARD</span><b>PHYSICAL TCG CARD</b></div>
+              <button id="claim-btn" class="btn wide" disabled>LOCKED</button>
+            </div>
+          </div>
+          <div class="level-row"><span>LEVEL <b id="pass-level">4</b></span><span id="pass-xp">120 / 300 XP</span></div>
+          <div class="bp-track"><i id="bp-fill"></i><div id="bp-nodes"></div></div>
+        </div>
+      </aside>
+
+      <aside id="right" class="col">
+        <div class="panel fold" data-fold="wallet">
+          <button class="fold-head" title="WALLET" aria-label="WALLET" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h15a3 3 0 0 1 3 3v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7zm0 0V6a2 2 0 0 1 2-2h11"/><circle cx="16.5" cy="14" r="1.2"/></svg><span>WALLET</span><b id="sum-wallet"></b><i></i></button>
+          <div class="fold-body">
+          <div id="wallet-off" class="muted">No wallet connected. The pass and its earnings belong to whichever NEAR account holds it.</div>
+          <div id="wallet-on" hidden>
+            <div class="row"><span>ACCOUNT</span><b id="w-account"></b></div>
+            <div class="row"><span>WALLET BALANCE</span><b id="w-near"></b></div>
+            <div class="row hot"><span>PASS BALANCE</span><b id="w-pass"></b></div>
+            <div class="row"><span>LIFETIME PROFIT</span><b id="w-life"></b></div>
+            <div class="row"><span>MARKET CUT EARNED</span><b id="w-cut"></b></div>
+            <div class="btn-row">
+              <button class="btn small" data-mock="Deposit to pass">DEPOSIT</button>
+              <button class="btn small" data-mock="Withdraw to wallet">WITHDRAW</button>
+            </div>
+          </div>
+          </div>
+        </div>
+
+        <div class="panel fold" data-fold="link">
+          <button class="fold-head" title="AGENT LINK" aria-label="AGENT LINK" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="2"/><path d="M12 8V4.5M9 13v2M15 13v2M2.5 12.5v3M21.5 12.5v3"/><circle cx="12" cy="3.5" r="1"/></svg><span>AGENT LINK</span><b id="sum-link"></b><i></i></button>
+          <div class="fold-body">
+          <div class="tabs">
+            <button class="tab on" data-tab="rent">RENT FROM QUESTFI</button>
+            <button class="tab" data-tab="byo">BRING YOUR OWN</button>
+          </div>
+          <div id="tab-rent" class="tab-body">
+            <div id="roster"></div>
+          </div>
+          <div id="tab-byo" class="tab-body" hidden>
+            <div class="muted">Point any MCP-capable agent at the QuestFi server, then link it to this pass.</div>
+            <pre id="mcp-cmd"></pre>
+            <label class="field"><span>AGENT NAME</span><input id="byo-name" maxlength="16" value="CLAUDE-CODE" /></label>
+            <button id="byo-link" class="btn wide">LINK AGENT</button>
+          </div>
+          </div>
+        </div>
+
+        <div class="panel fold dock-bottom" data-fold="policy">
+          <button class="fold-head" title="SPENDING POLICY" aria-label="SPENDING POLICY" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 7.8-8 9-4.8-1.2-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg><span>SPENDING POLICY</span><b id="sum-policy"></b><i></i></button>
+          <div class="fold-body">
+          <label class="slider"><span>PER CALL CAP</span><b id="pol-tx-v"></b>
+            <input id="pol-tx" type="range" min="0.1" max="5" step="0.1" /></label>
+          <label class="slider"><span>DAILY LIMIT</span><b id="pol-day-v"></b>
+            <input id="pol-day" type="range" min="1" max="25" step="0.5" /></label>
+          <div class="muted">The agent's key can only call game methods. It can never withdraw from the pass.</div>
+          </div>
+        </div>
+
+        <div class="panel fold" data-fold="log">
+          <button class="fold-head" title="ACTIVITY" aria-label="ACTIVITY" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>ACTIVITY</span><b id="sum-log"></b><i></i></button>
+          <div class="fold-body">
+          <ul id="log"></ul>
+          </div>
+        </div>
+      </aside>
+
+      <div id="center">
+        <div id="nameplate">
+          <div id="agent-name">NO AGENT LINKED</div>
+          <div id="agent-status"></div>
+        </div>
+        <button id="deploy-btn" class="btn big" disabled>DEPLOY TO AGENT WORLD</button>      </div>
+    </section>
+
+    <!-- ============ deploy sequence ============ -->
+    <section id="deploy" hidden>
+      <div class="term">
+        <div class="term-head">DEPLOYMENT <span>SIMULATED</span></div>
+        <ul id="deploy-log"></ul>
+        <div id="deploy-actions" hidden>
+          <div id="world-note" class="muted"></div>
+          <div class="btn-row">
+            <button id="enter-world" class="btn big">ENTER AGENT WORLD</button>
+            <button id="stay-here" class="btn">WATCH FROM HERE</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ world handoff ============ -->
+    <section id="world" hidden>
+      <div class="world-bar">
+        <button id="world-back" class="btn small">&lsaquo; BACK TO AGENT MANAGEMENT</button>
+        <span id="world-title"></span>
+      </div>
+      <iframe id="world-frame" allow="pointer-lock; fullscreen; autoplay; gamepad"></iframe>
+    </section>
+
+    <!-- ============ claim modal ============ -->
+    <section id="modal" hidden>
+      <div class="modal-box">
+        <h2 id="modal-title"></h2>
+        <div id="modal-body"></div>
+        <div class="btn-row">
+          <button id="modal-ok" class="btn big"></button>
+          <button id="modal-cancel" class="btn">CANCEL</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="toasts"></div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

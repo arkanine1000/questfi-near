@@ -1,0 +1,27 @@
+# dependencies and build output
+node_modules/
+dist/
+target/
+.venv/
+__pycache__/
+*.pyc
+
+# secrets: never commit keys or filled-in env files
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+near_passes.local.json
+neardev/
+.near-credentials/
+
+# game server run data
+server/quest-sim/data/
+
+# editor and OS noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
