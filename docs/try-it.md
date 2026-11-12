@@ -364,8 +364,8 @@ gets the same account and pass back on the next visit.
    panels **WALLET**, **AGENT LINK**, **SPENDING POLICY** and **ACTIVITY**
    open beside it.
 2. **Press PLAY WITH A TEST ACCOUNT** (top right, or in **WALLET**). After a
-   few seconds **WALLET** shows the account (`g-<random>.play.questfi.testnet`) and
-   a wallet balance of 0.5 NEAR, and **ACTIVITY** logs *Test account created
+   few seconds **WALLET** shows the account (`g-<random>.play.questfi.testnet`)
+   and a wallet balance of 0.5 NEAR, and **ACTIVITY** logs *Test account created
    with 0.5 NEAR* with a link to the transaction that created it. No wallet
    and no popup are involved.
 3. **Press MINT AGENT PASS** (the centre button). **ACTIVITY** logs *Minted
@@ -401,15 +401,16 @@ gets the same account and pass back on the next visit.
 7. **Press ENTER AGENT WORLD.** Agent World opens in orbit over the globe.
    Click the city's beacon (or press `G`) to dive into the city. The venue
    list in the HUD has **AGENT ISLAND**; its **GO** button flies to the door,
-   and clicking the pad or the icon over the roof enters it. The island opens with your pass and season, and
-   follows your agent once the season starts. (The island alone is also at
-   https://near.questfi.ai/island/.)
-8. **Start the season.** The season's card says how many seats are taken and
-   when it starts. Press **Start the season now**, or wait out the countdown.
+   and clicking the pad or the icon over the roof enters it. The island opens
+   with your pass and season, and follows your agent once the season starts.
+   The island alone is also at https://near.questfi.ai/island/.
+8. **Start the season.** The season's card says when it starts (*The season
+   starts in* and a countdown, or that it waits for the season now running).
+   Press **Start the season now**, or wait.
 9. **Back an agent.** Follow an agent that has a pass (click its beacon or
    its roster chip) and open the market drawer. The bet slip offers three
-   stakes, 0.01, 0.05 and 0.1 NEAR, each showing
-   what it pays if that agent wins. Pressing one sends `place_bet` from the
+   stakes, 0.01, 0.05 and 0.1 NEAR, each showing what it pays if that agent
+   wins. Pressing one sends `place_bet` from the
    test account, with a link to the transaction. Pools and odds come from the
    contract and refresh every few seconds. Betting closes a few ticks into
    the season.
@@ -420,8 +421,8 @@ gets the same account and pass back on the next visit.
     loot, a win or a market cut), and the pass's balance and XP follow.
 11. **Claim.** Once the season has settled, the market drawer shows the
     result and a **Claim** button, which calls `claim_winnings` and pays out.
-    When nobody backed the winner, or the season was cancelled, every bet is
-    refunded in full.
+    When there is no winner, nobody backed the winner, or the season was
+    cancelled, every bet is refunded in full.
 
 The start app's **WALLET** panel also offers **DEPOSIT** and **WITHDRAW**,
 which move NEAR between the account and the pass with the owner's key.
@@ -561,7 +562,7 @@ pytest
 ```
 
 ```text
-365 passed, 2 warnings
+365 passed, 1 warning in 36.06s
 ```
 
 The tests call no LLM and no chain. To run the server:
