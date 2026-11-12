@@ -11,6 +11,19 @@ function guestApi(mode) {
       const env = { ...process.env, ...loadEnv(mode, process.cwd(), '') };
       let service;
       server.middlewares.use('/api/guest', async (req, res) => {
+        // In development the other QuestFi apps run on their own ports and
+        // reach this endpoint across origins. Hosted, they share one origin.
+        const origin = req.headers.origin;
+        if (origin && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+          res.setHeader('Access-Control-Allow-Origin', origin);
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+          res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        }
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
         const guest = await import('./server/guest.js');
         if (service === undefined) {
           const config = guest.guestConfig(env);
