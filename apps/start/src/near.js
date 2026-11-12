@@ -42,6 +42,17 @@ export const explorerAccount = (id) => `https://testnet.nearblocks.io/address/${
 // - 'contract': any other panic in the contract
 // - 'funds':    the signing account cannot pay for the transaction
 // - 'other':    network trouble and the rest
+// What the RPC says when an access key is not allowed to send a transaction.
+// Matched on the message: the library names its errors after their classes,
+// and a minified build renames those.
+const PROTOCOL_REFUSALS = [
+  [/Deposit is not allowed with function call/i, 'DepositWithFunctionCall'],
+  [/Access key does not allow method/i, 'MethodNameMismatch'],
+  [/does not match transaction receiver/i, 'ReceiverMismatch'],
+  [/Access key requires full access/i, 'RequiresFullAccess'],
+  [/Not enough allowance for access key/i, 'NotEnoughAllowance'],
+];
+
 export function explainError(err) {
   const name = String(err?.name ?? '');
   const message = String(err?.message ?? err);
@@ -50,8 +61,9 @@ export function explainError(err) {
   const txHash = err?.transactionResult?.transaction?.hash ?? null;
   const policy = /POLICY: [^"\\,}]+/.exec(message);
   if (policy) return { kind: 'policy', text: policy[0].trim(), name, txHash };
-  if (name.startsWith('AccessKey')) return { kind: 'protocol', text: message, name: name.replace(/ActionError$/, ''), txHash: null };
-  if (/NotEnoughBalance|LackBalanceForState|enough balance/i.test(`${name} ${message}`)) {
+  const refusal = PROTOCOL_REFUSALS.find(([pattern]) => pattern.test(message));
+  if (refusal) return { kind: 'protocol', text: message, name: refusal[1], txHash: null };
+  if (/enough balance|LackBalanceForState/i.test(message)) {
     return { kind: 'funds', text: 'The account does not hold enough NEAR for this and its gas. Withdraw some from the pass, then try again.', name, txHash: null };
   }
   const panic = /Smart contract panicked: ([^"\\]+)/.exec(message);
