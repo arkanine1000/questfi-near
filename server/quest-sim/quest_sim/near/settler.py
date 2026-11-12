@@ -111,6 +111,9 @@ class Ledger:
     create_failed: bool = False
     start_failed: bool = False
     removed: bool = False  # the world is gone from the server
+    arena: bool = False  # opened by the arena (quest_sim.near.arena)
+    lock_tick: int | None = None  # overrides the settler's lock tick
+    orphan: bool = False  # found on chain with no record here; cancel only
     last_error: dict | None = None
     recent_txs: list[dict] = field(default_factory=list)
     ops: list[Op] = field(default_factory=list)
@@ -358,11 +361,20 @@ class Settler:
             ledger = self._ledger(season_id)
         return bool(ledger and not ledger.closed and not ledger.create_failed)
 
-    def create_season(self, season_id: str, entry_stake_yocto: int | None = None) -> Op | None:
+    def create_season(
+        self,
+        season_id: str,
+        entry_stake_yocto: int | None = None,
+        *,
+        lock_tick: int | None = None,
+        arena: bool = False,
+    ) -> Op | None:
         if self._ledger(season_id) is not None:
             return None  # already created (or creating) under this id
         stake = self.entry_stake_yocto if entry_stake_yocto is None else int(entry_stake_yocto)
-        ledger = Ledger(season_id=season_id, entry_stake_yocto=str(stake))
+        ledger = Ledger(
+            season_id=season_id, entry_stake_yocto=str(stake), lock_tick=lock_tick, arena=arena
+        )
         self._ledgers[season_id] = ledger
         return self._add(
             ledger, "create_season", {"season_id": season_id, "entry_stake": str(stake)}
@@ -425,6 +437,17 @@ class Settler:
         ledger.cancel_enqueued = True
         return self._add(ledger, "cancel_season", {"season_id": season_id})
 
+    def cancel_orphan(self, season_id: str) -> Op | None:
+        """Cancel a season found on chain that this server has no record of
+        (left by a process whose disk is gone). Refunds its stakes and frees
+        its passes. At most once per season: the ledger it opens is the
+        record."""
+        if self._ledger(season_id) is not None:
+            return None
+        ledger = Ledger(season_id=season_id, orphan=True, removed=True, cancel_enqueued=True)
+        self._ledgers[season_id] = ledger
+        return self._add(ledger, "cancel_season", {"season_id": season_id})
+
     def mark_removed(self, season_id: str) -> None:
         """The world is gone from the server; its ledger file may be deleted
         once nothing more is owed to the chain."""
@@ -447,6 +470,35 @@ class Settler:
     def is_locked(self, season_id: str) -> bool:
         ledger = self._ledger(season_id)
         return bool(ledger and ledger.lock_enqueued)
+
+    def lock_tick_for(self, season_id: str) -> int:
+        ledger = self._ledger(season_id)
+        if ledger is not None and ledger.lock_tick is not None:
+            return ledger.lock_tick
+        return self.lock_tick
+
+    def season_state(self, season_id: str) -> dict | None:
+        """What the settler knows of a season, or None without a record."""
+        ledger = self._ledger(season_id)
+        if ledger is None:
+            return None
+        return {
+            "status": ledger.status,
+            "create_failed": ledger.create_failed,
+            "start_failed": ledger.start_failed,
+            "closed": ledger.closed,
+            "pending": len(ledger.pending()),
+            # nothing queued and nothing more will be: settled, cancelled,
+            # or given up on
+            "done": ledger.create_failed or (ledger.closed and not ledger.pending()),
+        }
+
+    def open_arena_seasons(self) -> list[str]:
+        """Arena seasons not yet settled or cancelled."""
+        return [
+            ledger.season_id for ledger in self._ledgers.values()
+            if ledger.arena and not ledger.closed and not ledger.create_failed
+        ]
 
     def pass_busy(self, pass_id: str, except_season: str | None = None) -> bool:
         """Is this pass entered (or being entered) in another season that has

@@ -11,6 +11,7 @@ winner. The contract trusts it to report the game truthfully; see
 - ``client``: the client interface, its errors, and an in-memory fake
 - ``settler``: the queue, the ledger, retries
 - ``bridge``: which game moment becomes which contract call
+- ``arena``: seasons that run themselves (``QUEST_SIM_NEAR_ARENA_ENABLED``)
 """
 
 from __future__ import annotations

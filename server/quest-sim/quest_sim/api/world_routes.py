@@ -38,6 +38,7 @@ from quest_sim.models.events import EngineEvent, EngineEventType
 from quest_sim.models.sandbox import SandboxConfig, SandboxWorld, WorldPhase
 from quest_sim.near import bridge as near_bridge
 from quest_sim.near import get_settler
+from quest_sim.near.arena import get_arena
 from quest_sim.persistence import sandbox_store
 
 logger = logging.getLogger(__name__)
@@ -217,6 +218,36 @@ class RunRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+def create_world(
+    config: SandboxConfig,
+    seed: int,
+    *,
+    require_invite: bool = False,
+    season_options: dict | None = None,
+) -> SandboxWorld:
+    """Build, register and persist a lobby — shared by POST /world/new and
+    the arena. ``season_options`` go to the settler's create_season."""
+    world = build_world(config, seed=seed)
+    if require_invite:
+        world.invite_code = _secrets.token_hex(4)
+    # Every world has a host: whoever opened it. Handed back once by
+    # POST /world/new — longer than the invite code because a machine
+    # carries it, not a human retyping it.
+    world.host_key = _secrets.token_urlsafe(24)
+    runner = WorldRunner(world, _data_dir())
+    _install_llm_hook(runner)
+    _install_commentator(runner)
+    _install_settler(runner)
+    _runners[world.world_id] = runner
+    sandbox_store.save_world(_data_dir(), world)
+    settler = _settler()
+    if settler is not None:
+        # queued, never awaited
+        near_bridge.on_world_created(settler, world, **(season_options or {}))
+    logger.info("world %s created (seed=%s, pool=%s)", world.world_id, seed, config.pool_size)
+    return world
+
+
 @world_router.post("/new")
 async def new_world(
     req: NewWorldRequest | None = None,
@@ -246,23 +277,7 @@ async def new_world(
         max_ticks=req.max_ticks or settings.sandbox_max_ticks,
         hosted_brain=req.hosted_brain or settings.sandbox_hosted_brain,
     )
-    world = build_world(config, seed=seed)
-    if req.require_invite:
-        world.invite_code = _secrets.token_hex(4)
-    # Every world has a host: whoever opened it. Handed back once, below —
-    # longer than the invite code because a machine carries it, not a human
-    # retyping it.
-    world.host_key = _secrets.token_urlsafe(24)
-    runner = WorldRunner(world, _data_dir())
-    _install_llm_hook(runner)
-    _install_commentator(runner)
-    _install_settler(runner)
-    _runners[world.world_id] = runner
-    sandbox_store.save_world(_data_dir(), world)
-    settler = _settler()
-    if settler is not None:
-        near_bridge.on_world_created(settler, world)  # queued, never awaited
-    logger.info("world %s created (seed=%s, pool=%s)", world.world_id, seed, config.pool_size)
+    world = create_world(config, seed, require_invite=req.require_invite)
     return {
         "world_id": world.world_id,
         "phase": world.phase.value,
@@ -721,7 +736,25 @@ async def start_world(
     _check_host_key(world, _presented_key(x_host_key, host_key))
     if world.phase != WorldPhase.lobby:
         raise HTTPException(status_code=409, detail="The season has already started")
+    _check_not_arena(world_id)
+    return perform_start(runner)
 
+
+def _check_not_arena(world_id: str) -> None:
+    """Arena seasons keep their own clock: they start when the arena says
+    and tick only once the chain has the season running."""
+    arena = get_arena(_get_settings())
+    if arena is not None and arena.manages(world_id):
+        raise HTTPException(
+            status_code=409,
+            detail="This season is run by the arena — see GET /near/arena",
+        )
+
+
+def perform_start(runner: WorldRunner) -> dict:
+    """Backfill the roster and go live — shared by POST /start and the
+    arena. The caller has checked the world is still in its lobby."""
+    world = runner.world
     added = start_season(world)
     settler = _settler()
     if settler is not None:
@@ -796,6 +829,7 @@ async def manual_tick(
         raise HTTPException(status_code=409, detail=f"World is {runner.world.phase.value}")
     if runner.is_auto:
         raise HTTPException(status_code=409, detail="World is auto-running; pause first")
+    _check_not_arena(world_id)
     if wait_s is None:
         wait_s = min(runner.world.config.action_deadline_s, MANUAL_TICK_CAP_S)
     if wait_s <= 0:
@@ -818,6 +852,7 @@ async def run_world(
         raise HTTPException(status_code=409, detail=f"World is {runner.world.phase.value}")
     if runner.is_auto:
         raise HTTPException(status_code=409, detail="Already auto-running")
+    _check_not_arena(world_id)
     runner.start_auto(req.tick_seconds)
     return {"running": True, "tick_seconds": req.tick_seconds or runner.world.config.tick_seconds}
 

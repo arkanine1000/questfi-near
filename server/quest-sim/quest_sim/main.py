@@ -7,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from quest_sim.api.arena_routes import arena_router
 from quest_sim.api.tts_routes import tts_router
 from quest_sim.api.world_routes import world_router
 from quest_sim.config import get_settings
@@ -67,11 +68,23 @@ async def lifespan(app: FastAPI):
             "NEAR settlement on: contract %s, operator %s, %d call(s) queued",
             settings.near_contract_id, settings.near_operator_id, settler.queue_depth(),
         )
+    # The arena: seasons that run themselves. Boots after the settler so its
+    # self-heal can queue cancels for seasons a previous process left open.
+    from quest_sim.near.arena import get_arena
+
+    arena = get_arena(settings)
+    if arena is not None:
+        await arena.start()
+        logger.info("NEAR arena on: lobby %s open for entry", arena.lobby_id)
+    elif settings.near_arena_enabled:
+        logger.warning("QUEST_SIM_NEAR_ARENA_ENABLED is set but settlement is off; no arena")
     try:
         yield
     finally:
         if gc_task is not None:
             gc_task.cancel()
+        if arena is not None:
+            await arena.stop()
         if settler is not None:
             await settler.stop()  # unsent calls stay in the ledgers for next boot
 
@@ -132,6 +145,7 @@ def create_app() -> FastAPI:
 
     app.include_router(world_router)
     app.include_router(tts_router)
+    app.include_router(arena_router)  # inert unless the arena is on
 
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):

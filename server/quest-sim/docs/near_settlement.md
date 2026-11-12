@@ -84,7 +84,11 @@ python scripts/near_smoke.py                 # access key + get_config
 python scripts/near_smoke.py --send          # one create_season, prints the tx hash
 ```
 
-`data/` (worlds) and the settler's state dir must survive redeploys.
+Keep `data/` (worlds) and the settler's state dir on a persistent disk:
+with them, a restart resumes queued calls where it stopped. Without them a
+redeploy loses the record of open seasons; with the arena on, its boot
+check still finds and cancels those seasons from the chain (see below),
+so stakes and house passes are freed either way.
 
 ## Players
 
@@ -118,12 +122,102 @@ block:
   "last_error": null,
   "chain_error": null,
   "failed_calls": 0,
-  "recent_txs": [{"method": "report_events", "tx_hash": "…", "ok": true, "at": "…"}]
+  "recent_txs": [{"method": "report_events", "tx_hash": "…", "ok": true, "at": "…",
+                  "url": "https://testnet.nearblocks.io/txns/…"}]
 }
 ```
 
 `season_status` is the last status the server saw (`Open`, `Running`,
 `Settled`, `Cancelled`). `chain_error` is set while the chain is
 unreachable and clears on the next success. `recent_txs` lists up to ten,
-newest first, including rejected ones (`ok: false`). With settlement off
-the block is `{"enabled": false}`.
+newest first, including rejected ones (`ok: false`); `url` is the
+transaction on nearblocks (testnet when the contract is a `.testnet`
+account). With settlement off the block is `{"enabled": false}`.
+
+## Arena
+
+With `QUEST_SIM_NEAR_ARENA_ENABLED=true` as well, seasons run themselves.
+There is always exactly one arena world in its lobby, the next season,
+already created on chain; at most one arena season runs at a time.
+
+A visitor's agent key calls `enter_season` for the lobby's season, then:
+
+```
+GET  /near/arena                 the season open for entry, the one running, the last result
+POST /near/arena/join            {"world_id", "pass_id", "name", "roster_id", "account_id"}
+POST /near/arena/start           start now with house agents (rate-limited)
+```
+
+`join` checks `get_season` (`403` if the pass is not an entrant, `503` if
+the chain cannot be reached, `409` if that world has already started) and
+seats a hosted, policy-brain agent for the pass. `roster_id` picks the kit
+and temperament: `mimir` rogue / opportunist, `cassandra` fighter /
+aggressive, `roko` barbarian / aggressive, `aegis` fighter / turtle, and
+anything else a balanced fighter. Repeating a join returns the same seat.
+It answers `{"world_id", "agent_id", "name", "starts_in_s"}`.
+
+`GET /near/arena`:
+
+```json
+{
+  "enabled": true,
+  "contract_id": "questfi.testnet",
+  "entry_stake": "500000000000000000000000",
+  "world_id": "w-1a2b3c4d",
+  "lobby": {"world_id": "w-1a2b3c4d", "season_status": "Open", "seats_taken": 1,
+            "seats_total": 6, "players": [{"name": "MIMIR", "pass_id": "42"}],
+            "starts_in_s": 12.5, "waiting_for": "countdown"},
+  "running": {"world_id": "w-9f8e7d6c", "tick": 37, "max_ticks": 150,
+              "season_status": "Running", "stage": "ticking"},
+  "last": {"world_id": "w-5a4b3c2d", "winner_name": "Kell", "winner_pass": "1",
+           "season_status": "Settled"},
+  "house_start_in_s": 0,
+  "chain_error": null
+}
+```
+
+`waiting_for` is `chain` (the season is not open on chain yet, or the boot
+check has not finished), `player` (nobody seated), `running_season` (a
+season is still running or settling) or `countdown`. `starts_in_s` is the
+countdown left, or null when the start is not yet scheduled. With the
+arena off, `GET` answers `{"enabled": false, "world_id": null}` and the
+`POST`s are `404`.
+
+When the lobby starts:
+
+- **On its own**, `COUNTDOWN_S` after the first seat is taken, as soon as
+  no arena season is running (or the moment the running one has settled).
+- **On request**, `POST /near/arena/start`, when no arena season is running
+  and at least `HOUSE_GAP_S` have passed since the last season that started
+  with no player. This lets a spectator watch, and bet on, a house-only
+  season.
+
+Starting reads `get_season` and seats a hosted agent for every entrant on
+chain that has no seat and is not a house pass (named from the entrant's
+`name`, else `PASS-<id>`), so every stake has an agent playing for it.
+The house cast fills the remaining seats, their entries and
+`start_season` are queued, and a new lobby opens. **The clock starts only
+once the settler has seen the season `Running` on chain**, so the first
+tick is one the contract can take reports for, and betting locks
+`LOCK_TICKS` ticks in. If the start fails for good, the season is
+cancelled (stakes refunded) and the world dropped. Arena worlds always use
+the policy brain, and their clock routes (`/world/{id}/start`, `/run`,
+`/tick`) answer `409`. The latest finished arena world is kept for
+spectators; the one before it is deleted when a new one finishes.
+
+At boot the arena cancels and drops any arena world a previous process
+left in its lobby or running, then reads every house pass with
+`get_pass`. A pass whose `active_season` is a season this server has no
+record of (its disk was lost in a redeploy) has that season cancelled,
+once, which refunds its stakes and frees its passes. Seasons holding no
+house pass are not found this way.
+
+| Setting | Default | Meaning |
+|---|---|---|
+| `QUEST_SIM_NEAR_ARENA_ENABLED` | off | run the arena (needs `QUEST_SIM_NEAR_ENABLED`) |
+| `QUEST_SIM_NEAR_ARENA_POOL_SIZE` | 6 | seats per season; grows if more passes entered |
+| `QUEST_SIM_NEAR_ARENA_TICK_SECONDS` | 1.0 | seconds per tick |
+| `QUEST_SIM_NEAR_ARENA_MAX_TICKS` | 150 | the season's bell |
+| `QUEST_SIM_NEAR_ARENA_COUNTDOWN_S` | 20 | wait after the first seat |
+| `QUEST_SIM_NEAR_ARENA_HOUSE_GAP_S` | 600 | minimum gap between house-only starts |
+| `QUEST_SIM_NEAR_ARENA_LOCK_TICKS` | 10 | betting closes this many ticks in |

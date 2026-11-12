@@ -105,11 +105,13 @@ class FakeNearClient:
     ``outage = True`` makes every request fail with ``TransportError``;
     ``hang = True`` makes calls block until it is cleared (polled, so it may
     be cleared from another thread); ``fail_next`` queues targeted
-    failures."""
+    failures. ``active`` is each pass's ``active_season``: a pass is in one
+    season at a time, until that season settles or is cancelled."""
 
     calls: list[FakeCall] = field(default_factory=list)
     views: list[tuple[str, dict]] = field(default_factory=list)
     seasons: dict[str, dict] = field(default_factory=dict)
+    active: dict[str, str] = field(default_factory=dict)  # pass_id -> season_id
     outage: bool = False
     hang: bool = False
     _failures: list[_FakeFailure] = field(default_factory=list)
@@ -139,8 +141,10 @@ class FakeNearClient:
         ]
 
     def add_entrant(self, season_id: str, pass_id: str, name: str = "") -> None:
+        """A pass entering on its own (a player's agent key)."""
         season = self.seasons.setdefault(season_id, self._new_season("0"))
         season["entrants"][pass_id] = {"name": name, "alive": True}
+        self.active[pass_id] = season_id
 
     # -- NearClient ---------------------------------------------------------
 
@@ -194,6 +198,9 @@ class FakeNearClient:
         if method == "get_market":
             season = self.seasons.get(args.get("season_id"))
             return None if season is None else {"open": season["market_open"]}
+        if method == "get_pass":
+            pass_id = str(args.get("pass_id"))
+            return {"token_id": pass_id, "active_season": self.active.get(pass_id)}
         raise ContractError(f"MethodNotFound: {method}")
 
     async def aclose(self) -> None:
@@ -217,6 +224,10 @@ class FakeNearClient:
             "events": [], "winner": None, "market_open": True,
         }
 
+    def _release(self, season_id: str) -> None:
+        for pass_id in [p for p, s in self.active.items() if s == season_id]:
+            del self.active[pass_id]
+
     def _season(self, args: dict, *statuses: str) -> dict:
         season = self.seasons.get(args.get("season_id"))
         if season is None:
@@ -235,7 +246,10 @@ class FakeNearClient:
             season = self._season(args, "Open")
             if args["pass_id"] in season["entrants"]:
                 raise ContractError("pass already entered")
+            if args["pass_id"] in self.active:
+                raise ContractError("pass is already in a season")
             season["entrants"][args["pass_id"]] = {"name": "", "alive": True}
+            self.active[args["pass_id"]] = args["season_id"]
             return None
         if method == "start_season":
             self._season(args, "Open")["status"] = "Running"
@@ -280,8 +294,10 @@ class FakeNearClient:
             season["status"] = "Settled"
             season["winner"] = winner
             season["market_open"] = False
+            self._release(args["season_id"])
             return None
         if method == "cancel_season":
             self._season(args, "Open", "Running")["status"] = "Cancelled"
+            self._release(args["season_id"])
             return None
         raise ContractError(f"MethodNotFound: {method}")

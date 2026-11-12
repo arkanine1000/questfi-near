@@ -68,8 +68,8 @@ def _house_pass_for(name: str, passes: dict[str, str]) -> str | None:
     return None
 
 
-def on_world_created(settler: Settler, world: SandboxWorld) -> None:
-    settler.create_season(world.world_id)
+def on_world_created(settler: Settler, world: SandboxWorld, **season_options) -> None:
+    settler.create_season(world.world_id, **season_options)
 
 
 def assign_house_passes(settler: Settler, world: SandboxWorld) -> list[str]:
@@ -157,7 +157,8 @@ def on_tick(settler: Settler, world: SandboxWorld, frame: dict) -> None:
     if events:
         settler.report_events(season_id, events)
     finished = world.phase == WorldPhase.finished
-    lock_due = settler.lock_tick > 0 and world.tick >= settler.lock_tick
+    lock_tick = settler.lock_tick_for(season_id)
+    lock_due = lock_tick > 0 and world.tick >= lock_tick
     if (lock_due or finished) and not settler.is_locked(season_id):
         settler.lock_market(season_id)
     if finished:

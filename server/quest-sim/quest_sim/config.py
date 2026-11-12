@@ -100,6 +100,19 @@ class Settings(BaseSettings):
     # the same persistent disk as sandbox_data_dir. QUEST_SIM_NEAR_STATE_DIR
     near_state_dir: Path = Path("data/near")
 
+    # The arena: seasons that run themselves (quest_sim.near.arena). Needs
+    # settlement on as well. There is always one lobby open for entry; it
+    # starts COUNTDOWN_S after the first player takes a seat (or on request,
+    # house agents only, at most once per HOUSE_GAP_S), one season at a time,
+    # policy brains, betting locked LOCK_TICKS ticks in.
+    near_arena_enabled: bool = False  # QUEST_SIM_NEAR_ARENA_ENABLED
+    near_arena_pool_size: int = Field(default=6, ge=2, le=16)  # ..._POOL_SIZE
+    near_arena_tick_seconds: float = Field(default=1.0, gt=0)  # ..._TICK_SECONDS
+    near_arena_max_ticks: int = Field(default=150, ge=1)  # ..._MAX_TICKS
+    near_arena_countdown_s: float = Field(default=20.0, ge=0)  # ..._COUNTDOWN_S
+    near_arena_house_gap_s: float = Field(default=600.0, ge=0)  # ..._HOUSE_GAP_S
+    near_arena_lock_ticks: int = Field(default=10, ge=0)  # ..._LOCK_TICKS
+
     # Server
     host: str = "0.0.0.0"
     port: int = 8000
