@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -74,6 +75,30 @@ class Settings(BaseSettings):
     # still join, ready up, and take turns. Deploy-time only (.env / Railway),
     # and boot fails when it is on with no admin key set — see main.create_app.
     sandbox_operator_only: bool = False
+
+    # On-chain settlement (NEAR). OFF by default; when off nothing below is
+    # read and no request leaves the server. When on, the server is the
+    # season contract's operator and a TRUSTED REPORTER: the contract
+    # believes the kills and winners it is told. Boot fails when it is on
+    # and the contract, operator, key or stake is missing; see
+    # quest_sim.near.config_problems.
+    near_enabled: bool = False  # QUEST_SIM_NEAR_ENABLED
+    near_contract_id: str | None = None  # QUEST_SIM_NEAR_CONTRACT_ID
+    near_operator_id: str | None = None  # QUEST_SIM_NEAR_OPERATOR_ID
+    # ed25519:<base58> secret key of the operator account. SecretStr keeps
+    # it out of reprs and logs; it is read in exactly one place.
+    near_operator_key: SecretStr | None = None  # QUEST_SIM_NEAR_OPERATOR_KEY
+    near_rpc_url: str = "https://test.rpc.fastnear.com"  # QUEST_SIM_NEAR_RPC_URL
+    # yoctoNEAR each entrant stakes. QUEST_SIM_NEAR_ENTRY_STAKE
+    near_entry_stake: int | None = Field(default=None, ge=0)
+    # Betting closes at this tick (lock_market); 0 = only when the season
+    # ends. QUEST_SIM_NEAR_LOCK_TICK
+    near_lock_tick: int = Field(default=10, ge=0)
+    # The house agents' passes: a JSON object of agent name -> pass id.
+    near_passes_file: Path = Path("near_passes.json")  # QUEST_SIM_NEAR_PASSES_FILE
+    # The settler's per-season ledgers (queued and sent calls). Keep it on
+    # the same persistent disk as sandbox_data_dir. QUEST_SIM_NEAR_STATE_DIR
+    near_state_dir: Path = Path("data/near")
 
     # Server
     host: str = "0.0.0.0"

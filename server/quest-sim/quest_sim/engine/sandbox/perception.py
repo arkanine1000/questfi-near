@@ -837,6 +837,9 @@ def roster_view(world: SandboxWorld) -> list[dict]:
             "brain": agent.brain,
             "preset": agent.preset,
             **({"ready": agent.ready} if in_lobby else {}),
+            # Only when there is one, for the same reason as ``ready``: an
+            # always-null key would ride every frame of an off-chain season.
+            **({"pass_id": agent.pass_id} if agent.pass_id else {}),
             "alive": agent.is_alive,
             "hp": char.hp,
             "max_hp": char.max_hp,

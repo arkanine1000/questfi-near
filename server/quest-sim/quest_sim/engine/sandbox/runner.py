@@ -85,6 +85,11 @@ class WorldRunner:
         # She runs on her OWN loop (start_booth) — never on the tick path.
         self.commentator = None
         self._booth_task: asyncio.Task | None = None
+        # Called with (world, frame) after every tick's broadcast — the
+        # on-chain settler's hook, installed by the API layer when NEAR
+        # settlement is on. Synchronous and must only queue work: it runs on
+        # the tick path, and an exception from it is logged, never raised.
+        self.on_tick: Callable[[SandboxWorld, dict], None] | None = None
         # True from the RESOLVE phase until the world + persistence have
         # advanced. Wait loops must never report state while this is up —
         # mid-tick reads are lies-in-waiting.
@@ -330,6 +335,11 @@ class WorldRunner:
         # wake raised any earlier would release them onto a half-applied world.
         self.wake()
         self._broadcast(frame)
+        if self.on_tick is not None:
+            try:
+                self.on_tick(self.world, frame)
+            except Exception:
+                logger.exception("tick hook failed for %s", self.world.world_id)
         if self.world.phase == WorldPhase.finished:
             self.stop_auto()
         return frame

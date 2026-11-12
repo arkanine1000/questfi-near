@@ -56,11 +56,24 @@ async def lifespan(app: FastAPI):
         if settings.sandbox_gc_interval_min > 0
         else None
     )
+
+    # On-chain settlement: resume any calls a previous process left queued.
+    from quest_sim.near import get_settler
+
+    settler = get_settler(settings)
+    if settler is not None:
+        await settler.start()
+        logger.info(
+            "NEAR settlement on: contract %s, operator %s, %d call(s) queued",
+            settings.near_contract_id, settings.near_operator_id, settler.queue_depth(),
+        )
     try:
         yield
     finally:
         if gc_task is not None:
             gc_task.cancel()
+        if settler is not None:
+            await settler.stop()  # unsent calls stay in the ledgers for next boot
 
 
 def create_app() -> FastAPI:
@@ -76,6 +89,17 @@ def create_app() -> FastAPI:
             "empty — no one could create or run a season. Set the admin key, "
             "or unset operator-only."
         )
+    # Same reasoning for settlement: a half-configured operator would accept
+    # seasons and then fail every call to the contract, quietly.
+    if settings.near_enabled:
+        from quest_sim.near import config_problems
+
+        problems = config_problems(settings)
+        if problems:
+            raise RuntimeError(
+                "QUEST_SIM_NEAR_ENABLED is set but " + "; ".join(problems)
+                + ". Fill these in, or unset QUEST_SIM_NEAR_ENABLED."
+            )
 
     # MCP surface (streamable HTTP) rides in-process at /mcp — same event
     # loop and world registry as the routes. Its session manager needs its
