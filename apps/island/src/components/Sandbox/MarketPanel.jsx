@@ -187,11 +187,13 @@ function MarketChart({ onFollow }) {
 
 function Chip({ agent, followed, onClick }) {
   const {
-    mode, odds, prob, bets, place, bettingOpen, balance, pools, canBack,
+    mode, odds, prob, bets, place, bettingOpen, balance, pools, canBack, readState,
   } = useBets();
   const onChain = mode === 'chain';
-  // On chain, only an agent whose pass is entered in the season has a market.
-  const backable = !onChain || canBack(agent);
+  // On chain, only an agent whose pass is entered in the season has a market
+  // (unknown until the market has been read).
+  const known = !onChain || readState === 'live';
+  const backable = !onChain || (known && canBack(agent));
   const hpFrac = agent.max_hp ? Math.max(0, agent.hp / agent.max_hp) : 0;
   const x = agent.alive && backable ? odds(agent.agent_id) : null;
   const p = agent.alive ? prob(agent.agent_id) : 0;
@@ -211,6 +213,7 @@ function Chip({ agent, followed, onClick }) {
     if (!onChain) price = `${Math.round(p * 100)}%`;
     else if (backable) price = pools.total > 0 ? `${Math.round(p * 100)}%` : '—';
   }
+  const noMarket = onChain && known && !backable;
 
   return (
     <div className={cls} style={{ '--chip-color': agent.color }}>
@@ -238,7 +241,7 @@ function Chip({ agent, followed, onClick }) {
         </span>
         <span className="sbx-chip__meta">
           {price && <span className="sbx-chip__prob">{price}</span>}
-          {onChain && !backable && <span className="sbx-chip__nopass">no pass</span>}
+          {noMarket && <span className="sbx-chip__nopass">no pass</span>}
           <span className="sbx-chip__badges">
             {agent.alive && <span className="sbx-chip__hpnum">{agent.hp}</span>}
             {agent.kills > 0 && <span className="sbx-chip__kills">⚔{agent.kills}</span>}
@@ -251,14 +254,14 @@ function Chip({ agent, followed, onClick }) {
       </button>
       {canBet && (
         <div className="sbx-chip__bets" aria-label={`Back ${agent.name}`}>
-          <span className="sbx-chip__betlabel">back</span>
+          <span className="sbx-chip__betlabel">back · chips</span>
           {STAKES.map((s) => (
             <button
               key={s}
               type="button"
               disabled={s > balance}
               onClick={(e) => { e.stopPropagation(); place(agent, s); }}
-              title={`Back ${agent.name} with ${s} sim-chips`}
+              aria-label={`Back ${agent.name} with ${s} practice chips`}
             >
               +{s}
             </button>
@@ -280,8 +283,8 @@ function Ledger() {
       {payout && (
         <div className={`sbx-bets__payout${payout.won ? ' is-won' : ''}`}>
           {payout.won
-            ? `Crown backed — payout +${payout.amount.toLocaleString()} ⬡`
-            : `The island keeps your ${payout.amount.toLocaleString()} ⬡`}
+            ? `Crown backed — payout +${payout.amount.toLocaleString()} practice chips`
+            : `The island keeps your ${payout.amount.toLocaleString()} practice chips`}
         </div>
       )}
       <div className="sbx-market__ledgerrow" title="Parimutuel pool — simulated funds, no chain">
@@ -290,8 +293,42 @@ function Ledger() {
         {myTotal > 0 && (
           <span className="sbx-market__ledgerseg">staked {myTotal.toLocaleString()} ⬡</span>
         )}
-        <span className="sbx-bets__sim">sim</span>
+        <span className="sbx-bets__sim sbx-bets__practice">practice chips · not NEAR</span>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Why betting is closed, as prominent as the stake buttons it replaces:
+ * when it closed and why.
+ */
+function closedReason({ status, phase, bettingOpen }) {
+  if (status === 'settled') return 'The season is settled on chain.';
+  if (status === 'cancelled') return 'The season was cancelled on chain; every bet is refunded.';
+  if (phase === 'finished') return 'The game is over. Bets stay closed while the result settles on chain.';
+  if (!bettingOpen) return 'The market locked a few ticks into the season, so nobody bets on a fight that is already decided.';
+  return null;
+}
+
+/** While betting is open: it will not stay open for long. */
+const closesSoon = (phase) => (phase === 'lobby'
+  ? 'Betting closes shortly after the season starts.'
+  : 'Betting closes any moment now: the market locks a few ticks into the season.');
+
+/** In place of the stakes when this browser has no test account yet. */
+function AccountOffer() {
+  const { accountStatus, accountError, createTestAccount } = useBets();
+  const busy = accountStatus === 'creating' || accountStatus === 'loading';
+  let label = 'Play with a test account to bet';
+  if (accountStatus === 'creating') label = 'Creating your test account…';
+  else if (accountStatus === 'loading') label = 'Looking for your test account…';
+  return (
+    <div className="sbx-slip__join">
+      <button type="button" className="sbx-slip__account" onClick={createTestAccount} disabled={busy}>
+        {label}
+      </button>
+      {accountError && <p className="sbx-slip__notice is-bad" role="alert"><span>{accountError}</span></p>}
     </div>
   );
 }
@@ -299,33 +336,102 @@ function Ledger() {
 /**
  * The chain market's bet slip: the followed agent, what is on it, and three
  * stakes with what each returns if that agent wins. Every number the bettor
- * acts on is here in full, none of it behind a hover.
+ * acts on is here in full, none of it behind a hover. Without a test account
+ * the slip is read only and offers to make one.
  */
 function BetSlip() {
   const { followedAgent, world } = useSandbox();
   const {
     stakes, quote, ifWins, odds, canBack, place, pending, notice, dismissNotice,
-    bettingOpen, balance, bets, pools, status, feedError,
+    bettingOpen, balance, bets, pools, status, feedError, readState, hasAccount,
   } = useBets();
   const agent = followedAgent;
-  const backable = agent ? canBack(agent) : false;
+  const live = readState === 'live';
+  const backable = agent && live ? canBack(agent) : false;
   const onAgent = agent ? pools.byAgent[agent.agent_id] ?? 0 : 0;
   const mine = agent ? bets[agent.agent_id] ?? 0 : 0;
   const x = agent && backable ? odds(agent.agent_id) : null;
   const win = agent && mine > 0 ? ifWins(agent.agent_id) : null;
+  const closed = live ? closedReason({ status, phase: world?.phase, bettingOpen }) : null;
+  const open = live && !closed;
 
-  let closed = null;
-  if (status === 'settled' || status === 'cancelled') closed = `The season is ${status} on chain: betting is over.`;
-  else if (world?.phase === 'finished') closed = 'The game is over: betting is closed.';
-  else if (!bettingOpen) closed = 'Betting on this season is closed.';
+  // What takes the stake buttons' place, or the buttons themselves.
+  const action = (agentCanBet) => {
+    if (closed) {
+      return (
+        <div className="sbx-slip__closed" role="status">
+          <strong>Betting closed</strong>
+          <span>{closed}</span>
+        </div>
+      );
+    }
+    if (!open) return null;
+    if (!hasAccount) {
+      return (
+        <>
+          <AccountOffer />
+          <p className="sbx-slip__soon">{closesSoon(world?.phase)}</p>
+        </>
+      );
+    }
+    if (!agentCanBet) return null;
+    const short = stakes.some((st) => balance != null && st.near > balance);
+    return (
+      <>
+        <div className="sbx-slip__caption">bet · returns if {agent.name} wins</div>
+        <div className="sbx-slip__stakes">
+          {stakes.map((st) => {
+            const q = quote(agent.agent_id, st);
+            const placing = pending?.kind === 'bet' && pending.agentId === agent.agent_id && pending.stake === st.near;
+            return (
+              <button
+                key={String(st.yocto)}
+                type="button"
+                disabled={Boolean(pending) || (balance != null && st.near > balance)}
+                onClick={() => place(agent, st)}
+                aria-label={`Bet ${formatNear(st.near)} NEAR on ${agent.name}`}
+              >
+                {placing ? (
+                  <span className="sbx-slip__stake is-busy">sending…</span>
+                ) : (
+                  <span className="sbx-slip__stake">
+                    {formatNear(st.near)}
+                    <small>NEAR</small>
+                  </span>
+                )}
+                {q != null && <span className="sbx-slip__quote">→ {formatNear(q)}</span>}
+              </button>
+            );
+          })}
+        </div>
+        <p className="sbx-slip__soon">{closesSoon(world?.phase)}</p>
+        {short && <p className="sbx-slip__msg">Not enough NEAR on the test account for every stake.</p>}
+      </>
+    );
+  };
 
   let body;
-  if (!agent) {
-    body = <p className="sbx-slip__msg">Pick an agent above to back it with testnet NEAR.</p>;
+  if (readState === 'loading') {
+    body = <p className="sbx-slip__msg">Reading this season&apos;s market on NEAR…</p>;
+  } else if (readState === 'waiting') {
+    body = <p className="sbx-slip__msg">This season&apos;s market is opening on NEAR…</p>;
+  } else if (!agent) {
+    body = (
+      <>
+        <p className="sbx-slip__msg">
+          {hasAccount ? 'Pick an agent above to back it with testnet NEAR.' : 'Pick an agent above to see its pool and odds.'}
+        </p>
+        {action(false)}
+      </>
+    );
   } else if (!backable) {
-    body = <p className="sbx-slip__msg">{agent.name} has no agent pass in this season, so there is no market on it.</p>;
+    body = (
+      <>
+        <p className="sbx-slip__msg">{agent.name} has no agent pass in this season, so there is no market on it.</p>
+        {action(false)}
+      </>
+    );
   } else {
-    const short = stakes.some((s) => balance != null && s.near > balance);
     body = (
       <>
         <div className="sbx-slip__figures">
@@ -333,10 +439,12 @@ function BetSlip() {
             <span>on {agent.name}</span>
             <b>{formatNear(onAgent)} NEAR</b>
           </div>
-          <div>
-            <span>your stake</span>
-            <b className={mine > 0 ? 'is-mine' : ''}>{formatNear(mine)} NEAR</b>
-          </div>
+          {hasAccount && (
+            <div>
+              <span>your stake</span>
+              <b className={mine > 0 ? 'is-mine' : ''}>{formatNear(mine)} NEAR</b>
+            </div>
+          )}
           {win != null && (
             <div>
               <span>pays if it wins</span>
@@ -344,34 +452,7 @@ function BetSlip() {
             </div>
           )}
         </div>
-        {!agent.alive ? (
-          <p className="sbx-slip__msg">{agent.name} is out of the fight.</p>
-        ) : closed ? (
-          <p className="sbx-slip__msg">{closed}</p>
-        ) : (
-          <>
-            <div className="sbx-slip__caption">bet · returns if {agent.name} wins</div>
-            <div className="sbx-slip__stakes">
-              {stakes.map((s) => {
-                const q = quote(agent.agent_id, s);
-                const placing = pending?.kind === 'bet' && pending.agentId === agent.agent_id && pending.stake === s.near;
-                return (
-                  <button
-                    key={String(s.yocto)}
-                    type="button"
-                    disabled={Boolean(pending) || (balance != null && s.near > balance)}
-                    onClick={() => place(agent, s)}
-                    aria-label={`Bet ${formatNear(s.near)} NEAR on ${agent.name}`}
-                  >
-                    <span className="sbx-slip__stake">{placing ? 'sending…' : `${formatNear(s.near)} NEAR`}</span>
-                    {q != null && <span className="sbx-slip__quote">→ {formatNear(q)}</span>}
-                  </button>
-                );
-              })}
-            </div>
-            {short && <p className="sbx-slip__msg">Not enough NEAR on the test account for every stake.</p>}
-          </>
-        )}
+        {agent.alive || closed ? action(true) : <p className="sbx-slip__msg">{agent.name} is out of the fight.</p>}
       </>
     );
   }
@@ -401,7 +482,7 @@ function BetSlip() {
 /** The chain ledger: pool, the account's stake and balance, and the result. */
 function ChainLedger() {
   const {
-    balance, myTotal, pools, payout, claim, pending,
+    balance, myTotal, pools, payout, claim, pending, hasAccount, readState,
   } = useBets();
   return (
     <div className="sbx-market__ledger">
@@ -409,17 +490,21 @@ function ChainLedger() {
       <div className="sbx-market__ledgerrow sbx-market__ledgerrow--chain">
         <span className="sbx-market__fig">
           <small>pool</small>
-          <b>{formatNear(pools.total)}</b>
+          <b>{readState === 'live' ? formatNear(pools.total) : '…'}</b>
         </span>
-        <span className="sbx-market__fig">
-          <small>your stake</small>
-          <b>{formatNear(myTotal)}</b>
-        </span>
-        <span className="sbx-market__fig">
-          <small>balance</small>
-          <b>{balance != null ? formatNear(balance) : '…'}</b>
-        </span>
-        <span className="sbx-bets__sim sbx-bets__net">NEAR testnet</span>
+        {hasAccount && (
+          <>
+            <span className="sbx-market__fig">
+              <small>your stake</small>
+              <b>{formatNear(myTotal)}</b>
+            </span>
+            <span className="sbx-market__fig">
+              <small>balance</small>
+              <b>{balance != null ? formatNear(balance) : '…'}</b>
+            </span>
+          </>
+        )}
+        <span className="sbx-bets__sim sbx-bets__net">{hasAccount ? 'NEAR testnet' : 'NEAR testnet · read only'}</span>
       </div>
     </div>
   );
@@ -465,7 +550,7 @@ function ChainPayout({ payout, claim, busy }) {
   );
 }
 
-const TX_ROWS = 5;
+const TX_ROWS = 4;
 const isOverStatus = (s) => /^(settled|cancelled)$/i.test(String(s ?? ''));
 
 /**
@@ -605,7 +690,7 @@ export default function MarketPanel({ onFollow }) {
         <span className="sbx-market__handletext">market</span>
       </button>
       <nav
-        className={`sbx-roster sbx-market${collapsed ? ' is-folded' : ''}${finale}`}
+        className={`sbx-roster sbx-market${collapsed ? ' is-folded' : ''}${onChain ? ' is-chain' : ''}${finale}`}
         aria-label="Prediction market"
         aria-hidden={collapsed}
         inert={collapsed || undefined}

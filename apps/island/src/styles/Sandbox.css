@@ -576,8 +576,8 @@
   gap: 2px 12px;
   padding: 10px 14px;
   font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.06em;
+  font-size: 14px;
+  letter-spacing: 0.04em;
   color: rgba(220, 255, 230, 0.92);
   background: rgba(1, 14, 6, 0.88);
   border: 1px solid rgba(255, 170, 0, 0.35);
@@ -728,13 +728,13 @@
 }
 
 .sbx-chip__odds {
-  font-size: 11px;
+  font-size: 13px;
   color: #ffd27a;
   font-variant-numeric: tabular-nums;
 }
 
 .sbx-chip__stake {
-  font-size: 9px;
+  font-size: 13px;
   color: #7fdcff;
   font-variant-numeric: tabular-nums;
 }
@@ -742,7 +742,7 @@
 .sbx-chip__bets {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   max-height: 0;
   overflow: hidden;
   padding: 0 10px;
@@ -750,30 +750,36 @@
   transition: max-height 160ms ease, opacity 160ms ease, padding 160ms ease;
 }
 
+/* always open on the followed agent; hover and focus open it on the rest */
+.sbx-chipwrap.is-followed .sbx-chip__bets,
 .sbx-chipwrap:hover .sbx-chip__bets,
 .sbx-chipwrap:focus-within .sbx-chip__bets {
-  max-height: 30px;
+  max-height: 64px;
   opacity: 1;
-  padding: 4px 10px 2px;
+  padding: 6px 10px 4px;
 }
 
 .sbx-chip__betlabel {
-  font-size: 8px;
-  letter-spacing: 0.18em;
+  flex: none;
+  font-size: 13px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 210, 122, 0.55);
+  color: #ffd27a;
   margin-right: 2px;
 }
 
 .sbx-chip__bets button {
   appearance: none;
+  flex: 1;
+  min-height: 44px;
   font-family: var(--font-mono);
-  font-size: 8px;
-  padding: 2px 7px;
-  color: rgba(255, 220, 160, 0.9);
-  background: rgba(255, 170, 0, 0.08);
-  border: 1px solid rgba(255, 170, 0, 0.3);
-  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 0 8px;
+  color: #fff3d6;
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.5);
+  border-radius: 6px;
   cursor: pointer;
   transition: background 120ms ease;
 }
@@ -1616,8 +1622,8 @@ body:has(.crawler-hud) .sbx-promptchan {
 
 .sbx-bets__payout {
   margin-bottom: 8px;
-  padding: 7px 10px;
-  font-size: 11px;
+  padding: 8px 11px;
+  font-size: 14px;
   border-radius: 5px;
   color: rgba(255, 190, 190, 0.9);
   background: rgba(40, 4, 10, 0.6);
@@ -1640,8 +1646,8 @@ body:has(.crawler-hud) .sbx-promptchan {
 .sbx-market__handle.is-finale { z-index: 934; }
 
 .sbx-market__note {
-  padding: 7px 10px;
-  font-size: 12px;
+  padding: 8px 11px;
+  font-size: 14px;
   line-height: 1.35;
   color: #ffe2a8;
   background: rgba(40, 28, 2, 0.7);
@@ -1649,16 +1655,16 @@ body:has(.crawler-hud) .sbx-promptchan {
   border-radius: 5px;
 }
 
-.sbx-chipwrap.is-chain .sbx-chip__odds { font-size: 13px; font-weight: 700; }
+.sbx-chipwrap.is-chain .sbx-chip__odds { font-size: 14px; font-weight: 700; }
 
 .sbx-chipwrap.is-chain .sbx-chip__stake {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: #9fe6ff;
 }
 
 .sbx-chip__nopass {
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 2px 6px;
@@ -1668,11 +1674,18 @@ body:has(.crawler-hud) .sbx-promptchan {
 }
 
 .sbx-txlink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 10px;
+  font-size: 14px;
   color: #9fe6ff;
   text-decoration: underline;
   text-underline-offset: 2px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(0, 191, 255, 0.4);
+  border-radius: 6px;
 }
 
 .sbx-txlink:hover { color: #d6f6ff; }
@@ -1699,7 +1712,7 @@ body:has(.crawler-hud) .sbx-promptchan {
 }
 
 .sbx-slip__label {
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #ffd27a;
@@ -1719,14 +1732,14 @@ body:has(.crawler-hud) .sbx-promptchan {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 17px;
+  font-size: 18px;
   letter-spacing: 0.06em;
   color: #f0fff4;
 }
 
 .sbx-slip__odds {
   margin-left: auto;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: #ffd27a;
   font-variant-numeric: tabular-nums;
@@ -1745,13 +1758,13 @@ body:has(.crawler-hud) .sbx-promptchan {
 }
 
 .sbx-slip__figures span {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: rgba(215, 240, 222, 0.8);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: rgba(225, 245, 230, 0.9);
 }
 
 .sbx-slip__figures b {
-  font-size: 16px;
+  font-size: 18px;
   color: #f0fff4;
   font-variant-numeric: tabular-nums;
 }
@@ -1760,9 +1773,9 @@ body:has(.crawler-hud) .sbx-promptchan {
 .sbx-slip__figures b.is-win { color: #ffd27a; }
 
 .sbx-slip__caption {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: rgba(255, 220, 160, 0.85);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: #ffe2a8;
 }
 
 .sbx-slip__stakes {
@@ -1776,8 +1789,11 @@ body:has(.crawler-hud) .sbx-promptchan {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 8px 4px;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 60px;
+  padding: 8px 2px;
   font-family: var(--font-mono);
   color: #fff3d6;
   background: rgba(255, 170, 0, 0.12);
@@ -1795,20 +1811,102 @@ body:has(.crawler-hud) .sbx-promptchan {
 .sbx-slip__stakes button:disabled { opacity: 0.4; cursor: default; }
 
 .sbx-slip__stake {
-  font-size: 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 20px;
   font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.sbx-slip__stake.is-busy { font-size: 16px; }
+
+.sbx-slip__stake small {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffe2a8;
 }
 
 .sbx-slip__quote {
-  font-size: 12px;
-  color: #ffd27a;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffe2a8;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
+/* betting is open, but not for long */
+.sbx-slip__soon {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #ffd27a;
+}
+
+/* betting is closed: as prominent as the stake buttons it replaces */
+.sbx-slip__closed {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 60px;
+  padding: 10px 14px;
+  background: rgba(60, 4, 14, 0.7);
+  border: 1px solid rgba(255, 64, 96, 0.7);
+  border-radius: 6px;
+}
+
+.sbx-slip__closed strong {
+  font-size: 20px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffe0e4;
+}
+
+.sbx-slip__closed span {
+  font-size: 14px;
+  line-height: 1.4;
+  color: #ffd6dc;
+}
+
+/* no test account yet: one large way in, in place of the stakes */
+.sbx-slip__join {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sbx-slip__account {
+  appearance: none;
+  min-height: 60px;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff3d6;
+  background: rgba(255, 170, 0, 0.24);
+  border: 1px solid rgba(255, 170, 0, 0.85);
+  border-radius: 7px;
+  box-shadow: 0 0 20px rgba(255, 170, 0, 0.28);
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.sbx-slip__account:hover:not(:disabled) {
+  background: rgba(255, 170, 0, 0.38);
+  box-shadow: 0 0 26px rgba(255, 170, 0, 0.45);
+}
+
+.sbx-slip__account:disabled { opacity: 0.7; cursor: default; }
+
 .sbx-slip__msg {
   margin: 0;
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1.4;
   color: rgba(225, 245, 230, 0.9);
 }
@@ -1820,7 +1918,7 @@ body:has(.crawler-hud) .sbx-promptchan {
   gap: 4px 10px;
   margin: 0;
   padding: 7px 9px;
-  font-size: 12.5px;
+  font-size: 14px;
   line-height: 1.4;
   color: #e8fff0;
   background: rgba(0, 255, 65, 0.08);
@@ -1838,6 +1936,8 @@ body:has(.crawler-hud) .sbx-promptchan {
 
 .sbx-slip__dismiss {
   appearance: none;
+  min-width: 40px;
+  min-height: 40px;
   margin-left: auto;
   padding: 0 4px;
   font: inherit;
@@ -1861,22 +1961,24 @@ body:has(.crawler-hud) .sbx-promptchan {
 }
 
 .sbx-market__fig small {
-  font-size: 10.5px;
-  letter-spacing: 0.12em;
+  font-size: 13px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(255, 220, 160, 0.85);
 }
 
 .sbx-market__fig b {
-  font-size: 17px;
+  font-size: 20px;
   color: #f4fff6;
   font-variant-numeric: tabular-nums;
 }
 
-.sbx-market__ledgerrow .sbx-bets__net {
+.sbx-market__ledgerrow .sbx-bets__net,
+.sbx-market__ledgerrow .sbx-bets__practice {
   align-self: center;
-  font-size: 10px;
-  color: rgba(255, 220, 160, 0.9);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: #ffe2a8;
 }
 
 .sbx-payout {
@@ -1886,14 +1988,14 @@ body:has(.crawler-hud) .sbx-promptchan {
   gap: 4px 12px;
   margin-bottom: 0;
   padding: 10px 12px;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.4;
 }
 
 .sbx-payout__why { flex-basis: 100%; }
 
 .sbx-payout__amount {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   color: #ffe9b8;
   font-variant-numeric: tabular-nums;
@@ -1901,8 +2003,10 @@ body:has(.crawler-hud) .sbx-promptchan {
 
 .sbx-payout__claim {
   margin-left: auto;
-  padding: 8px 20px;
-  font-size: 14px;
+  min-height: 52px;
+  padding: 10px 28px;
+  font-size: 17px;
+  font-weight: 700;
   color: #fff3d6;
   background: rgba(255, 170, 0, 0.28);
   border-color: rgba(255, 170, 0, 0.8);
@@ -1935,7 +2039,7 @@ body:has(.crawler-hud) .sbx-promptchan {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 2px;
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(0, 255, 65, 0.85);
@@ -1943,7 +2047,7 @@ body:has(.crawler-hud) .sbx-promptchan {
 
 .sbx-onchain__status {
   padding: 1px 8px;
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.12em;
   color: #e8fff0;
   border: 1px solid rgba(0, 255, 65, 0.4);
@@ -1953,7 +2057,7 @@ body:has(.crawler-hud) .sbx-promptchan {
 .sbx-onchain__warn,
 .sbx-onchain__empty {
   margin: 0;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.35;
   color: #ffe2a8;
 }
@@ -1962,11 +2066,12 @@ body:has(.crawler-hud) .sbx-promptchan {
 
 .sbx-onchain__row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
   min-width: 0;
-  padding: 3px 2px;
-  font-size: 12px;
+  min-height: 40px;
+  padding: 0 4px;
+  font-size: 13px;
   color: #e3fbe9;
   text-decoration: none;
   border-radius: 4px;
@@ -1976,8 +2081,8 @@ body:has(.crawler-hud) .sbx-promptchan {
 
 .sbx-onchain__who {
   flex: none;
-  width: 3.6em;
-  font-size: 10.5px;
+  width: 3.4em;
+  font-size: 13px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(0, 255, 65, 0.8);
@@ -1995,7 +2100,7 @@ body:has(.crawler-hud) .sbx-promptchan {
 
 .sbx-onchain__fail {
   flex: none;
-  font-size: 10.5px;
+  font-size: 13px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #ff8a9c;
@@ -2022,7 +2127,8 @@ body:has(.crawler-hud) .sbx-promptchan {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 12px;
+  min-height: 40px;
+  padding: 4px 14px;
   font-family: var(--font-mono);
   color: #e8fff0;
   text-decoration: none;
@@ -2038,8 +2144,8 @@ body:has(.crawler-hud) .sbx-promptchan {
 }
 
 .sbx-account__net {
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: 13px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #ffd27a;
 }
@@ -2053,14 +2159,14 @@ body:has(.crawler-hud) .sbx-promptchan {
   display: flex;
   align-items: baseline;
   gap: 4px;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   color: #fff3d6;
   font-variant-numeric: tabular-nums;
 }
 
 .sbx-account__bal small {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 400;
   color: #ffd27a;
 }
@@ -2076,18 +2182,28 @@ body:has(.crawler-hud) .sbx-promptchan {
   max-width: min(420px, 80vw);
 }
 
+/* the top bar's own buttons shrink in the compact tier; this one stays
+   at a size a finger and a compressed video can both find */
+.sbx-account .sbx-btn {
+  min-height: 40px;
+  font-size: 13px;
+}
+
 .sbx-account__made,
 .sbx-account__error {
   margin: 0;
   padding: 7px 11px;
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.4;
   border-radius: 7px;
   backdrop-filter: blur(6px);
 }
 
 .sbx-account__made {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
   color: #d6f6ff;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -2106,6 +2222,8 @@ body:has(.crawler-hud) .sbx-promptchan {
 
 .sbx-account__error button {
   appearance: none;
+  min-width: 40px;
+  min-height: 40px;
   padding: 0 2px;
   font: inherit;
   color: inherit;
@@ -2340,9 +2458,7 @@ body:has(.crawler-hud) .sbx-promptchan {
   .sbx-btn { font-size: 11px; padding: 6px 12px; }
   .sbx-btn--icon { padding: 6px 9px; }
   .sbx-speed__step { font-size: 10px; padding: 5px 9px; }
-  .sbx-account__pill { gap: 7px; padding: 3px 10px; }
-  .sbx-account__id { font-size: 11px; }
-  .sbx-account__bal { font-size: 14px; }
+  .sbx-account__pill { gap: 8px; padding: 3px 11px; }
 
   /* the market rail shrinks as one piece — every internal proportion
      was tuned at full size, so a uniform scale beats re-tuning */
@@ -2354,6 +2470,13 @@ body:has(.crawler-hud) .sbx-promptchan {
   }
 
   .sbx-market__handle { top: 58px; }
+
+  /* the NEAR market keeps more of its size: its stakes and figures are
+     what a bettor reads and presses */
+  .sbx-roster.is-chain {
+    --rail-scale: 0.88;
+    max-height: calc((100vh - 58px) / 0.88);
+  }
 
   /* the caster and her bubble come down to cameo size */
   .sbx-promptchan { right: 6px; }

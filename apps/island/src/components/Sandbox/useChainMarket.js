@@ -11,6 +11,10 @@
  * The season id is the game's world id (the server's `near.season_id` when
  * it sends one). An agent is bettable when it carries a `pass_id` that is an
  * entrant in the market's totals.
+ *
+ * A season on chain always shows its real market. Without a test account it
+ * is read only (pools, odds and whether betting is open); the account only
+ * adds the bettor's own stakes and the right to bet.
  */
 
 import {
@@ -66,11 +70,19 @@ export function useProbHistory(worldId, tick, pools) {
 }
 
 export function useChainMarket({ near, world, roster }) {
-  const { chain, config, session, accountId, refreshBalance } = near;
+  const {
+    chain, config, session, refreshBalance, createTestAccount,
+  } = near;
   const seasonId = world?.near?.season_id || world?.world_id || null;
-  // The server says outright when a season is not settled on chain.
-  const offChain = world?.near?.enabled === false;
-  const ready = Boolean(near.enabled && near.status === 'ready' && chain && config && session && seasonId && !offChain);
+  // The server's near block says whether this season settles on chain:
+  // true, false, or undefined for a server that sends no such block.
+  const serverSays = world?.near?.enabled;
+  const offChain = serverSays === false;
+  const canRead = Boolean(near.enabled && chain && seasonId && !offChain);
+  const hasAccount = Boolean(near.status === 'ready' && session && near.accountId);
+  const accountId = hasAccount ? near.accountId : null;
+  // Able to bet: the market can be read, priced, and signed for.
+  const ready = Boolean(canRead && config && hasAccount);
 
   const [market, setMarket] = useState(undefined); // undefined: not read; null: no such season
   const [season, setSeason] = useState(null);
@@ -81,12 +93,16 @@ export function useChainMarket({ near, world, roster }) {
   const [txs, setTxs] = useState([]);
   const [claimed, setClaimed] = useState(null);
 
-  const keyBase = ready ? `${chain.contractId}:${seasonId}:${accountId}` : null;
+  // The market belongs to the season; bets, links and claims to the account.
+  const readKey = canRead ? `${chain.contractId}:${seasonId}` : null;
+  const keyBase = readKey && accountId ? `${readKey}:${accountId}` : null;
   useEffect(() => {
     setMarket(undefined);
     setSeason(null);
-    setMyBets(null);
     setFeedError(null);
+  }, [readKey]);
+  useEffect(() => {
+    setMyBets(null);
     setNotice(null);
     setTxs(keyBase ? store.get(`questfi.island.txs:${keyBase}`, []) : []);
     setClaimed(keyBase ? store.get(`questfi.island.claim:${keyBase}`, null) : null);
@@ -95,16 +111,19 @@ export function useChainMarket({ near, world, roster }) {
   // ---- reading ------------------------------------------------------------
   const readAll = useCallback(async ({ bets = true } = {}) => {
     const [m, s] = await Promise.all([chain.getMarket(seasonId), chain.getSeason(seasonId)]);
-    const b = bets && m ? await chain.getBets(seasonId, accountId) : undefined;
+    const b = bets && m && accountId ? await chain.getBets(seasonId, accountId) : undefined;
     return { m: m ?? null, s: s ?? null, b };
   }, [chain, seasonId, accountId]);
 
+  // Which season and account a read in flight was for; a late answer for
+  // another one is dropped.
+  const pollKey = `${readKey}|${accountId}`;
   const liveKey = useRef(null);
-  liveKey.current = keyBase;
+  liveKey.current = pollKey;
 
   useEffect(() => {
-    if (!ready) return undefined;
-    const key = keyBase;
+    if (!readKey) return undefined;
+    const key = pollKey;
     let stop = false;
     let timer = null;
     let n = 0;
@@ -116,7 +135,7 @@ export function useChainMarket({ near, world, roster }) {
         if (stop || liveKey.current !== key) return;
         const status = statusOf(peek.m, peek.s);
         let { b } = peek;
-        if (peek.m && (n % BETS_EVERY === 0 || status !== lastStatus)) {
+        if (peek.m && accountId && (n % BETS_EVERY === 0 || status !== lastStatus)) {
           b = await chain.getBets(seasonId, accountId);
           if (stop || liveKey.current !== key) return;
         }
@@ -140,10 +159,10 @@ export function useChainMarket({ near, world, roster }) {
       stop = true;
       clearTimeout(timer);
     };
-  }, [ready, keyBase, readAll, chain, seasonId, accountId]);
+  }, [readKey, pollKey, readAll, chain, seasonId, accountId]);
 
   const refreshNow = useCallback(async () => {
-    const key = keyBase;
+    const key = pollKey;
     try {
       const { m, s, b } = await readAll();
       if (liveKey.current !== key) return;
@@ -152,7 +171,7 @@ export function useChainMarket({ near, world, roster }) {
       if (b !== undefined) setMyBets(b);
     } catch { /* the poll catches up */ }
     refreshBalance();
-  }, [keyBase, readAll, refreshBalance]);
+  }, [pollKey, readAll, refreshBalance]);
 
   const addTx = useCallback((tx) => {
     if (!keyBase) return;
@@ -248,8 +267,12 @@ export function useChainMarket({ near, world, roster }) {
     return fromYocto(settlePayout({ pool: poolY, winnerBets: onPass, stakeOnWinner: mine, ...cuts }));
   }, [agentById, myByPass, onPassOf, poolY, cuts]);
 
-  const bettingOpen = Boolean(ready && market?.open && isLive(status) && world?.phase !== 'finished');
-  const balance = near.balance != null ? fromYocto(near.balance) : null;
+  // Whether the season's market takes bets, read from the contract whether
+  // or not this browser can bet. The game's end closes it here at once: the
+  // contract stays open until the server's lock, but the result is known.
+  const readState = market === undefined || !config ? 'loading' : market === null ? 'waiting' : 'live';
+  const bettingOpen = Boolean(readState === 'live' && market.open && isLive(status) && world?.phase !== 'finished');
+  const balance = hasAccount && near.balance != null ? fromYocto(near.balance) : null;
 
   // ---- the account's actions ---------------------------------------------
   const place = useCallback(async (agent, stake) => {
@@ -330,16 +353,17 @@ export function useChainMarket({ near, world, roster }) {
   }, [market, agentByPass, stakedY, status, world?.winner_name, world?.phase, claimed, myBets]);
 
   const myTotal = fromYocto(stakedY);
-  const probHistory = useProbHistory(ready && market ? seasonId : null, world?.tick, pools);
+  const probHistory = useProbHistory(readState === 'live' ? seasonId : null, world?.tick, pools);
 
-  // Ready to replace the simulated market only once the season is known to
-  // be on chain; until then the drawer keeps the simulation and says why.
-  const active = ready && Boolean(market);
-  let note = null;
-  if (near.enabled && near.status === 'ready' && seasonId) {
-    if (offChain) note = 'This season is not settled on chain: simulated chips only.';
-    else if (ready && market === null) note = 'This season is not on chain yet: simulated chips until it is.';
-  }
+  // The drawer shows this market for every season on chain, account or not.
+  // Practice chips are left only where they are honest: the server says the
+  // season is off chain, or (a server with no near block) the contract has
+  // no such season.
+  const notOnChain = offChain || (serverSays !== true && market === null);
+  const active = Boolean(near.enabled && seasonId && !notOnChain);
+  const note = near.enabled && seasonId && notOnChain
+    ? 'This season is not on chain. These are practice chips, not NEAR.'
+    : null;
 
   const value = useMemo(() => ({
     mode: 'chain',
@@ -365,12 +389,17 @@ export function useChainMarket({ near, world, roster }) {
     feedError,
     txs,
     status,
+    readState,
     seasonId,
     accountId,
+    hasAccount,
+    accountStatus: near.status,
+    accountError: near.error,
+    createTestAccount,
     minBet: fromYocto(minBet),
   }), [balance, bets, myTotal, pools, odds, prob, probHistory, place, payout, bettingOpen,
-       stakes, quote, ifWins, canBack, claim, pending, notice, feedError, txs, status, seasonId,
-       accountId, minBet]);
+       stakes, quote, ifWins, canBack, claim, pending, notice, feedError, txs, status, readState,
+       seasonId, accountId, hasAccount, near.status, near.error, createTestAccount, minBet]);
 
   return { active, note, value };
 }
