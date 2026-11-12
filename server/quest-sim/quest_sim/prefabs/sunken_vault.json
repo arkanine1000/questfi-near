@@ -1,0 +1,149 @@
+{
+  "quest_id": "prefab-sunken-vault",
+  "quest": {
+    "quest_name": "The Sunken Vault",
+    "description": "A reliquary sunk beneath the hills, flooded once and drained badly. Two doors, one treasury, and everything between them still on guard duty. A through-road for the brave and a payday for the quick.",
+    "budget_total": 25,
+    "budget_spent": 18,
+    "difficulty": "normal",
+    "entrance_position": [0, 1],
+    "entrances": [[0, 1], [4, 1]],
+    "grid": {
+      "rows": 5,
+      "cols": 3,
+      "rooms": {
+        "0,1": {
+          "row": 0,
+          "col": 1,
+          "room_type": "entrance",
+          "connections": {"S": true},
+          "description": "The north door of the vault hangs off one hinge, green water-stains marking how high the flood once reached."
+        },
+        "1,1": {
+          "row": 1,
+          "col": 1,
+          "room_type": "trap_room",
+          "connections": {"N": true, "S": true},
+          "trap_dc": 11,
+          "trap_damage": 3,
+          "description": "A drowned antechamber. The floor tiles have settled unevenly, and some of them settle further when stepped on."
+        },
+        "2,0": {
+          "row": 2,
+          "col": 0,
+          "room_type": "treasure_room",
+          "connections": {"E": true},
+          "search_dc": 11,
+          "treasure_item_ids": ["grave_aegis", "steel_falchion"],
+          "description": "The west strongroom, its shelves collapsed into a silt-bedded heap that might still hide what the flood could not carry away."
+        },
+        "2,1": {
+          "row": 2,
+          "col": 1,
+          "room_type": "chamber",
+          "connections": {"N": true, "S": true, "E": true, "W": true},
+          "entity_ids": ["skeleton_1"],
+          "description": "The vault's crossing hall, four archways under a cracked dome. Wet footprints that are not yours end in the middle of the floor."
+        },
+        "2,2": {
+          "row": 2,
+          "col": 2,
+          "room_type": "treasure_room",
+          "connections": {"W": true},
+          "treasure_item_ids": ["vault_seal", "potion_healing_v1"],
+          "entity_ids": ["skeleton_2"],
+          "description": "The east reliquary. On a stone table, in plain sight, sits the vault's great seal — and its last clerk still at his post."
+        },
+        "3,1": {
+          "row": 3,
+          "col": 1,
+          "room_type": "chamber",
+          "connections": {"N": true, "S": true},
+          "entity_ids": ["mage_1"],
+          "description": "The counting room. Tally-marks cover every wall, and the counting has not stopped."
+        },
+        "4,1": {
+          "row": 4,
+          "col": 1,
+          "room_type": "entrance",
+          "connections": {"N": true},
+          "description": "The south door, half-buried outside but clear within — the vault's back way, known to smugglers and worse."
+        }
+      }
+    },
+    "characters": [
+      {
+        "id": "skeleton_1",
+        "name": "Vault Skeleton",
+        "entity_type": "hostile",
+        "hp": 10,
+        "max_hp": 10,
+        "ac": 10,
+        "abilities": {"strength": 1, "dexterity": 1},
+        "position": [2, 1],
+        "point_cost": 2,
+        "description": "A guard who never abandoned the crossing hall. Its halberd has rusted to lace; its grip has not."
+      },
+      {
+        "id": "skeleton_2",
+        "name": "Reliquary Skeleton",
+        "entity_type": "hostile",
+        "hp": 9,
+        "max_hp": 9,
+        "ac": 9,
+        "abilities": {"strength": 1, "dexterity": 0},
+        "position": [2, 2],
+        "point_cost": 2,
+        "description": "The vault's last clerk, seated at its table, quill long gone. It rises only when something touches the seal."
+      },
+      {
+        "id": "mage_1",
+        "name": "Vault Mage",
+        "entity_type": "hostile",
+        "hp": 12,
+        "max_hp": 12,
+        "ac": 11,
+        "abilities": {"strength": 2, "dexterity": 2},
+        "position": [3, 1],
+        "point_cost": 3,
+        "description": "The warden of the counting room, still tallying in the dark. Interruptions are deducted."
+      }
+    ],
+    "items": [
+      {
+        "id": "vault_seal",
+        "name": "The Vault Seal",
+        "item_type": "misc",
+        "ac_bonus": 1,
+        "description": "A palm-sized disc of lead and silver, the sigil of the drowned order. Whoever holds it may claim what the vault held."
+      },
+      {
+        "id": "grave_aegis",
+        "name": "Grave Aegis",
+        "item_type": "shield",
+        "ac_bonus": 1,
+        "description": "A round shield of blackened bronze, flood-pitted but sound. It turns a blade a finger's width better than bare mail."
+      },
+      {
+        "id": "steel_falchion",
+        "name": "Steel Falchion",
+        "item_type": "weapon",
+        "damage_bonus": 2,
+        "description": "A broad, forward-weighted blade from the strongroom racks, still bright under a decade of silt."
+      },
+      {
+        "id": "potion_healing_v1",
+        "name": "Potion of Healing",
+        "item_type": "potion",
+        "heal_amount": 8,
+        "consumable": true,
+        "description": "A small vial of red liquid that restores health."
+      }
+    ],
+    "objective": {
+      "type": "retrieve_item",
+      "target_id": "vault_seal",
+      "description": "Claim the Vault Seal from the east reliquary."
+    }
+  }
+}

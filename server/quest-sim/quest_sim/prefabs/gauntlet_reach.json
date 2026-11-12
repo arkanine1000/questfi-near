@@ -1,0 +1,213 @@
+{
+  "quest_id": "prefab-gauntlet-reach",
+  "quest": {
+    "quest_name": "The Long Gauntlet",
+    "description": "A proving-road built by an order long dead: one winding path, sown with snares, from the iron gate to the far sanctum. Reach the sanctum alive.",
+    "budget_total": 25,
+    "budget_spent": 19,
+    "difficulty": "normal",
+    "entrance_position": [0, 0],
+    "grid": {
+      "rows": 5,
+      "cols": 5,
+      "rooms": {
+        "0,0": {
+          "row": 0,
+          "col": 0,
+          "room_type": "entrance",
+          "connections": {"S": true},
+          "description": "An iron gate stands rusted open at the mouth of the gauntlet, its arch inscribed: WALK AND BE WEIGHED. The single path beyond runs crooked into the dark."
+        },
+        "1,0": {
+          "row": 1,
+          "col": 0,
+          "room_type": "corridor",
+          "connections": {"N": true, "S": true},
+          "description": "The first stretch of the proving-road, worn into a groove by centuries of anxious feet."
+        },
+        "2,0": {
+          "row": 2,
+          "col": 0,
+          "room_type": "trap_room",
+          "connections": {"N": true, "E": true},
+          "trap_dc": 11,
+          "trap_damage": 3,
+          "description": "The passage narrows and the walls show fresh gouges. Old stains map where earlier pilgrims stood too long."
+        },
+        "2,1": {
+          "row": 2,
+          "col": 1,
+          "room_type": "corridor",
+          "connections": {"E": true, "W": true},
+          "description": "A turning in the road. A pilgrim's pack lies against the wall, its owner nowhere in sight."
+        },
+        "2,2": {
+          "row": 2,
+          "col": 2,
+          "room_type": "chamber",
+          "connections": {"N": true, "S": true, "W": true},
+          "entity_ids": ["harpy_1"],
+          "description": "A waystation with a dry fountain at its center. The silence here has weight."
+        },
+        "3,2": {
+          "row": 3,
+          "col": 2,
+          "room_type": "treasure_room",
+          "connections": {"N": true},
+          "search_dc": 12,
+          "treasure_item_ids": ["pilgrims_blade"],
+          "description": "A votive alcove off the main road, its offerings buried under a fall of dust and rubble."
+        },
+        "1,2": {
+          "row": 1,
+          "col": 2,
+          "room_type": "corridor",
+          "connections": {"N": true, "S": true},
+          "description": "The road climbs through a seam in the rock, each step cut shallower than the last."
+        },
+        "0,2": {
+          "row": 0,
+          "col": 2,
+          "room_type": "trap_room",
+          "connections": {"S": true, "E": true},
+          "trap_dc": 12,
+          "trap_damage": 4,
+          "description": "A gallery of leaning statues, every face worn blank. Thin wires of light cross the floor between them."
+        },
+        "0,3": {
+          "row": 0,
+          "col": 3,
+          "room_type": "corridor",
+          "connections": {"E": true, "W": true},
+          "description": "A high, narrow walk. Far below, water moves in the dark."
+        },
+        "0,4": {
+          "row": 0,
+          "col": 4,
+          "room_type": "chamber",
+          "connections": {"W": true, "S": true},
+          "entity_ids": ["harpy_2"],
+          "description": "A tollhouse at the road's high corner. Its keeper never left."
+        },
+        "1,4": {
+          "row": 1,
+          "col": 4,
+          "room_type": "trap_room",
+          "connections": {"N": true, "S": true},
+          "trap_dc": 12,
+          "trap_damage": 4,
+          "search_dc": 12,
+          "treasure_item_ids": ["potion_healing_2"],
+          "description": "The floor here is a mosaic of pressure-worn tiles, several sitting a hair too proud."
+        },
+        "2,4": {
+          "row": 2,
+          "col": 4,
+          "room_type": "treasure_room",
+          "connections": {"N": true, "S": true},
+          "treasure_item_ids": ["potion_healing_1"],
+          "description": "A resting cell for pilgrims, stone bunks bare. A supply niche still holds a final kindness."
+        },
+        "3,4": {
+          "row": 3,
+          "col": 4,
+          "room_type": "trap_room",
+          "connections": {"N": true, "W": true},
+          "trap_dc": 13,
+          "trap_damage": 6,
+          "description": "The winnowing hall. Scorch marks fan across the walls in overlapping arcs."
+        },
+        "3,3": {
+          "row": 3,
+          "col": 3,
+          "room_type": "chamber",
+          "connections": {"E": true, "S": true},
+          "entity_ids": ["mage_1"],
+          "description": "The last chamber before the sanctum stair. Something has been waiting here a very long time."
+        },
+        "4,3": {
+          "row": 4,
+          "col": 3,
+          "room_type": "corridor",
+          "connections": {"N": true, "W": true},
+          "description": "The sanctum stair, each step inlaid with a worn silver line pointing the way."
+        },
+        "4,2": {
+          "row": 4,
+          "col": 2,
+          "room_type": "chamber",
+          "connections": {"E": true},
+          "description": "The far sanctum. Light falls from an unseen height onto a floor of unbroken white stone — the end of the gauntlet."
+        }
+      }
+    },
+    "characters": [
+      {
+        "id": "harpy_1",
+        "name": "Gauntlet Harpy",
+        "entity_type": "hostile",
+        "hp": 9,
+        "max_hp": 9,
+        "ac": 9,
+        "abilities": {"strength": 1, "dexterity": 1},
+        "position": [2, 2],
+        "point_cost": 2,
+        "description": "It roosts above the dry fountain, all wing and talon, and drops without a sound on those who linger."
+      },
+      {
+        "id": "harpy_2",
+        "name": "Toll Harpy",
+        "entity_type": "hostile",
+        "hp": 10,
+        "max_hp": 10,
+        "ac": 10,
+        "abilities": {"strength": 1, "dexterity": 2},
+        "position": [0, 4],
+        "point_cost": 2,
+        "description": "It perches on the tollhouse sill, one talon extended and open. The toll it collects is not coin."
+      },
+      {
+        "id": "mage_1",
+        "name": "Sanctum Mage",
+        "entity_type": "hostile",
+        "hp": 12,
+        "max_hp": 12,
+        "ac": 11,
+        "abilities": {"strength": 2, "dexterity": 2},
+        "position": [3, 3],
+        "point_cost": 3,
+        "description": "The gauntlet's final judge, robed and utterly still, tracing wards in the air that flare as you approach."
+      }
+    ],
+    "items": [
+      {
+        "id": "pilgrims_blade",
+        "name": "Pilgrim's Blade",
+        "item_type": "weapon",
+        "damage_bonus": 2,
+        "description": "A straight, plain sword left as an offering. The order judged it; the order kept it."
+      },
+      {
+        "id": "potion_healing_1",
+        "name": "Potion of Healing",
+        "item_type": "potion",
+        "heal_amount": 8,
+        "consumable": true,
+        "description": "A small vial of red liquid that restores health."
+      },
+      {
+        "id": "potion_healing_2",
+        "name": "Potion of Healing",
+        "item_type": "potion",
+        "heal_amount": 8,
+        "consumable": true,
+        "description": "Hidden beneath a proud tile — a reward for the careful, or the lucky."
+      }
+    ],
+    "objective": {
+      "type": "reach_room",
+      "target_id": "4,2",
+      "description": "Survive the gauntlet and stand in the far sanctum."
+    }
+  }
+}

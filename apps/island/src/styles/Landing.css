@@ -1,0 +1,783 @@
+/**
+ * The landing view — a broadcast board over the live island.
+ *
+ * Own stylesheet, own `qf-` prefix: Sandbox.css is 1700 lines of HUD and
+ * this is a different surface with different rules.
+ *
+ * Three rules this file exists to enforce, all of them things earlier
+ * passes got wrong:
+ *   1. ONE CENTRED COLUMN, both axes. Masthead over board over footer, in
+ *      a stage narrow enough to read and centred in the viewport — not a
+ *      ribbon pinned to the top-left of a 1900px display, and not a side
+ *      rail holding four elements it never earned.
+ *   2. BUTTONS DO NOT STRETCH. They size to their label. `flex: 1` on a
+ *      button is how "Watch" ends up 700px wide.
+ *   3. THE ISLAND STAYS VISIBLE. The backdrop is a scrim; the panels carry
+ *      the darkness, so water shows between them.
+ *
+ * Type starts at 12px and body copy is 15px — this is the one surface a
+ * first-time visitor reads at length, unlike the HUD's glanceable chrome.
+ */
+
+/* ---------------------------------------------------------------- shell */
+
+.qf-landing {
+  position: fixed;
+  inset: 0;
+  z-index: 940;
+  color: #d7ffe4;
+  font-family: var(--font-mono);
+  /* Light enough to keep the island legible underneath — the panels below
+     supply the contrast that text actually needs. */
+  background:
+    radial-gradient(62% 58% at 50% 46%, rgba(0, 8, 3, 0.8) 0%, rgba(0, 8, 3, 0.52) 55%, rgba(0, 8, 3, 0.2) 100%),
+    radial-gradient(120% 90% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.66) 100%);
+  animation: qf-fade 420ms ease-out both;
+}
+
+.qf-landing__veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* faint CRT ruling, enough to bind the panels to the HUD's language */
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0, 255, 65, 0.022) 0 1px, transparent 1px 3px);
+}
+
+.qf-landing__scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+}
+
+/* margin:auto (not just align-items) so a tall board still scrolls from
+   the top instead of clipping its head off */
+.qf-landing__stage {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  width: 100%;
+  /* Wide enough that a row's figure and its buttons sit comfortably apart,
+     narrow enough to stay a readable column on a 1900px display. */
+  max-width: 780px;
+  margin: auto;
+  padding: 56px clamp(24px, 5vw, 48px);
+}
+
+@keyframes qf-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes qf-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes qf-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.82); }
+}
+
+/* ---------------------------------------------------------------- brand */
+
+.qf-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  animation: qf-rise 520ms ease-out both;
+}
+
+.qf-brand__lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.qf-brand__mark {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(0, 255, 65, 0.45));
+}
+
+.qf-brand__word {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.36em;
+  color: rgba(214, 255, 224, 0.95);
+  text-shadow: 0 0 18px rgba(0, 255, 65, 0.4);
+}
+
+/* The one oversized element. Tight tracking + phosphor bloom does the work
+   a display typeface would, without a webfont in a PWA that precaches
+   everything it serves. */
+.qf-brand__title {
+  font-size: clamp(38px, 6.4vw, 62px);
+  line-height: 1.04;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  color: #eafff0;
+  text-shadow:
+    0 2px 30px rgba(0, 0, 0, 0.85),
+    0 0 34px rgba(0, 255, 65, 0.4),
+    0 0 84px rgba(0, 255, 65, 0.2);
+}
+
+.qf-brand__sub {
+  max-width: 44ch;
+  font-size: 15px;
+  line-height: 1.75;
+  color: rgba(198, 240, 212, 0.8);
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.9);
+}
+
+.qf-brand__onair {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px;
+  font-size: 12px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(0, 255, 65, 0.9);
+  background: rgba(0, 20, 8, 0.6);
+  border: 1px solid rgba(0, 255, 65, 0.28);
+  border-radius: 999px;
+}
+
+.qf-brand__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-green);
+  box-shadow: 0 0 10px var(--color-green);
+  animation: qf-pulse 2s ease-in-out infinite;
+}
+
+/* Operator sign-in: the last thing on the page, quiet and centred. */
+.qf-foot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+}
+
+.qf-operator { align-items: center; text-align: center; }
+
+/* ---------------------------------------------------------------- board */
+
+/* Glass, in the same register as the lobby card the HUD already uses —
+   the board is a surface the seasons sit ON, not a bare list floating over
+   the water. Everything nested inside it therefore goes flatter: stacking
+   blurred panels on blurred panels just reads muddy. */
+.qf-board {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 22px 24px 24px;
+  background: rgba(1, 12, 5, 0.75);
+  border: 1px solid rgba(0, 255, 65, 0.18);
+  border-radius: 14px;
+  backdrop-filter: blur(9px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.45);
+  animation: qf-rise 620ms ease-out both;
+}
+
+.qf-board__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+}
+
+.qf-board__title {
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(0, 255, 65, 0.85);
+}
+
+.qf-board__locked {
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(150, 200, 165, 0.6);
+}
+
+.qf-empty {
+  padding: 22px 2px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: rgba(180, 225, 195, 0.6);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+}
+
+/* ------------------------------------------------------------------ rows */
+
+.qf-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  /* the board scrolls, not the page, once there are many seasons */
+  max-height: min(52vh, 560px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* Items on the board, not panels of their own: a lift in tint plus the
+   accent edge is enough separation now that the board carries the glass. */
+.qf-row {
+  --accent: var(--color-green);
+  padding: 14px 16px;
+  background: rgba(0, 255, 65, 0.035);
+  border: 1px solid rgba(0, 255, 65, 0.14);
+  border-left: 2px solid var(--accent);
+  border-radius: 9px;
+  transition: border-color 150ms ease, background 150ms ease;
+  animation: qf-rise 420ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+
+.qf-row:hover {
+  border-color: rgba(0, 255, 65, 0.34);
+  border-left-color: var(--accent);
+  background: rgba(0, 255, 65, 0.085);
+}
+
+.qf-row--running { --accent: var(--color-amber); }
+.qf-row--finished { --accent: rgba(150, 200, 165, 0.45); opacity: 0.68; }
+.qf-row--finished:hover { opacity: 1; }
+
+.qf-row__main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.qf-row__read {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.qf-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.qf-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+/* a lobby waits for people, so its dot breathes; a live one is steady */
+.qf-status--lobby i { animation: qf-pulse 2s ease-in-out infinite; }
+
+/* The number is the headline — seats taken is what a visitor scans for. */
+.qf-row__figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.qf-row__figure strong {
+  font-size: 26px;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #eafff0;
+  font-variant-numeric: tabular-nums;
+}
+
+.qf-row__figure span {
+  font-size: 13px;
+  color: rgba(184, 228, 198, 0.72);
+}
+
+.qf-row__id {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(140, 190, 155, 0.5);
+}
+
+.qf-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.qf-row__kill {
+  flex: none;
+  padding: 7px 9px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1;
+  color: rgba(180, 220, 190, 0.35);
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.qf-row__kill:hover {
+  color: #ffd9de;
+  background: rgba(255, 0, 64, 0.14);
+  border-color: rgba(255, 0, 64, 0.5);
+}
+
+/* --------------------------------------------------------------- buttons */
+
+/* Sized by their label. Never `flex: 1` — that is how a lone "Watch"
+   button ends up spanning an entire card. */
+.qf-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: rgba(205, 255, 218, 0.9);
+  background: rgba(0, 255, 65, 0.06);
+  border: 1px solid rgba(0, 255, 65, 0.3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.qf-btn svg { font-size: 13px; }
+
+.qf-btn:hover {
+  background: rgba(0, 255, 65, 0.14);
+  border-color: rgba(0, 255, 65, 0.6);
+  color: #eafff0;
+}
+
+.qf-btn--primary {
+  color: #02190b;
+  background: var(--color-green);
+  border-color: var(--color-green);
+  font-weight: 700;
+  box-shadow: 0 0 22px rgba(0, 255, 65, 0.28);
+}
+
+.qf-btn--primary:hover {
+  background: #6bff9a;
+  border-color: #6bff9a;
+  color: #02190b;
+}
+
+.qf-btn:disabled { opacity: 0.45; cursor: default; }
+
+.qf-input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #eafff0;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(0, 255, 65, 0.28);
+  border-radius: 6px;
+}
+
+.qf-input:focus {
+  outline: none;
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 3px rgba(0, 255, 65, 0.13);
+}
+
+/* --------------------------------------------------------------- alerts */
+
+.qf-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #ffd9a0;
+  background: rgba(255, 170, 0, 0.1);
+  border-left: 2px solid var(--color-amber);
+  border-radius: 0 6px 6px 0;
+  animation: qf-rise 320ms ease-out both;
+}
+
+.qf-alert--bad {
+  color: #ffb3c4;
+  background: rgba(255, 0, 64, 0.1);
+  border-left-color: var(--color-red);
+}
+
+.qf-alert__x {
+  flex: none;
+  background: none;
+  border: 0;
+  color: inherit;
+  opacity: 0.65;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.qf-alert__x:hover { opacity: 1; }
+
+/* ------------------------------------------------------------ onboarding */
+
+.qf-onboard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 13px;
+  padding-top: 13px;
+  border-top: 1px dashed rgba(0, 255, 65, 0.22);
+  animation: qf-rise 240ms ease-out both;
+}
+
+/* One target. Everything else is disclosed. Not full-bleed: it is a
+   button, and it should look like one. */
+.qf-onboard__hero {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px 12px 14px;
+  text-align: left;
+  font-family: inherit;
+  color: #eafff0;
+  background: rgba(0, 255, 65, 0.09);
+  border: 1px solid rgba(0, 255, 65, 0.42);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.qf-onboard__hero:hover {
+  background: rgba(0, 255, 65, 0.16);
+  border-color: var(--color-green);
+}
+
+.qf-onboard__hero.is-copied {
+  background: rgba(0, 255, 65, 0.22);
+  border-color: var(--color-green);
+}
+
+.qf-onboard__heroicon {
+  flex: none;
+  font-size: 19px;
+  color: var(--color-green);
+}
+
+.qf-onboard__herotext {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.qf-onboard__herotext strong { font-size: 14px; letter-spacing: 0.04em; }
+
+.qf-onboard__herotext small {
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(185, 230, 200, 0.72);
+}
+
+.qf-inviteqr {
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 255, 65, 0.22);
+  border-radius: 8px;
+  animation: qf-rise 200ms ease-out both;
+}
+
+/* Sized to fill the card but never past what a camera needs to resolve it. */
+.qf-inviteqr__canvas {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 6px;
+}
+
+.qf-onboard__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 2px;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: rgba(160, 210, 175, 0.72);
+  cursor: pointer;
+}
+
+.qf-onboard__more:hover { color: var(--color-green); }
+.qf-onboard__caret { font-size: 10px; }
+
+.qf-onboard__extra {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: qf-rise 200ms ease-out both;
+}
+
+.qf-onboard__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(150, 200, 165, 0.62);
+}
+
+.qf-copyrow {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid rgba(0, 255, 65, 0.22);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.qf-copyrow__text {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 11px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(200, 245, 214, 0.9);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.qf-copyrow__btn {
+  flex: none;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(200, 255, 215, 0.85);
+  background: rgba(0, 255, 65, 0.09);
+  border: 0;
+  border-left: 1px solid rgba(0, 255, 65, 0.2);
+  cursor: pointer;
+}
+
+.qf-copyrow__btn:hover { background: rgba(0, 255, 65, 0.2); color: #eafff0; }
+
+.qf-tag {
+  padding: 2px 6px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--color-amber);
+  border: 1px solid rgba(255, 170, 0, 0.4);
+  border-radius: 3px;
+}
+
+/* -------------------------------------------------------- panels / forms */
+
+/* Also inside the board — recessed rather than raised, so the form reads
+   as a drawer the board opened rather than a card stacked on top of it. */
+.qf-panel {
+  padding: 16px 18px;
+  background: rgba(0, 0, 0, 0.34);
+  border: 1px solid rgba(0, 255, 65, 0.18);
+  border-radius: 9px;
+  animation: qf-rise 280ms ease-out both;
+}
+
+.qf-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 7px 0;
+  font-size: 14px;
+  color: rgba(200, 240, 212, 0.9);
+}
+
+.qf-field + .qf-field { border-top: 1px solid rgba(0, 255, 65, 0.08); }
+.qf-field > span { flex: none; }
+
+.qf-field input[type='number'],
+.qf-field input[type='text'],
+.qf-field select {
+  width: min(280px, 55%);
+  padding: 8px 11px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #eafff0;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(0, 255, 65, 0.26);
+  border-radius: 6px;
+}
+
+.qf-field input:focus, .qf-field select:focus {
+  outline: none;
+  border-color: var(--color-green);
+}
+
+.qf-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0 2px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(190, 235, 205, 0.78);
+  cursor: pointer;
+}
+
+.qf-check input { margin-top: 2px; accent-color: var(--color-green); }
+
+/* right-aligned so the primary lands where the eye exits the form */
+.qf-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(0, 255, 65, 0.12);
+}
+
+.qf-warn {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ffd9a0;
+  background: rgba(255, 170, 0, 0.08);
+  border-left: 2px solid var(--color-amber);
+  border-radius: 0 5px 5px 0;
+}
+
+/* -------------------------------------------------------------- operator */
+
+.qf-operator__toggle {
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(140, 190, 155, 0.5);
+  cursor: pointer;
+}
+
+.qf-operator__toggle:hover { color: var(--color-green); }
+
+.qf-operator {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  max-width: 340px;
+  animation: qf-rise 240ms ease-out both;
+}
+
+.qf-operator__label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(150, 200, 165, 0.72);
+}
+
+.qf-operator__row { display: flex; gap: 8px; }
+
+/* A refused key is the one thing down here that must not read as chrome —
+   it explains why the board is locked, so it keeps its colour whether the
+   panel is open or shut. */
+.qf-operator__toggle.is-refused {
+  color: var(--color-amber);
+  opacity: 1;
+}
+
+.qf-operator__toggle.is-refused:hover { color: #ffd9a0; }
+
+.qf-operator__refused {
+  max-width: 420px;
+  margin-top: 8px;
+  padding: 9px 11px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #ffd9a0;
+  background: rgba(255, 170, 0, 0.08);
+  border-left: 2px solid var(--color-amber);
+  border-radius: 0 5px 5px 0;
+}
+
+.qf-operator__hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(140, 190, 155, 0.55);
+}
+
+.qf-operator__hint code { color: rgba(180, 225, 195, 0.78); }
+
+/* ------------------------------------------------------------- responsive */
+
+/* One column below the point where two stop being comfortable. */
+@media (max-width: 900px) {
+  .qf-landing__stage { gap: 22px; padding: 36px 22px 56px; }
+  .qf-brand__title { font-size: clamp(32px, 9vw, 48px); }
+  .qf-list { max-height: none; overflow: visible; }
+  .qf-landing {
+    background:
+      linear-gradient(180deg, rgba(0, 8, 3, 0.9) 0%, rgba(0, 8, 3, 0.74) 100%),
+      radial-gradient(120% 90% at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.62) 100%);
+  }
+}
+
+@media (max-width: 560px) {
+  .qf-row__main { align-items: flex-start; }
+  .qf-row__actions { width: 100%; }
+  .qf-field { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .qf-field input[type='number'],
+  .qf-field input[type='text'],
+  .qf-field select { width: 100%; }
+  .qf-operator__row { flex-wrap: wrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qf-landing, .qf-brand, .qf-board, .qf-row, .qf-alert,
+  .qf-onboard, .qf-onboard__extra, .qf-inviteqr, .qf-panel, .qf-operator { animation: none; }
+  .qf-brand__dot, .qf-status--lobby i { animation: none; }
+}

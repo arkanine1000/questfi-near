@@ -1,0 +1,157 @@
+{
+  "quest_id": "prefab-howling-roost",
+  "quest": {
+    "quest_name": "The Howling Roost",
+    "description": "A wind-carved gallery through the cliffside where harpies nest and something older keeps them fed. Two mouths open onto the hills — the wind uses both, and so can you.",
+    "budget_total": 25,
+    "budget_spent": 19,
+    "difficulty": "normal",
+    "entrance_position": [0, 0],
+    "entrances": [[0, 0], [0, 4]],
+    "grid": {
+      "rows": 3,
+      "cols": 5,
+      "rooms": {
+        "0,0": {
+          "row": 0,
+          "col": 0,
+          "room_type": "entrance",
+          "connections": {"S": true},
+          "description": "The west mouth of the roost, whistling a long dry note. Feathers and small bones carpet the threshold."
+        },
+        "1,0": {
+          "row": 1,
+          "col": 0,
+          "room_type": "trap_room",
+          "connections": {"N": true, "S": true},
+          "trap_dc": 12,
+          "trap_damage": 4,
+          "description": "A descending gallery strung with old snare-lines, set by someone who feared what roosts below."
+        },
+        "2,0": {
+          "row": 2,
+          "col": 0,
+          "room_type": "chamber",
+          "connections": {"N": true, "E": true},
+          "entity_ids": ["harpy_1"],
+          "description": "A nesting alcove of woven branches and stolen cloth. The nest is warm."
+        },
+        "2,1": {
+          "row": 2,
+          "col": 1,
+          "room_type": "chamber",
+          "connections": {"E": true, "W": true},
+          "entity_ids": ["harpy_2"],
+          "description": "The long perch — a natural ledge above a black drop, walkable if nothing shrieks at the wrong moment."
+        },
+        "2,2": {
+          "row": 2,
+          "col": 2,
+          "room_type": "chamber",
+          "connections": {"E": true, "W": true},
+          "entity_ids": ["wraith_1"],
+          "description": "The heart of the roost, ringed by picked-clean offerings. The harpies do not land here. Something else holds this floor."
+        },
+        "2,3": {
+          "row": 2,
+          "col": 3,
+          "room_type": "corridor",
+          "connections": {"E": true, "W": true},
+          "description": "A wind-tunnel passage, smooth as a bottle's neck. The howling is loudest here."
+        },
+        "2,4": {
+          "row": 2,
+          "col": 4,
+          "room_type": "treasure_room",
+          "connections": {"N": true, "W": true},
+          "search_dc": 11,
+          "treasure_item_ids": ["windwrap_cloak", "war_accordion", "potion_healing_r1"],
+          "description": "The magpie-hoard: everything shiny the flock ever carried home, heaped in a wind-sheltered bowl of stone."
+        },
+        "1,4": {
+          "row": 1,
+          "col": 4,
+          "room_type": "trap_room",
+          "connections": {"N": true, "S": true},
+          "trap_dc": 12,
+          "trap_damage": 4,
+          "description": "A climbing shaft with convenient handholds. Several are not stone."
+        },
+        "0,4": {
+          "row": 0,
+          "col": 4,
+          "room_type": "entrance",
+          "connections": {"S": true},
+          "description": "The east mouth of the roost, opening onto open sky and a long fall for the careless."
+        }
+      }
+    },
+    "characters": [
+      {
+        "id": "harpy_1",
+        "name": "Roost Harpy",
+        "entity_type": "hostile",
+        "hp": 9,
+        "max_hp": 9,
+        "ac": 9,
+        "abilities": {"strength": 1, "dexterity": 1},
+        "position": [2, 0],
+        "point_cost": 2,
+        "description": "A brood-guard drowsing over her nest, one yellow eye always open."
+      },
+      {
+        "id": "harpy_2",
+        "name": "Shriek Harpy",
+        "entity_type": "hostile",
+        "hp": 10,
+        "max_hp": 10,
+        "ac": 10,
+        "abilities": {"strength": 1, "dexterity": 2},
+        "position": [2, 1],
+        "point_cost": 2,
+        "description": "The flock's alarm and its first talon. Her cry has started every fight this roost has ever seen."
+      },
+      {
+        "id": "wraith_1",
+        "name": "Roost Wraith",
+        "entity_type": "hostile",
+        "hp": 14,
+        "max_hp": 14,
+        "ac": 11,
+        "abilities": {"strength": 2, "dexterity": 2},
+        "position": [2, 2],
+        "point_cost": 4,
+        "description": "The old cold thing the harpies feed. It drifts an inch above its ring of offerings, patient as weather."
+      }
+    ],
+    "items": [
+      {
+        "id": "windwrap_cloak",
+        "name": "Windwrap Cloak",
+        "item_type": "shield",
+        "ac_bonus": 1,
+        "description": "A cloak of layered grey feathers that spills blows aside the way a wing spills wind."
+      },
+      {
+        "id": "war_accordion",
+        "name": "War Accordion",
+        "item_type": "weapon",
+        "damage_bonus": 5,
+        "description": "A battered squeezebox in oxblood and brass, swung with conviction."
+      },
+      {
+        "id": "potion_healing_r1",
+        "name": "Potion of Healing",
+        "item_type": "potion",
+        "heal_amount": 8,
+        "consumable": true,
+        "description": "A small vial of red liquid that restores health."
+      }
+    ],
+    "objective": {
+      "type": "reach_room",
+      "target_id": "2,2",
+      "description": "Stand in the heart of the roost."
+    }
+  }
+}

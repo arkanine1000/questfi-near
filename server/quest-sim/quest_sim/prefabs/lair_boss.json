@@ -1,0 +1,201 @@
+{
+  "quest_id": "prefab-lair-boss",
+  "quest": {
+    "quest_name": "Lair of the Wraith Tyrant",
+    "description": "A wraith of uncommon will has bound lesser shades to its service and styles itself a tyrant. Its lair riddles the hill like a wasp nest — find the throne cavern and cut the tyrant down.",
+    "budget_total": 30,
+    "budget_spent": 24,
+    "difficulty": "normal",
+    "entrance_position": [4, 2],
+    "grid": {
+      "rows": 5,
+      "cols": 5,
+      "rooms": {
+        "4,2": {
+          "row": 4,
+          "col": 2,
+          "room_type": "entrance",
+          "connections": {"N": true},
+          "description": "A jagged fissure splits the hillside, breathing cold air that smells of storm and old stone. Every shadow inside seems to lean toward you."
+        },
+        "3,2": {
+          "row": 3,
+          "col": 2,
+          "room_type": "corridor",
+          "connections": {"N": true, "S": true, "E": true, "W": true},
+          "description": "A descending throat of rock, its walls sheathed in pale frost that does not melt."
+        },
+        "3,3": {
+          "row": 3,
+          "col": 3,
+          "room_type": "chamber",
+          "connections": {"W": true},
+          "entity_ids": ["shadow_1"],
+          "description": "A den of gnawed bones and rag nests, abandoned by whatever lived here before the shades came."
+        },
+        "3,1": {
+          "row": 3,
+          "col": 1,
+          "room_type": "trap_room",
+          "connections": {"E": true},
+          "trap_dc": 11,
+          "trap_damage": 3,
+          "search_dc": 11,
+          "treasure_item_ids": ["potion_healing_2"],
+          "description": "A side gallery littered with shattered stone. The floor sags ominously toward its center."
+        },
+        "2,2": {
+          "row": 2,
+          "col": 2,
+          "room_type": "chamber",
+          "connections": {"N": true, "S": true, "E": true, "W": true},
+          "description": "A vaulted nexus where five tunnels once met; two have collapsed. Whispers circle the dome overhead."
+        },
+        "2,1": {
+          "row": 2,
+          "col": 1,
+          "room_type": "corridor",
+          "connections": {"E": true, "W": true},
+          "description": "A worm-bored passage, slick and glistening."
+        },
+        "2,0": {
+          "row": 2,
+          "col": 0,
+          "room_type": "chamber",
+          "connections": {"N": true, "E": true},
+          "entity_ids": ["shadow_2"],
+          "description": "A hollow chamber where the frost thickens into feathered patterns on every surface."
+        },
+        "1,0": {
+          "row": 1,
+          "col": 0,
+          "room_type": "treasure_room",
+          "connections": {"S": true},
+          "treasure_item_ids": ["potion_healing_1"],
+          "description": "A plundered burial nook. What the tyrant's servants could not use, they left scattered."
+        },
+        "2,3": {
+          "row": 2,
+          "col": 3,
+          "room_type": "corridor",
+          "connections": {"E": true, "W": true},
+          "description": "A gallery of scratched tally-marks, thousands upon thousands, gouged into the stone."
+        },
+        "2,4": {
+          "row": 2,
+          "col": 4,
+          "room_type": "chamber",
+          "connections": {"N": true, "W": true},
+          "entity_ids": ["shadow_3"],
+          "description": "The remains of a camp: split packs, a cold fire ring, and no sign of the travelers themselves."
+        },
+        "1,4": {
+          "row": 1,
+          "col": 4,
+          "room_type": "treasure_room",
+          "connections": {"S": true},
+          "search_dc": 12,
+          "treasure_item_ids": ["spectral_edge"],
+          "description": "A crevice vault where the tyrant hoards what it cannot touch. Metal gleams beneath fallen scree."
+        },
+        "1,2": {
+          "row": 1,
+          "col": 2,
+          "room_type": "trap_room",
+          "connections": {"N": true, "S": true},
+          "trap_dc": 13,
+          "trap_damage": 5,
+          "description": "A warded threshold before the throne cavern. Sigils of binding flicker faintly across the floor."
+        },
+        "0,2": {
+          "row": 0,
+          "col": 2,
+          "room_type": "boss_room",
+          "connections": {"S": true},
+          "entity_ids": ["wraith_tyrant"],
+          "description": "The throne cavern. Upon a seat of fused bone and ice sits the Wraith Tyrant, crowned in frost-fire."
+        }
+      }
+    },
+    "characters": [
+      {
+        "id": "shadow_1",
+        "name": "Bound Shadow",
+        "entity_type": "hostile",
+        "hp": 9,
+        "max_hp": 9,
+        "ac": 9,
+        "abilities": {"strength": 1, "dexterity": 1},
+        "position": [3, 3],
+        "point_cost": 2,
+        "description": "A ragged scrap of living darkness dragging at an unseen chain, compelled to hold this den."
+      },
+      {
+        "id": "shadow_2",
+        "name": "Frost Shadow",
+        "entity_type": "hostile",
+        "hp": 10,
+        "max_hp": 10,
+        "ac": 10,
+        "abilities": {"strength": 1, "dexterity": 2},
+        "position": [2, 0],
+        "point_cost": 2,
+        "description": "A shade rimed in pale frost. Cold pours off it in waves; the air cracks quietly wherever it drifts."
+      },
+      {
+        "id": "shadow_3",
+        "name": "Watcher Shadow",
+        "entity_type": "hostile",
+        "hp": 11,
+        "max_hp": 11,
+        "ac": 10,
+        "abilities": {"strength": 2, "dexterity": 1},
+        "position": [2, 4],
+        "point_cost": 2,
+        "description": "A tall stain of darkness standing over the ruined camp, a sentry that has forgotten what it guards."
+      },
+      {
+        "id": "wraith_tyrant",
+        "name": "Wraith Tyrant",
+        "entity_type": "hostile",
+        "hp": 30,
+        "max_hp": 30,
+        "ac": 12,
+        "abilities": {"strength": 3, "dexterity": 2},
+        "position": [0, 2],
+        "point_cost": 10,
+        "description": "A towering shade crowned in frost-fire, its will a chain about every lesser wraith in the lair."
+      }
+    ],
+    "items": [
+      {
+        "id": "potion_healing_1",
+        "name": "Potion of Healing",
+        "item_type": "potion",
+        "heal_amount": 8,
+        "consumable": true,
+        "description": "A small vial of red liquid that restores health."
+      },
+      {
+        "id": "potion_healing_2",
+        "name": "Potion of Healing",
+        "item_type": "potion",
+        "heal_amount": 8,
+        "consumable": true,
+        "description": "A traveler's potion, dropped in flight and never recovered."
+      },
+      {
+        "id": "spectral_edge",
+        "name": "Spectral Edge",
+        "item_type": "weapon",
+        "damage_bonus": 2,
+        "description": "A sword-shaped absence in the air, cold to hold and colder to receive."
+      }
+    ],
+    "objective": {
+      "type": "defeat_boss",
+      "target_id": "wraith_tyrant",
+      "description": "Slay the Wraith Tyrant on its throne of bone and ice."
+    }
+  }
+}

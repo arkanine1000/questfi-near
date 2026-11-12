@@ -1,0 +1,210 @@
+{
+  "quest_id": "prefab-sanctum-heart",
+  "quest": {
+    "quest_name": "The Sanctum of the Blightheart",
+    "description": "The island's oldest chamber, sealed at its exact heart, where the blight was bound and where it is thinnest. The Sovereign that sleeps here wears the season's crown. Take it, and the season ends.",
+    "budget_total": 40,
+    "budget_spent": 26,
+    "difficulty": "hard",
+    "entrance_position": [
+      0,
+      2
+    ],
+    "entrances": [
+      [
+        0,
+        2
+      ],
+      [
+        4,
+        2
+      ]
+    ],
+    "grid": {
+      "rows": 5,
+      "cols": 5,
+      "rooms": {
+        "0,2": {
+          "row": 0,
+          "col": 2,
+          "room_type": "entrance",
+          "connections": {
+            "S": true
+          },
+          "description": "The north gate of the Sanctum, a slab of white stone veined black. The veins pulse, faintly, in time with nothing."
+        },
+        "1,2": {
+          "row": 1,
+          "col": 2,
+          "room_type": "chamber",
+          "connections": {
+            "N": true,
+            "S": true
+          },
+          "entity_ids": [
+            "shadow_1"
+          ],
+          "description": "The processional hall. The murals show the binding of the blight; the last panel has been scratched out from the inside."
+        },
+        "2,2": {
+          "row": 2,
+          "col": 2,
+          "room_type": "boss_room",
+          "connections": {
+            "N": true,
+            "S": true,
+            "E": true,
+            "W": true
+          },
+          "entity_ids": [
+            "aethermaw"
+          ],
+          "description": "The heart of the island: a round vault under a dome of black glass, where Aethermaw coils around its crown and breathes green fire at anything that enters."
+        },
+        "3,2": {
+          "row": 3,
+          "col": 2,
+          "room_type": "chamber",
+          "connections": {
+            "N": true,
+            "S": true
+          },
+          "entity_ids": [
+            "shadow_2"
+          ],
+          "description": "The reliquary stair, its steps worn hollow by keepers who no longer have feet."
+        },
+        "4,2": {
+          "row": 4,
+          "col": 2,
+          "room_type": "entrance",
+          "connections": {
+            "N": true
+          },
+          "description": "The south gate, twin to the north \u2014 white stone, black veins, and a threshold that hums against your teeth."
+        },
+        "2,1": {
+          "row": 2,
+          "col": 1,
+          "room_type": "treasure_room",
+          "connections": {
+            "E": true
+          },
+          "treasure_item_ids": [
+            "blightward_plate"
+          ],
+          "description": "The west vestry. On an armor stand of pale wood waits a harness of overlapping plates, untouched by the rot around it."
+        },
+        "2,3": {
+          "row": 2,
+          "col": 3,
+          "room_type": "treasure_room",
+          "connections": {
+            "W": true
+          },
+          "treasure_item_ids": [
+            "sovereigns_edge",
+            "potion_healing_s1",
+            "potion_healing_s2"
+          ],
+          "description": "The east vestry: the Sovereign's arsenal, kept oiled and ready by hands that serve whether or not the master wakes."
+        }
+      }
+    },
+    "characters": [
+      {
+        "id": "shadow_1",
+        "name": "Sanctum Shadow",
+        "entity_type": "hostile",
+        "hp": 12,
+        "max_hp": 12,
+        "ac": 10,
+        "abilities": {
+          "strength": 2,
+          "dexterity": 1
+        },
+        "position": [
+          1,
+          2
+        ],
+        "point_cost": 3,
+        "description": "A keeper of the processional, poured across the mural like a stain that noticed you."
+      },
+      {
+        "id": "shadow_2",
+        "name": "Threshold Shadow",
+        "entity_type": "hostile",
+        "hp": 12,
+        "max_hp": 12,
+        "ac": 10,
+        "abilities": {
+          "strength": 2,
+          "dexterity": 1
+        },
+        "position": [
+          3,
+          2
+        ],
+        "point_cost": 3,
+        "description": "It guards the south stair by becoming the dark between the steps."
+      },
+      {
+        "id": "aethermaw",
+        "name": "Aethermaw",
+        "entity_type": "hostile",
+        "hp": 70,
+        "max_hp": 70,
+        "ac": 15,
+        "abilities": {
+          "strength": 5,
+          "dexterity": 2
+        },
+        "damage_dice": 8,
+        "damage_bonus": 1,
+        "position": [
+          2,
+          2
+        ],
+        "point_cost": 10,
+        "description": "The bound thing at the island's heart, a green-fire dragon coiled around the season's crown. The blight outside is its breath; the season ends when it does."
+      }
+    ],
+    "items": [
+      {
+        "id": "sovereigns_edge",
+        "name": "Sovereign's Edge",
+        "item_type": "weapon",
+        "damage_bonus": 3,
+        "description": "A long pale blade that drinks the light around it. The finest steel on the island, kept for a master who no longer draws it."
+      },
+      {
+        "id": "blightward_plate",
+        "name": "Blightward Plate",
+        "item_type": "shield",
+        "ac_bonus": 2,
+        "description": "Overlapping plates etched with the binding-sigils. What the blight cannot touch, blades find slippery too."
+      },
+      {
+        "id": "potion_healing_s1",
+        "name": "Potion of Healing",
+        "item_type": "potion",
+        "heal_amount": 8,
+        "consumable": true,
+        "description": "A small vial of red liquid that restores health."
+      },
+      {
+        "id": "potion_healing_s2",
+        "name": "Potion of Healing",
+        "item_type": "potion",
+        "heal_amount": 8,
+        "consumable": true,
+        "description": "A small vial of red liquid that restores health."
+      }
+    ],
+    "objective": {
+      "type": "defeat_boss",
+      "target_id": "aethermaw",
+      "description": "Slay Aethermaw and claim the season's crown."
+    }
+  }
+}
