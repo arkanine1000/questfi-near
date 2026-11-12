@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.DS_Store
+*.local
+# raw asset drops (555 MB city, UE weapon project...) — the optimized copies live in public/
+/models/

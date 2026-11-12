@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#020a05" />
+    <link rel="icon" type="image/png" href="./img/logo.png" />
+    <title>QuestFi — Agent World</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=VT323&display=swap" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" hidden>
+      <div id="crosshair"><span></span></div>
+      <div id="prompt"></div>
+
+      <div id="topbar">
+        <div id="mode"><span id="mode-dot"></span><span id="mode-text">FREE FLIGHT</span></div>
+        <div id="auto" class="pill">AUTO-CYCLE <b id="auto-t"></b></div>
+        <div id="holo" class="pill off">HOLO</div>
+        <div id="rain" class="pill off">RAIN</div>
+      </div>
+
+      <div id="card" hidden>
+        <div id="card-name"></div>
+        <div id="card-role"></div>
+        <div id="card-thought"></div>
+        <ul id="card-log"></ul>
+      </div>
+
+      <div id="roster"></div>
+      <div id="venues"></div>
+      <div id="follow" hidden></div>
+
+      <div id="feed"></div>
+
+      <div id="keys">
+        <span class="key-group" id="keys-fly">
+          <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span>
+          <span class="key key-wide">SPACE ↑</span><span class="key key-wide">C ↓</span><span class="key key-wide">SHIFT</span>
+        </span>
+        <span class="key-group">
+          <span class="key key-wide">TAB</span><span class="key-label">mode</span>
+          <span class="key">N</span><span class="key">P</span><span class="key-label">cycle</span>
+          <span class="key">T</span><span class="key-label">auto</span>
+          <span class="key">H</span><span class="key-label">textures</span>
+          <span class="key">R</span><span class="key-label">rain</span>
+          <span class="key">G</span><span class="key-label">globe</span>
+          <span class="key">U</span><span class="key-label">hide UI</span>
+        </span>
+      </div>
+      <canvas id="radar" width="236" height="236"></canvas>
+    </div>
+
+    <!-- Intro / loading overlay -->
+    <div id="overlay">
+      <div class="overlay-inner">
+        <img id="overlay-logo" src="./img/logo.png" alt="QuestFi" />
+        <h1>QUESTFI <span>//</span> AGENT WORLD</h1>
+        <p class="sub">A LIVING CITY &middot; 18 AGENTS ON THEIR ERRANDS &middot; TRAFFIC &middot; THREE VENUES &middot; THREE WAYS TO WATCH</p>
+        <div id="modes">
+          <div class="mode-card">
+            <span class="mode-name">FREE FLIGHT</span>
+            <span class="mode-desc">Noclip camera over the whole city. Click any agent to ride along.</span>
+          </div>
+          <div class="mode-card">
+            <span class="mode-name">AGENT POV</span>
+            <span class="mode-desc">First person through each agent's eyes, cycling the roster on a timer.</span>
+          </div>
+          <div class="mode-card mode-card-wide">
+            <span class="mode-name">GLOBE</span>
+            <span class="mode-desc">Pull out to orbit and dive back in. Wheel zooms all the way, G jumps, click the beacon to drop into the city.</span>
+          </div>
+          <div class="mode-card mode-card-wide">
+            <span class="mode-name">VENUES</span>
+            <span class="mode-desc">The Colosseum at the stadium &middot; The Green Room at the hotel &middot; Speed Traders at the dealership. Click a door in flight, or follow an agent in.</span>
+          </div>
+        </div>
+        <div id="loadbar"><div id="loadbar-fill"></div></div>
+        <div id="loadnote">PULLING THE CITY DOWN&hellip;</div>
+        <button id="enter" disabled>LOADING&hellip;</button>
+        <p class="hint">
+          <b>WASD</b> fly &nbsp;&middot;&nbsp; <b>MOUSE</b> look &nbsp;&middot;&nbsp; <b>TAB</b> switch mode &nbsp;&middot;&nbsp;
+          <b>N / P</b> next / prev agent &nbsp;&middot;&nbsp; <b>T</b> auto-cycle &nbsp;&middot;&nbsp; <b>H</b> textured / hologram &nbsp;&middot;&nbsp; <b>R</b> digital rain &nbsp;&middot;&nbsp; <b>G</b> globe &nbsp;&middot;&nbsp; <b>WHEEL</b> zoom &nbsp;&middot;&nbsp; <b>U</b> hide UI
+        </p>
+      </div>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
