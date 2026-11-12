@@ -7,6 +7,7 @@ import { WEAPON_PALETTE_URL, loaderFor, weaponModelUrl, weaponSpecFor } from './
 import { getWallTilesTexture, getWallTilesNormalTexture } from './crawlerTextures';
 import { getSpriteSheetTexture } from './spriteSheet';
 import { whenTrackedLoadsSettle } from './loadTracker';
+import { publicUrl } from '../../../services/publicUrl';
 
 /**
  * The crawler's fixed asset manifest, plus the warm-up that pulls all of it
@@ -21,31 +22,31 @@ import { whenTrackedLoadsSettle } from './loadTracker';
  * the asset loads on screen instead of behind the curtain.
  */
 
-export const TORCH_MODEL_URL = '/crawler/models/torch/torch.fbx';
+export const TORCH_MODEL_URL = publicUrl('/crawler/models/torch/torch.fbx');
 // One array, one useLoader call, one cache entry — order is load-bearing.
 export const TORCH_TEXTURE_URLS = [
-  '/crawler/models/torch/basecolor.webp',
-  '/crawler/models/torch/normal.webp',
-  '/crawler/models/torch/orm.webp',
+  publicUrl('/crawler/models/torch/basecolor.webp'),
+  publicUrl('/crawler/models/torch/normal.webp'),
+  publicUrl('/crawler/models/torch/orm.webp'),
 ];
-export const COBWEB_TEXTURE_URL = '/crawler/textures/cobweb-corner.webp';
+export const COBWEB_TEXTURE_URL = publicUrl('/crawler/textures/cobweb-corner.webp');
 
-export const CHEST_MODEL_URL = '/crawler/models/chest/chest.obj';
-export const CHEST_TEXTURE_URL = '/crawler/models/chest/chest.jpg';
+export const CHEST_MODEL_URL = publicUrl('/crawler/models/chest/chest.obj');
+export const CHEST_TEXTURE_URL = publicUrl('/crawler/models/chest/chest.jpg');
 
-export const AGENT_MODEL_URL = '/crawler/models/crew.glb';
+export const AGENT_MODEL_URL = publicUrl('/crawler/models/crew.glb');
 
 export const ENEMY_SPRITES = {
-  wraith: '/crawler/enemies/wraith.webp',
-  skeleton: '/crawler/enemies/skeleton.webp',
-  shadow: '/crawler/enemies/shadow.webp',
-  harpy: '/crawler/enemies/harpy.webp',
-  mage: '/crawler/enemies/mage.webp',
+  wraith: publicUrl('/crawler/enemies/wraith.webp'),
+  skeleton: publicUrl('/crawler/enemies/skeleton.webp'),
+  shadow: publicUrl('/crawler/enemies/shadow.webp'),
+  harpy: publicUrl('/crawler/enemies/harpy.webp'),
+  mage: publicUrl('/crawler/enemies/mage.webp'),
 };
 export const ENEMY_SPRITE_KEYS = Object.keys(ENEMY_SPRITES);
 export const ENEMY_SPRITE_URLS = ENEMY_SPRITE_KEYS.map((key) => ENEMY_SPRITES[key]);
 
-export const FLAME_SHEET = { url: '/crawler/fx/flame-sheet.webp', columns: 3, rows: 1 };
+export const FLAME_SHEET = { url: publicUrl('/crawler/fx/flame-sheet.webp'), columns: 3, rows: 1 };
 
 /**
  * Bosses that render as an animated sprite sheet instead of a static
@@ -71,7 +72,7 @@ export const FLAME_SHEET = { url: '/crawler/fx/flame-sheet.webp', columns: 3, ro
  */
 export const BOSS_SHEETS = {
   aethermaw: {
-    url: '/crawler/enemies/aethermaw-sheet.webp',
+    url: publicUrl('/crawler/enemies/aethermaw-sheet.webp'),
     columns: 3,
     rows: 2,
     // row 0, packed low -> mid -> up, so a ping-pong reads as a wingbeat

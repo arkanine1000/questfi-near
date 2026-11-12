@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { trackedLoad } from './loadTracker';
+import { publicUrl } from '../../../services/publicUrl';
 
 /**
  * Procedural phosphor-grid canvas textures for the first-person crawler —
@@ -89,8 +90,8 @@ export function getCrawlerTexture(kind) {
   return textureCache.get(kind);
 }
 
-export const WALL_TILES_URL = '/crawler/textures/wall-tiles.jpg';
-export const WALL_TILES_NORMAL_URL = '/crawler/textures/wall-tiles-normal.png';
+export const WALL_TILES_URL = publicUrl('/crawler/textures/wall-tiles.jpg');
+export const WALL_TILES_NORMAL_URL = publicUrl('/crawler/textures/wall-tiles-normal.png');
 
 const wallTilesCache = new Map();
 

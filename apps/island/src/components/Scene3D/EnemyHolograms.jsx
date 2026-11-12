@@ -7,6 +7,7 @@ import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import { axialToWorld, COLORS, TERRAIN_HEIGHT_SCALE } from './worldUtils';
 import { getActiveMapId } from '../../data/maps';
 import { BOOT, bootRamp } from './bootFx';
+import { publicUrl } from '../../services/publicUrl';
 
 // Global miniaturization knob — hostiles are set dressing, not centerpieces
 const ENEMY_SCALE = 0.4;
@@ -201,8 +202,8 @@ const WYVERN = {
   bank: 0.24,
 };
 
-const WYVERN_MODEL = '/island/dragon/dragon.glb';
-const WYVERN_PALETTE = '/island/dragon/palette.png';
+const WYVERN_MODEL = publicUrl('/island/dragon/dragon.glb');
+const WYVERN_PALETTE = publicUrl('/island/dragon/palette.png');
 const WYVERN_ANIM = 'Flying_loop';
 
 /**

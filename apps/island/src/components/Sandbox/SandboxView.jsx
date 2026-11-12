@@ -13,6 +13,7 @@ import {
 import IslandScene from '../Scene3D/IslandScene';
 import { ISLAND_MASK, axialToPixel, getHexPoints } from '../HexGrid/hexUtils';
 import { useSandbox } from '../../context/SandboxContext';
+import { getArena, startArena } from '../../services/sandboxApi';
 import { IS_TV, onTvCommand, sendToTv } from '../../services/cast';
 import useTvDirector from '../../hooks/useTvDirector';
 import { axialToWorld, prefersReducedMotion } from '../Scene3D/worldUtils';
@@ -28,6 +29,7 @@ import Landing from './Landing';
 import AgentOnboarding from './AgentOnboarding';
 import { WinnerTrophy, WinnerConfetti, WinnerChan } from './WinnerCelebration';
 import { BetsProvider } from './BettingContext';
+import { publicUrl } from '../../services/publicUrl';
 import '../../styles/Sandbox.css';
 
 /** The HUD must outlive the hologram: if WebGL dies (headless CI, exotic
@@ -84,8 +86,46 @@ function MiniIsland() {
   );
 }
 
+/**
+ * The arena's view of this lobby, when the server runs it by itself: no host
+ * presses Begin there. The season starts on a countdown after the first
+ * seat, and anyone watching can start it sooner. Null for a hosted lobby, or
+ * when the server has no arena.
+ */
+function useArenaLobby(worldId) {
+  const [lobby, setLobby] = useState(null);
+  useEffect(() => {
+    if (!worldId) return undefined;
+    let live = true;
+    const read = async () => {
+      try {
+        const arena = await getArena();
+        if (live) setLobby(arena?.enabled && arena.lobby?.world_id === worldId ? arena.lobby : null);
+      } catch {
+        if (live) setLobby(null);
+      }
+    };
+    read();
+    const timer = setInterval(read, 2000);
+    return () => { live = false; clearInterval(timer); };
+  }, [worldId]);
+  return lobby;
+}
+
+function arenaWaiting(lobby) {
+  switch (lobby.waiting_for) {
+    case 'countdown': return 'The season starts in';
+    case 'running_season': return 'The season starts when the one now running has settled.';
+    case 'chain': return 'Opening the season on NEAR…';
+    default: return 'The season starts once a challenger takes a seat.';
+  }
+}
+
 function LobbyOverlay() {
   const { world, roster, canControl, invite } = useSandbox();
+  const arenaLobby = useArenaLobby(world?.world_id);
+  const [starting, setStarting] = useState(false);
+  const [startNote, setStartNote] = useState('');
   const joined = roster.length;
   const seats = world?.pool_size ?? 10;
   if (!world) return null;
@@ -97,6 +137,22 @@ function LobbyOverlay() {
     ? 'Press Begin when the roster looks right.'
     : 'Waiting on the host to begin…';
 
+  const canStartArena = arenaLobby && !IS_TV
+    && (arenaLobby.waiting_for === 'countdown' || arenaLobby.waiting_for === 'player');
+  const startNow = async () => {
+    setStarting(true);
+    setStartNote('');
+    try {
+      await startArena();
+    } catch (err) {
+      // 429: a season with no challenger ran too recently. 409: one is running.
+      setStartNote(err.status === 429
+        ? 'A season with no challenger ran a few minutes ago. Take a seat, or try again shortly.'
+        : 'The season could not be started just now.');
+      setStarting(false);
+    }
+  };
+
   // Whoever opened this lobby lands straight here, and the invite is the
   // only thing they can act on — sending them back to the landing board to
   // find their own season was the long way round. The create response's
@@ -107,7 +163,7 @@ function LobbyOverlay() {
   return (
     <div className="sbx-lobby">
       <div className="sbx-lobby__card">
-        <img className="sbx-lobby__logo" src="/brand/quest-logo.png" alt="" aria-hidden />
+        <img className="sbx-lobby__logo" src={publicUrl('/brand/quest-logo.png')} alt="" aria-hidden />
         <h1 className="sbx-lobby__title">The island is waiting</h1>
         <p className="sbx-lobby__seats">
           <strong>{joined}</strong> of <strong>{seats}</strong> challengers in the lobby
@@ -129,7 +185,24 @@ function LobbyOverlay() {
             <AgentOnboarding worldId={world.world_id} invitePath={invitePath} />
           </div>
         )}
-        <p className="sbx-lobby__waiting">{IS_TV ? 'Waiting on the host to begin…' : waiting}</p>
+        {arenaLobby ? (
+          <>
+            <p className="sbx-lobby__waiting sbx-lobby__waiting--arena">
+              {arenaWaiting(arenaLobby)}
+              {arenaLobby.waiting_for === 'countdown' && arenaLobby.starts_in_s != null && (
+                <strong className="sbx-lobby__count">{Math.ceil(arenaLobby.starts_in_s)} s</strong>
+              )}
+            </p>
+            {canStartArena && (
+              <button type="button" className="sbx-btn sbx-btn--primary sbx-lobby__start" onClick={startNow} disabled={starting}>
+                {starting ? 'Starting…' : 'Start the season now'}
+              </button>
+            )}
+            {startNote && <p className="sbx-lobby__note">{startNote}</p>}
+          </>
+        ) : (
+          <p className="sbx-lobby__waiting">{IS_TV ? 'Waiting on the host to begin…' : waiting}</p>
+        )}
       </div>
     </div>
   );
@@ -301,6 +374,23 @@ export default function SandboxView() {
     sendToTv({ type: 'follow', agentId: agent.agent_id });
   }, [setFollowedAgentId, flyToAgent]);
 
+  // ?pass=<id>: the page that opened the island (the start app, through
+  // Agent World) names the viewer's agent pass. Follow the agent carrying it
+  // as soon as it appears in the roster, once per season; any later pick is
+  // the viewer's own. In the lobby this already points the bet slip at it.
+  const passToFollow = useMemo(() => new URLSearchParams(window.location.search).get('pass'), []);
+  const passFollowedIn = useRef(null);
+  const userFollowRef = useRef(null);
+  useEffect(() => {
+    const worldId = world?.world_id;
+    if (!passToFollow || !worldId) return;
+    if (passFollowedIn.current === worldId) return;
+    const agent = roster.find((a) => a.alive && a.pass_id != null && String(a.pass_id) === passToFollow);
+    if (!agent) return;
+    passFollowedIn.current = worldId;
+    userFollowRef.current?.(agent);
+  }, [passToFollow, world?.world_id, roster]);
+
   // Underground follow hands the screen to the first-person crawler, which
   // brings its own HUD; on the surface the island map stays in view and the
   // overworld overlays (thought toasts) do that job instead.
@@ -339,6 +429,7 @@ export default function SandboxView() {
     if (directorOn) noteManual();
     handleFollow(agent);
   }, [directorOn, noteManual, handleFollow]);
+  userFollowRef.current = userFollow;
   const userDeselect = useCallback(() => {
     if (directorOn) noteManual();
     handleDeselect();
@@ -432,6 +523,9 @@ export default function SandboxView() {
     'sbx-root',
     IS_TV ? 'sbx-root--tv' : '',
     crawlerActive ? 'sbx-root--crawler' : '',
+    // the finale card is up: the top bar and the market drawer stay above
+    // its dimming, usable (the drawer is where winnings are claimed)
+    status === 'ready' && world?.phase === 'finished' ? 'sbx-root--finale' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -469,7 +563,8 @@ export default function SandboxView() {
             directorOn={directorOn}
             onToggleDirector={() => setDirectorOn((v) => !v)}
           />
-          {world.phase !== 'lobby' && <MarketPanel onFollow={userFollow} />}
+          {/* the drawer decides for itself whether the lobby gets a market */}
+          <MarketPanel onFollow={userFollow} />
           {world.phase === 'lobby' && <LobbyOverlay />}
           {/* the caster works both desks: god view AND over the crawler —
               and her name-drops are camera cues (click to follow). During
@@ -558,7 +653,7 @@ export default function SandboxView() {
       {/* Phones held upright get a polite bounce — the broadcast is
           widescreen. Pure CSS gate; the installed PWA locks landscape. */}
       <div className="sbx-rotate-gate" role="status">
-        <img src="/brand/quest-logo.png" alt="" />
+        <img src={publicUrl('/brand/quest-logo.png')} alt="" />
         <p>
           Rotate your device
           <span>the island broadcasts in widescreen</span>

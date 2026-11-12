@@ -576,8 +576,8 @@
   gap: 2px 12px;
   padding: 10px 14px;
   font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.06em;
+  font-size: 14px;
+  letter-spacing: 0.04em;
   color: rgba(220, 255, 230, 0.92);
   background: rgba(1, 14, 6, 0.88);
   border: 1px solid rgba(255, 170, 0, 0.35);
@@ -728,13 +728,13 @@
 }
 
 .sbx-chip__odds {
-  font-size: 11px;
+  font-size: 13px;
   color: #ffd27a;
   font-variant-numeric: tabular-nums;
 }
 
 .sbx-chip__stake {
-  font-size: 9px;
+  font-size: 13px;
   color: #7fdcff;
   font-variant-numeric: tabular-nums;
 }
@@ -742,7 +742,7 @@
 .sbx-chip__bets {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   max-height: 0;
   overflow: hidden;
   padding: 0 10px;
@@ -750,30 +750,36 @@
   transition: max-height 160ms ease, opacity 160ms ease, padding 160ms ease;
 }
 
+/* always open on the followed agent; hover and focus open it on the rest */
+.sbx-chipwrap.is-followed .sbx-chip__bets,
 .sbx-chipwrap:hover .sbx-chip__bets,
 .sbx-chipwrap:focus-within .sbx-chip__bets {
-  max-height: 30px;
+  max-height: 64px;
   opacity: 1;
-  padding: 4px 10px 2px;
+  padding: 6px 10px 4px;
 }
 
 .sbx-chip__betlabel {
-  font-size: 8px;
-  letter-spacing: 0.18em;
+  flex: none;
+  font-size: 13px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(255, 210, 122, 0.55);
+  color: #ffd27a;
   margin-right: 2px;
 }
 
 .sbx-chip__bets button {
   appearance: none;
+  flex: 1;
+  min-height: 44px;
   font-family: var(--font-mono);
-  font-size: 8px;
-  padding: 2px 7px;
-  color: rgba(255, 220, 160, 0.9);
-  background: rgba(255, 170, 0, 0.08);
-  border: 1px solid rgba(255, 170, 0, 0.3);
-  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 0 8px;
+  color: #fff3d6;
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.5);
+  border-radius: 6px;
   cursor: pointer;
   transition: background 120ms ease;
 }
@@ -834,11 +840,14 @@
   text-align: center;
   background: radial-gradient(ellipse at center, rgba(0, 20, 8, 0.2), rgba(0, 0, 0, 0.55));
   padding: 24px;
+  /* a wash over the island; only the card in it takes clicks */
+  pointer-events: none;
 }
 
 /* The content sits on its own darkened glass card — the full-viewport
    wash alone left ring/title/seats floating illegibly over the island. */
 .sbx-lobby__card {
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -901,6 +910,33 @@
   font-size: 13px;
   letter-spacing: 0.1em;
   color: rgba(0, 255, 65, 0.7);
+}
+
+.sbx-lobby__waiting--arena {
+  font-size: 15px;
+  color: #c8ffd2;
+}
+
+.sbx-lobby__count {
+  margin-left: 10px;
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  color: #eafff1;
+  text-shadow: 0 0 16px rgba(0, 255, 65, 0.6);
+}
+
+.sbx-lobby__start {
+  padding: 10px 22px;
+  font-size: 14px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sbx-lobby__note {
+  max-width: 420px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #ffd678;
 }
 
 .sbx-lobby__hint {
@@ -1167,13 +1203,22 @@ body:has(.crawler-hud) .sbx-promptchan {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* centred in the room right of the market drawer (14 + 356px) once the
+     window is too narrow to centre it 20px clear of it (the card is at
+     most 460px) */
+  padding-left: clamp(0px, calc(1240px - 100vw), 390px);
   background: rgba(0, 0, 0, 0.62);
   animation: sbx-fade 400ms ease;
+  /* the wash is decoration: the drawer, the top bar and the island under
+     it stay usable; only the card takes clicks */
+  pointer-events: none;
 }
 
 @keyframes sbx-fade { from { opacity: 0; } to { opacity: 1; } }
 
 .sbx-winner__card {
+  pointer-events: auto;
+  max-width: 460px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1220,6 +1265,8 @@ body:has(.crawler-hud) .sbx-promptchan {
 .sbx-promptchan--finale { z-index: 934; }
 
 .sbx-winner__name {
+  overflow-wrap: anywhere;
+  text-align: center;
   font-size: 26px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -1589,8 +1636,8 @@ body:has(.crawler-hud) .sbx-promptchan {
 
 .sbx-bets__payout {
   margin-bottom: 8px;
-  padding: 7px 10px;
-  font-size: 11px;
+  padding: 8px 11px;
+  font-size: 14px;
   border-radius: 5px;
   color: rgba(255, 190, 190, 0.9);
   background: rgba(40, 4, 10, 0.6);
@@ -1602,6 +1649,605 @@ body:has(.crawler-hud) .sbx-promptchan {
   background: rgba(40, 28, 2, 0.7);
   border-left-color: var(--color-amber);
   text-shadow: 0 0 10px rgba(255, 170, 0, 0.45);
+}
+
+/* ── The market on chain (testnet NEAR) ──
+   Recorded and replayed as compressed video, so every number a bettor acts
+   on is large and bright, and nothing waits behind a hover. */
+
+/* While the finale card is up (.sbx-winner, 930), the market drawer, where
+   winnings are claimed, and the top bar, with the account, stay above its
+   dimming. The victory cameo sits at 934. */
+.sbx-root--finale .sbx-market__handle { z-index: 934; }
+.sbx-root--finale .sbx-roster { z-index: 935; }
+.sbx-root--finale .sbx-topbar { z-index: 936; }
+
+.sbx-market__note {
+  padding: 8px 11px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: #ffe2a8;
+  background: rgba(40, 28, 2, 0.7);
+  border-left: 2px solid var(--color-amber);
+  border-radius: 5px;
+}
+
+.sbx-chipwrap.is-chain .sbx-chip__odds { font-size: 14px; font-weight: 700; }
+
+.sbx-chipwrap.is-chain .sbx-chip__stake {
+  font-size: 14px;
+  font-weight: 700;
+  color: #9fe6ff;
+}
+
+.sbx-chip__nopass {
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  color: rgba(225, 235, 230, 0.85);
+  border: 1px solid rgba(225, 235, 230, 0.35);
+  border-radius: 4px;
+}
+
+.sbx-txlink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 10px;
+  font-size: 14px;
+  color: #9fe6ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid rgba(0, 191, 255, 0.4);
+  border-radius: 6px;
+}
+
+.sbx-txlink:hover { color: #d6f6ff; }
+
+/* the bet slip: the followed agent, three stakes, what each returns */
+.sbx-slip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 13px 12px;
+  font-family: var(--font-mono);
+  background: rgba(1, 14, 6, 0.9);
+  border: 1px solid rgba(255, 170, 0, 0.4);
+  border-left: 3px solid var(--chip-color, rgba(255, 170, 0, 0.6));
+  border-radius: 9px;
+  backdrop-filter: blur(6px);
+}
+
+.sbx-slip__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sbx-slip__label {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ffd27a;
+}
+
+.sbx-slip__head i {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--chip-color);
+  box-shadow: 0 0 8px var(--chip-color);
+}
+
+.sbx-slip__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  color: #f0fff4;
+}
+
+.sbx-slip__odds {
+  margin-left: auto;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffd27a;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-slip__figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.sbx-slip__figures div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sbx-slip__figures span {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: rgba(225, 245, 230, 0.9);
+}
+
+.sbx-slip__figures b {
+  font-size: 18px;
+  color: #f0fff4;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-slip__figures b.is-mine { color: #9fe6ff; }
+.sbx-slip__figures b.is-win { color: #ffd27a; }
+
+.sbx-slip__caption {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: #ffe2a8;
+}
+
+.sbx-slip__stakes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.sbx-slip__stakes button {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  min-height: 60px;
+  padding: 8px 2px;
+  font-family: var(--font-mono);
+  color: #fff3d6;
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.55);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.sbx-slip__stakes button:hover:not(:disabled) {
+  background: rgba(255, 170, 0, 0.26);
+  box-shadow: 0 0 14px rgba(255, 170, 0, 0.3);
+}
+
+.sbx-slip__stakes button:disabled { opacity: 0.4; cursor: default; }
+
+.sbx-slip__stake {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-slip__stake.is-busy { font-size: 16px; }
+
+.sbx-slip__stake small {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffe2a8;
+}
+
+.sbx-slip__quote {
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffe2a8;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* betting is open, but not for long */
+.sbx-slip__soon {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #ffd27a;
+}
+
+/* betting is closed: as prominent as the stake buttons it replaces */
+.sbx-slip__closed {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-height: 60px;
+  padding: 10px 14px;
+  background: rgba(60, 4, 14, 0.7);
+  border: 1px solid rgba(255, 64, 96, 0.7);
+  border-radius: 6px;
+}
+
+.sbx-slip__closed strong {
+  font-size: 20px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ffe0e4;
+}
+
+.sbx-slip__closed span {
+  font-size: 14px;
+  line-height: 1.4;
+  color: #ffd6dc;
+}
+
+/* no test account yet: one large way in, in place of the stakes */
+.sbx-slip__join {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sbx-slip__account {
+  appearance: none;
+  min-height: 60px;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff3d6;
+  background: rgba(255, 170, 0, 0.24);
+  border: 1px solid rgba(255, 170, 0, 0.85);
+  border-radius: 7px;
+  box-shadow: 0 0 20px rgba(255, 170, 0, 0.28);
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.sbx-slip__account:hover:not(:disabled) {
+  background: rgba(255, 170, 0, 0.38);
+  box-shadow: 0 0 26px rgba(255, 170, 0, 0.45);
+}
+
+.sbx-slip__account:disabled { opacity: 0.7; cursor: default; }
+
+.sbx-slip__msg {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: rgba(225, 245, 230, 0.9);
+}
+
+.sbx-slip__notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 7px 9px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #e8fff0;
+  background: rgba(0, 255, 65, 0.08);
+  border-left: 2px solid rgba(0, 255, 65, 0.6);
+  border-radius: 5px;
+}
+
+.sbx-slip__notice > span { flex: 1 1 180px; }
+
+.sbx-slip__notice.is-bad {
+  color: #ffe0e4;
+  background: rgba(60, 4, 14, 0.75);
+  border-left-color: var(--color-red);
+}
+
+.sbx-slip__dismiss {
+  appearance: none;
+  min-width: 40px;
+  min-height: 40px;
+  margin-left: auto;
+  padding: 0 4px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+/* the chain ledger: three figures, each a label over a bright number */
+.sbx-market__ledgerrow--chain {
+  gap: 4px 18px;
+  padding: 9px 14px;
+}
+
+.sbx-market__fig {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sbx-market__fig small {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 220, 160, 0.85);
+}
+
+.sbx-market__fig b {
+  font-size: 20px;
+  color: #f4fff6;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-market__ledgerrow .sbx-bets__net,
+.sbx-market__ledgerrow .sbx-bets__practice {
+  align-self: center;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: #ffe2a8;
+}
+
+.sbx-payout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-bottom: 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.sbx-payout__why { flex-basis: 100%; }
+
+.sbx-payout__amount {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffe9b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-payout__claim {
+  margin-left: auto;
+  min-height: 52px;
+  padding: 10px 28px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff3d6;
+  background: rgba(255, 170, 0, 0.28);
+  border-color: rgba(255, 170, 0, 0.8);
+  box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
+}
+
+.sbx-payout__claim:hover:not(:disabled) {
+  background: rgba(255, 170, 0, 0.42);
+  border-color: var(--color-amber);
+  box-shadow: 0 0 26px rgba(255, 170, 0, 0.45);
+}
+
+.sbx-payout__claim:disabled { opacity: 0.6; cursor: default; }
+
+/* ON CHAIN: the season's newest transactions, the game's and the viewer's */
+.sbx-onchain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 12px 10px;
+  font-family: var(--font-mono);
+  background: rgba(1, 14, 6, 0.86);
+  border: 1px solid rgba(0, 255, 65, 0.22);
+  border-radius: 9px;
+  backdrop-filter: blur(6px);
+}
+
+.sbx-onchain__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(0, 255, 65, 0.85);
+}
+
+.sbx-onchain__status {
+  padding: 1px 8px;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: #e8fff0;
+  border: 1px solid rgba(0, 255, 65, 0.4);
+  border-radius: 999px;
+}
+
+.sbx-onchain__warn,
+.sbx-onchain__empty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: #ffe2a8;
+}
+
+.sbx-onchain__empty { color: rgba(215, 240, 222, 0.75); }
+
+.sbx-onchain__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 4px;
+  font-size: 13px;
+  color: #e3fbe9;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.sbx-onchain__row:hover { background: rgba(0, 255, 65, 0.08); }
+
+.sbx-onchain__who {
+  flex: none;
+  width: 3.4em;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(0, 255, 65, 0.8);
+}
+
+.sbx-onchain__row.is-mine .sbx-onchain__who { color: #9fe6ff; }
+
+.sbx-onchain__method {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sbx-onchain__fail {
+  flex: none;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ff8a9c;
+}
+
+.sbx-onchain__row.is-failed .sbx-onchain__method { color: #ffc2cc; }
+
+.sbx-onchain__hash {
+  flex: none;
+  color: #9fe6ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the test account in the top bar */
+.sbx-account {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sbx-account__pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 14px;
+  font-family: var(--font-mono);
+  color: #e8fff0;
+  text-decoration: none;
+  background: rgba(1, 14, 6, 0.7);
+  border: 1px solid rgba(255, 170, 0, 0.45);
+  border-radius: 999px;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.sbx-account__pill:hover {
+  border-color: var(--color-amber);
+  box-shadow: 0 0 16px rgba(255, 170, 0, 0.25);
+}
+
+.sbx-account__net {
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ffd27a;
+}
+
+.sbx-account__id {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.sbx-account__bal {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff3d6;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-account__bal small {
+  font-size: 13px;
+  font-weight: 400;
+  color: #ffd27a;
+}
+
+.sbx-account__under {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: max-content;
+  max-width: min(420px, 80vw);
+}
+
+/* the top bar's own buttons shrink in the compact tier; this one stays
+   at a size a finger and a compressed video can both find */
+.sbx-account .sbx-btn {
+  min-height: 40px;
+  font-size: 13px;
+}
+
+.sbx-account__made,
+.sbx-account__error {
+  margin: 0;
+  padding: 7px 11px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.4;
+  border-radius: 7px;
+  backdrop-filter: blur(6px);
+}
+
+.sbx-account__made {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  color: #d6f6ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: rgba(1, 14, 6, 0.9);
+  border: 1px solid rgba(0, 191, 255, 0.4);
+}
+
+.sbx-account__error {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: #ffe0e4;
+  background: rgba(40, 3, 10, 0.92);
+  border: 1px solid rgba(255, 0, 64, 0.55);
+}
+
+.sbx-account__error button {
+  appearance: none;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 2px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  opacity: 0.75;
+  cursor: pointer;
 }
 
 /* ── Descent interstitial ── */
@@ -1755,6 +2401,7 @@ body:has(.crawler-hud) .sbx-promptchan {
   position: fixed;
   inset: 0;
   z-index: 940;
+  pointer-events: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1829,6 +2476,7 @@ body:has(.crawler-hud) .sbx-promptchan {
   .sbx-btn { font-size: 11px; padding: 6px 12px; }
   .sbx-btn--icon { padding: 6px 9px; }
   .sbx-speed__step { font-size: 10px; padding: 5px 9px; }
+  .sbx-account__pill { gap: 8px; padding: 3px 11px; }
 
   /* the market rail shrinks as one piece — every internal proportion
      was tuned at full size, so a uniform scale beats re-tuning */
@@ -1840,6 +2488,17 @@ body:has(.crawler-hud) .sbx-promptchan {
   }
 
   .sbx-market__handle { top: 58px; }
+
+  /* the NEAR market keeps more of its size: its stakes and figures are
+     what a bettor reads and presses */
+  .sbx-roster.is-chain {
+    --rail-scale: 0.88;
+    max-height: calc((100vh - 58px) / 0.88);
+  }
+
+  /* the finale card clears the (smaller) drawer here too: the NEAR
+     drawer ends at 8 + 356 × 0.88 ≈ 321px, the card starts 20px past it */
+  .sbx-winner { padding-left: clamp(0px, calc(1142px - 100vw), 340px); }
 
   /* the caster and her bubble come down to cameo size */
   .sbx-promptchan { right: 6px; }

@@ -24,6 +24,7 @@ import { listWorlds, whoami } from '../../services/sandboxApi';
 import { getAdminKey, getHostKey, setAdminKey } from '../../services/hostKeys';
 import AgentOnboarding from './AgentOnboarding';
 import OpenLobbyForm from './OpenLobbyForm';
+import { publicUrl } from '../../services/publicUrl';
 import '../../styles/Landing.css';
 
 const POLL_MS = 5000;
@@ -278,7 +279,7 @@ export default function Landing() {
           {/* ---- masthead ---- */}
           <header className="qf-brand">
             <div className="qf-brand__lockup">
-              <img className="qf-brand__mark" src="/brand/quest-logo.png" alt="" aria-hidden />
+              <img className="qf-brand__mark" src={publicUrl('/brand/quest-logo.png')} alt="" aria-hidden />
               <span className="qf-brand__word">QUESTFI</span>
             </div>
             <h1 className="qf-brand__title">Agent Island</h1>

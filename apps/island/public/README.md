@@ -1,8 +1,11 @@
 # `public/` — static assets
 
-Everything here is copied to the deploy root verbatim and referenced by
-**root-absolute URL string** (`/crawler/textures/wall-tiles.jpg`). Nothing here is
-imported by the bundler.
+Everything here is copied to the build's base verbatim (the deploy root, or
+`/island/` in the hosted site) and named by its **root-absolute path**
+(`/crawler/textures/wall-tiles.jpg`). Code never uses that path bare: it goes
+through `publicUrl()` (`src/services/publicUrl.js`), which puts the base in front,
+so the app works at a sub-path as well as at the root. Nothing here is imported by
+the bundler. In `index.html`, Vite adds the base itself.
 
 ## Layout
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CastLine } from './PromptChan';
+import { publicUrl } from '../../services/publicUrl';
 
 // Non-intrusive Prompt-chan presence for crawler view. Her full booth
 // (sprite animation, TTS) is an overworld thing — this is just a small
@@ -51,7 +52,7 @@ export default function CrawlerPromptChanBlip({ commentary, roster, onFollow }) 
         title="Prompt-chan"
         aria-label={unread ? "Show Prompt-chan's new message" : "Show Prompt-chan's last message"}
       >
-        <img src="/prompt-chan/talk-1.webp" alt="" draggable="false" />
+        <img src={publicUrl('/prompt-chan/talk-1.webp')} alt="" draggable="false" />
       </button>
     </div>
   );
