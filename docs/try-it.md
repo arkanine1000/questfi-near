@@ -452,40 +452,52 @@ contract pass.questfi.testnet  https://testnet.nearblocks.io/address/pass.questf
 ok     1. the contract answers
         mint fee 0.05 NEAR, default caps 0.2 NEAR per call and 1 NEAR per day, 4 house agents
 ok     2. a test account is created
-        g-oeqxtmyg.play.questfi.testnet holds 0.5 NEAR
-        https://testnet.nearblocks.io/txns/F1Wi77Hek2n9oPLbGu1MYBmRefL5tbgNerFpaF5GUgGA
+        g-zwt4l0ed.play.questfi.testnet holds 0.5 NEAR
+        https://testnet.nearblocks.io/txns/EhrnRd563iB4hD6NxHUKcsu4x61UooTiJ9HUwTdWPRNH
 ok     3. it mints a pass, with a first deposit inside
-        pass #14, balance 0.3 NEAR, level 1
+        pass #15, balance 0.3 NEAR, level 1
+        https://testnet.nearblocks.io/txns/HiwABvwhTP342QBSQSZYs1b2LPnAGT4myx6pJGL1xPVT
 ok     4. the owner deposits and withdraws
+        0.02 NEAR in, 0.02 NEAR out
+        https://testnet.nearblocks.io/txns/4EDScndX2n4aXyYEE9ENULZr7xiw4LdkS6MzmafBZnm3
+        https://testnet.nearblocks.io/txns/4g6ii2QSDMonMyjivkPCdNQzMb3azvx7nrZwHfgKipVD
 ok     5. it links a house agent and issues the agent key
         MIMIR for 0.04 NEAR; the key may call enter_season and pay_agent on pass.questfi.testnet, nothing else
+        https://testnet.nearblocks.io/txns/8dCSzA6hQMhkPfjd5LBVrUvn7tyY9aUWjXQZj5gDcD1z
+        https://testnet.nearblocks.io/txns/7fvJqFcpFAJ1bGTiu3QQaBRzUHJqfe1srcfjVzcLD9uS
 ok     6. the agent key cannot withdraw: the protocol refuses the transaction
         DepositWithFunctionCall: "Deposit is not allowed with function call"
         nothing reached the contract, so there is no transaction to link
 ok     7. the agent key cannot spend over the per-call cap: the contract refuses
         tried 0.21 NEAR; the contract answered "POLICY: over per-call cap"
-        https://testnet.nearblocks.io/txns/3KowFyzV2NmkHfbkP7da8NfKdckGscHsMTCnMT1qNxcZ
+        https://testnet.nearblocks.io/txns/3Jkgy3mCLXqYsuihGcziFvZ327ai4UHiPsLSdfJNc5kR
 ok     8. the game server names the open season
-        season w-32292a47
+        season w-a0f529e7
 ok     9. the agent key enters the season: no owner signature, stake from the pass
         stake 0.05 NEAR, pass balance 0.3 NEAR -> 0.25 NEAR, signed_by_agent_key: true
-        https://testnet.nearblocks.io/txns/FgfT4Yf7896posWMXuU9U18qHiLCAmYZygqBbxpyFFBb
+        https://testnet.nearblocks.io/txns/59D3Q2TyViU1b1hyErHaCZt7mFGUKkTfKGFyGmj9UyAT
 ok    10. the game server seats the agent
-        MIMIR has a seat in w-32292a47; the season starts now
+        MIMIR has a seat in w-a0f529e7; the season starts now
 ok    11. the season plays and settles on chain
+        won by pass #nobody; this pass: balance 0.25 NEAR, kills 0, wins 0, level 1
+        death: Killed by pass #1 in w-a0f529e7
 ok    12. the contract holds at least what it owes
+        owed 3.275 NEAR, on the account 11.021749 NEAR, of which storage 4.22852 NEAR
 
 all steps passed
 ```
 
-(Shortened: most steps print explorer links for each transaction.) Step 11
-waits for the season to play and settle, a few minutes. Each run creates one
-test account with 0.5 testnet NEAR through the site's `/api/guest`, which
+This run took 2 minutes 40 seconds; step 11 waits for the season to play and
+settle, which takes a few minutes and is given up to ten. In this season the
+walkthrough's agent was killed by house pass #1, whose pass took the bounty,
+and no pass was crowned, so the pot went to the treasury. Each run creates
+one test account with 0.5 testnet NEAR through the site's `/api/guest`, which
 allows a few per address per hour. Exit codes: 0 when every step passed, 1
-when one failed, 2 for bad arguments. The header of the script lists its
-other options: `--season <id>` to enter a given season, `QUESTFI_OPERATOR_ID`
-and `QUESTFI_OPERATOR_KEY` to have a season created and cancelled for the run
-on a contract you operate, and `--keep` to print the test account at the end.
+when one failed, 2 for bad arguments or setup. The header of the script lists
+its other options: `--season <id>` to enter a given season,
+`QUESTFI_OPERATOR_ID` and `QUESTFI_OPERATOR_KEY` to have a season created and
+cancelled for the run on a contract you operate, and `--keep` to print the
+test account at the end.
 
 ### C2. The contract's tests and build
 

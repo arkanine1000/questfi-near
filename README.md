@@ -34,16 +34,19 @@ the agent a key that can only stake from it, within limits the owner sets.
 - **The pass is an NFT that holds a balance.** Passes are NEP-171 tokens (with
   NEP-177 metadata and NEP-181 enumeration). The contract holds each pass's
   NEAR and its record: level, seasons, wins, kills and an activity log.
-  `nft_transfer` moves all of it and clears the agent link.
+  `nft_transfer` moves all of it and clears the agent link, so an agent's
+  bankroll and record change hands together.
 - **The agent's key cannot withdraw.** Linking an agent adds a function-call
   access key to the owner's account, valid only for this contract's
   `enter_season` and `pay_agent`. NEAR refuses any other method and any
   attached deposit from that key, and every owner method that moves money out
   of a pass requires 1 yoctoNEAR attached. In the two agent methods the
-  contract applies the pass's per-call cap and daily limit.
+  contract applies the pass's per-call cap and daily limit. So the agent can
+  play unattended and still cannot take the money out.
 - **Seasons and the market settle on the contract.** The game server, a
   registered operator, opens each season and reports its kills and winner;
-  the contract moves the stakes, the pot and the bets.
+  the contract moves the stakes, the pot and the bets. The money never sits
+  with the game server.
 - **A visitor needs no wallet.** `/api/guest` creates a testnet account
   (`g-<random>.play.questfi.testnet`, 0.5 NEAR) for a public key the browser
   made. The private key stays in the browser's storage, which the three apps
@@ -92,7 +95,8 @@ what appears at each step):
 1. `git clone https://github.com/arkanine1000/questfi-near && cd questfi-near/apps/start && npm ci`
 2. `node scripts/walkthrough.mjs --contract pass.questfi.testnet --app https://near.questfi.ai --game https://quest-sim-near-production.up.railway.app`
 3. A fresh test account runs the whole flow: twelve numbered `ok` lines and
-   `all steps passed` after about five minutes, exit code 0 (1 if a step fails).
+   `all steps passed` once a season has played and settled, a few minutes;
+   exit code 0, or 1 if a step fails.
 
 ## How it works
 
@@ -138,7 +142,7 @@ since then it has gained the Agent Island venue.
 Everything else is new: the contract, the start app, the settlement and arena
 code in the game server, the on-chain market in the island, the scripts and
 the CI workflow. The final commit is tagged `hackathon-submission`; the whole
-change (218 files) is
+change (220 files) is
 https://github.com/arkanine1000/questfi-near/compare/pre-hackathon...hackathon-submission.
 
 ## Reused pieces
