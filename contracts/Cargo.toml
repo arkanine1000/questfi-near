@@ -1,0 +1,25 @@
+[workspace]
+members = ["questfi", "integration-tests"]
+default-members = ["questfi"]
+resolver = "2"
+
+[workspace.package]
+# version and repository end up in the contract's NEP-330 metadata
+# (`contract_source_metadata`): cargo-near reads them through cargo metadata.
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/arkanine1000/questfi-near"
+
+[workspace.dependencies]
+near-sdk = "5.30"
+near-contract-standards = "5.30"
+
+# Size-optimised, as in cargo-near's contract template, with arithmetic
+# overflow checked at run time.
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true
