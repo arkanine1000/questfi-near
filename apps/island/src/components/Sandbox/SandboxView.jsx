@@ -469,7 +469,8 @@ export default function SandboxView() {
             directorOn={directorOn}
             onToggleDirector={() => setDirectorOn((v) => !v)}
           />
-          {world.phase !== 'lobby' && <MarketPanel onFollow={userFollow} />}
+          {/* the drawer decides for itself whether the lobby gets a market */}
+          <MarketPanel onFollow={userFollow} />
           {world.phase === 'lobby' && <LobbyOverlay />}
           {/* the caster works both desks: god view AND over the crawler —
               and her name-drops are camera cues (click to follow). During

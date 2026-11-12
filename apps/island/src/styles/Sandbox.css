@@ -1604,6 +1604,386 @@ body:has(.crawler-hud) .sbx-promptchan {
   text-shadow: 0 0 10px rgba(255, 170, 0, 0.45);
 }
 
+/* ── The market on chain (testnet NEAR) ──
+   Recorded and replayed as compressed video, so every number a bettor acts
+   on is large and bright, and nothing waits behind a hover. */
+
+/* above the finale's wash (.sbx-winner), where the CLAIM button lives */
+.sbx-market.is-finale { z-index: 935; }
+.sbx-market__handle.is-finale { z-index: 934; }
+
+.sbx-market__note {
+  padding: 7px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #ffe2a8;
+  background: rgba(40, 28, 2, 0.7);
+  border-left: 2px solid var(--color-amber);
+  border-radius: 5px;
+}
+
+.sbx-chipwrap.is-chain .sbx-chip__odds { font-size: 13px; font-weight: 700; }
+
+.sbx-chipwrap.is-chain .sbx-chip__stake {
+  font-size: 12px;
+  font-weight: 700;
+  color: #9fe6ff;
+}
+
+.sbx-chip__nopass {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  color: rgba(225, 235, 230, 0.85);
+  border: 1px solid rgba(225, 235, 230, 0.35);
+  border-radius: 4px;
+}
+
+.sbx-txlink {
+  color: #9fe6ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-txlink:hover { color: #d6f6ff; }
+
+/* the bet slip: the followed agent, three stakes, what each returns */
+.sbx-slip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 11px 13px 12px;
+  font-family: var(--font-mono);
+  background: rgba(1, 14, 6, 0.9);
+  border: 1px solid rgba(255, 170, 0, 0.4);
+  border-left: 3px solid var(--chip-color, rgba(255, 170, 0, 0.6));
+  border-radius: 9px;
+  backdrop-filter: blur(6px);
+}
+
+.sbx-slip__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sbx-slip__label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ffd27a;
+}
+
+.sbx-slip__head i {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--chip-color);
+  box-shadow: 0 0 8px var(--chip-color);
+}
+
+.sbx-slip__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 17px;
+  letter-spacing: 0.06em;
+  color: #f0fff4;
+}
+
+.sbx-slip__odds {
+  margin-left: auto;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffd27a;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-slip__figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.sbx-slip__figures div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sbx-slip__figures span {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(215, 240, 222, 0.8);
+}
+
+.sbx-slip__figures b {
+  font-size: 16px;
+  color: #f0fff4;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-slip__figures b.is-mine { color: #9fe6ff; }
+.sbx-slip__figures b.is-win { color: #ffd27a; }
+
+.sbx-slip__caption {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 220, 160, 0.85);
+}
+
+.sbx-slip__stakes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.sbx-slip__stakes button {
+  appearance: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  font-family: var(--font-mono);
+  color: #fff3d6;
+  background: rgba(255, 170, 0, 0.12);
+  border: 1px solid rgba(255, 170, 0, 0.55);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 120ms ease, box-shadow 120ms ease;
+}
+
+.sbx-slip__stakes button:hover:not(:disabled) {
+  background: rgba(255, 170, 0, 0.26);
+  box-shadow: 0 0 14px rgba(255, 170, 0, 0.3);
+}
+
+.sbx-slip__stakes button:disabled { opacity: 0.4; cursor: default; }
+
+.sbx-slip__stake {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-slip__quote {
+  font-size: 12px;
+  color: #ffd27a;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-slip__msg {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: rgba(225, 245, 230, 0.9);
+}
+
+.sbx-slip__notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 7px 9px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #e8fff0;
+  background: rgba(0, 255, 65, 0.08);
+  border-left: 2px solid rgba(0, 255, 65, 0.6);
+  border-radius: 5px;
+}
+
+.sbx-slip__notice > span { flex: 1 1 180px; }
+
+.sbx-slip__notice.is-bad {
+  color: #ffe0e4;
+  background: rgba(60, 4, 14, 0.75);
+  border-left-color: var(--color-red);
+}
+
+.sbx-slip__dismiss {
+  appearance: none;
+  margin-left: auto;
+  padding: 0 4px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+/* the chain ledger: three figures, each a label over a bright number */
+.sbx-market__ledgerrow--chain {
+  gap: 4px 18px;
+  padding: 9px 14px;
+}
+
+.sbx-market__fig {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sbx-market__fig small {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 220, 160, 0.85);
+}
+
+.sbx-market__fig b {
+  font-size: 17px;
+  color: #f4fff6;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-market__ledgerrow .sbx-bets__net {
+  align-self: center;
+  font-size: 10px;
+  color: rgba(255, 220, 160, 0.9);
+}
+
+.sbx-payout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-bottom: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.sbx-payout__why { flex-basis: 100%; }
+
+.sbx-payout__amount {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffe9b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-payout__claim {
+  margin-left: auto;
+  padding: 8px 20px;
+  font-size: 14px;
+  color: #fff3d6;
+  background: rgba(255, 170, 0, 0.28);
+  border-color: rgba(255, 170, 0, 0.8);
+  box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
+}
+
+.sbx-payout__claim:hover:not(:disabled) {
+  background: rgba(255, 170, 0, 0.42);
+  border-color: var(--color-amber);
+  box-shadow: 0 0 26px rgba(255, 170, 0, 0.45);
+}
+
+.sbx-payout__claim:disabled { opacity: 0.6; cursor: default; }
+
+/* ON CHAIN: the season's newest transactions, the game's and the viewer's */
+.sbx-onchain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 12px 10px;
+  font-family: var(--font-mono);
+  background: rgba(1, 14, 6, 0.86);
+  border: 1px solid rgba(0, 255, 65, 0.22);
+  border-radius: 9px;
+  backdrop-filter: blur(6px);
+}
+
+.sbx-onchain__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(0, 255, 65, 0.85);
+}
+
+.sbx-onchain__status {
+  padding: 1px 8px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #e8fff0;
+  border: 1px solid rgba(0, 255, 65, 0.4);
+  border-radius: 999px;
+}
+
+.sbx-onchain__warn,
+.sbx-onchain__empty {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #ffe2a8;
+}
+
+.sbx-onchain__empty { color: rgba(215, 240, 222, 0.75); }
+
+.sbx-onchain__row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  padding: 3px 2px;
+  font-size: 12px;
+  color: #e3fbe9;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+.sbx-onchain__row:hover { background: rgba(0, 255, 65, 0.08); }
+
+.sbx-onchain__who {
+  flex: none;
+  width: 3.6em;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(0, 255, 65, 0.8);
+}
+
+.sbx-onchain__row.is-mine .sbx-onchain__who { color: #9fe6ff; }
+
+.sbx-onchain__method {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sbx-onchain__fail {
+  flex: none;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ff8a9c;
+}
+
+.sbx-onchain__row.is-failed .sbx-onchain__method { color: #ffc2cc; }
+
+.sbx-onchain__hash {
+  flex: none;
+  color: #9fe6ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* the test account in the top bar */
 .sbx-account {
   position: relative;

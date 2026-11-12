@@ -1,16 +1,21 @@
 /**
- * Simulated-funds parimutuel state, shared by the roster rail (per-agent
- * odds + stakes live ON the chips — least friction) and the wallet pill.
+ * Parimutuel state, shared by the roster rail (per-agent odds + stakes live
+ * ON the chips — least friction) and the wallet pill.
  *
- * No chain, no accounts: a localStorage sim-wallet, per-world slips,
- * deterministic house liquidity that drifts with live performance, true
- * parimutuel odds with a 2% rake, pro-rata settlement at season end.
+ * Two markets behind one value. With a contract configured (VITE_CONTRACT_ID)
+ * and a NEAR test account in this browser, bets are real testnet NEAR on the
+ * QuestFi contract (useChainMarket.js). Otherwise it is the simulation: a
+ * localStorage sim-wallet, per-world slips, deterministic house liquidity
+ * that drifts with live performance, true parimutuel odds with a 2% rake,
+ * pro-rata settlement at season end.
  */
 
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useState,
 } from 'react';
 import { useSandbox } from '../../context/SandboxContext';
+import { useNear } from '../../context/NearContext';
+import { useChainMarket } from './useChainMarket';
 
 const START_BALANCE = 1000;
 export const STAKES = [25, 100, 250];
@@ -42,7 +47,8 @@ function seedPool(worldId, agentId) {
 
 const BettingContext = createContext(null);
 
-export function BetsProvider({ children }) {
+/** The simulated market, unchanged from before the chain existed. */
+function useSimMarket() {
   const { world, roster } = useSandbox();
   const worldId = world?.world_id;
   const [balance, setBalance] = useState(() => readJSON('sbx-chips', START_BALANCE));
@@ -149,14 +155,26 @@ export function BetsProvider({ children }) {
     [bets],
   );
 
-  const value = useMemo(() => ({
+  return useMemo(() => ({
+    mode: 'sim', unit: '⬡', stakes: STAKES,
     balance, bets, myTotal, pools, odds, prob, probHistory, place, payout, bettingOpen,
   }), [balance, bets, myTotal, pools, odds, prob, probHistory, place, payout, bettingOpen]);
+}
 
+export function BetsProvider({ children }) {
+  const { world, roster } = useSandbox();
+  const near = useNear();
+  const sim = useSimMarket();
+  const chain = useChainMarket({ near, world, roster });
+  const value = useMemo(
+    () => (chain.active ? chain.value : (chain.note ? { ...sim, note: chain.note } : sim)),
+    [chain.active, chain.value, chain.note, sim],
+  );
   return <BettingContext.Provider value={value}>{children}</BettingContext.Provider>;
 }
 
 const INERT = {
+  mode: 'sim', unit: '⬡', stakes: STAKES,
   balance: 0, bets: {}, myTotal: 0, pools: { total: 0, byAgent: {} },
   odds: () => null, prob: () => 0, probHistory: [], place: () => {},
   payout: null, bettingOpen: false,
