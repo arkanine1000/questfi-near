@@ -1,10 +1,12 @@
-// Everything in this file is placeholder content for the flow mockup. No
-// value here comes from a chain or a server.
+// Settings, and the scripted content of the mock mode. The values down to
+// the "live build" section are placeholders: none of them comes from a chain
+// or a server.
 
 const params = new URLSearchParams(location.search);
+const env = import.meta.env ?? {};
 
 // Where DEPLOY hands off to. agent_world's dev server runs on 5175.
-export const WORLD_URL = params.get('world') || 'http://localhost:5175/?nointro&alt=9000000';
+export const WORLD_URL = params.get('world') || env.VITE_WORLD_URL || 'http://localhost:5175/?nointro&alt=9000000';
 
 export const PASS = {
   id: '0042',
@@ -43,6 +45,28 @@ export const ROSTER = [
 ];
 
 export const BYO = { key: 'byo', name: 'CLAUDE-CODE', tint: 0xffb54a };
+
+// ---------------------------------------------------------------------------
+// The live build. With a contract configured the app talks to NEAR testnet
+// and everything above this line is unused, except the roster's tints and
+// the tier labels. `?mock` (or no contract id) keeps the scripted flow.
+// ---------------------------------------------------------------------------
+export const CHAIN = {
+  contractId: env.VITE_CONTRACT_ID || '',
+  rpcUrl: env.VITE_RPC_URL || 'https://test.rpc.fastnear.com',
+  guestApi: env.VITE_GUEST_API || '/api/guest',
+  // the Agent Island game server, which opens seasons and seats agents
+  gameUrl: (params.get('game') || env.VITE_GAME_URL || 'http://localhost:8000').replace(/\/$/, ''),
+};
+export const MOCK = params.has('mock') || !CHAIN.contractId;
+
+// NEAR put into a new pass along with the mint fee.
+export const FIRST_DEPOSIT = 0.3;
+
+// A pass that has not been minted yet.
+export const EMPTY_PASS = { id: '----', level: 1, xp: 0, xpPerLevel: 300, seasons: 0, wins: 0, kills: 0, balance: 0, lifetime: 0, marketCut: 0 };
+
+export const tintOf = (rosterId) => ROSTER.find((a) => a.key === rosterId)?.tint ?? BYO.tint;
 
 export const MCP_COMMAND = 'claude mcp add --transport http questfi https://<host>/mcp/';
 
