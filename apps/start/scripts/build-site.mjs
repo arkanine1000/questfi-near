@@ -5,9 +5,11 @@
 //
 //   VITE_CONTRACT_ID=<contract> VITE_GAME_URL=<game server> npm run build:site
 //
-// Settings not given get the values that fit this layout.
+// Settings not given get the values that fit this layout. The other two apps'
+// dependencies are installed from their lockfiles first, every time: a build
+// host may restore an older node_modules from its cache. Pass --no-install
+// to reuse what is installed.
 import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const start = fileURLToPath(new URL('..', import.meta.url));
@@ -29,7 +31,7 @@ function run(command, cwd) {
 run('npx vite build', start);
 for (const [name, base] of [['world', './'], ['island', '/island/']]) {
   const dir = sibling(name);
-  if (!existsSync(`${dir}node_modules`)) run('npm ci --no-audit --no-fund', dir);
+  if (!process.argv.includes('--no-install')) run('npm ci --no-audit --no-fund', dir);
   run(`npx vite build --base=${base} --outDir "${start}dist/${name}" --emptyOutDir`, dir);
 }
 console.log('\nsite built in apps/start/dist: / (start), /world/, /island/');
