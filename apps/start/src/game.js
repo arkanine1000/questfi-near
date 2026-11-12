@@ -26,5 +26,7 @@ export function createGame(baseUrl, fetchImpl = globalThis.fetch) {
     // has entered the season before it lets the agent in.
     join: (worldId, { passId, name, rosterId = null, accountId }) =>
       request('/near/arena/join', { world_id: worldId, pass_id: String(passId), name, roster_id: rosterId, account_id: accountId }),
+    // Starts the open season now instead of waiting out its countdown.
+    startNow: () => request('/near/arena/start', {}),
   };
 }

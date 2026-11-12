@@ -216,7 +216,10 @@ if (seasonId && !failed) {
 if (gameUrl && seasonId && !failed) {
   await step('the game server seats the agent', async () => {
     const seat = await createGame(gameUrl).join(seasonId, { passId, name: pick.name, rosterId: pick.roster_id, accountId: owner.accountId });
-    const when = seat.starts_in_s == null ? 'when the season before it has settled' : `in about ${Math.round(seat.starts_in_s)} s`;
+    // a seated player may skip the countdown; if a season is still running,
+    // this one starts by itself when that has settled
+    const early = await createGame(gameUrl).startNow().then(() => true, () => false);
+    const when = early ? 'now' : seat.starts_in_s == null ? 'when the season before it has settled' : `in about ${Math.round(seat.starts_in_s)} s`;
     return `${seat.name} has a seat in ${seat.world_id}; the season starts ${when}`;
   });
 

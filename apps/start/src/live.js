@@ -258,13 +258,34 @@ export function createLive(ui) {
     });
 
   // ---- the pass ---------------------------------------------------------
-  // The mint carries a first deposit: one and a half per-call caps, or less
-  // when the account could not also pay for an agent and gas afterwards.
+  // What the account keeps back. A call's whole gas limit has to be prepaid
+  // at a padded price (about 0.02 NEAR for the calls made here, refunded
+  // afterwards), the transactions before it burn a little, and the account
+  // pays for its own storage.
+  const RESERVE = toYocto('0.05');
+
+  // The account pays rentals and gas; the pass holds most of the visitor's
+  // NEAR. When the account is short for a payment and the pass can cover it,
+  // the difference is moved out of the pass first, as an owner's withdrawal.
+  async function coverFromPass(needYocto, what) {
+    const need = BigInt(needYocto) + RESERVE;
+    const have = await chain.balanceOf(state.session.accountId);
+    const short = need - have;
+    if (short <= 0n) return;
+    if (!state.hasPass || state.pass.balanceYocto < short) {
+      throw new Error(`The account holds ${fmt(fromYocto(have))} NEAR and ${what} takes about ${fmt(fromYocto(need))} with gas. The pass cannot cover the difference.`);
+    }
+    const moved = await chain.withdraw(state.session, state.pass.id, short);
+    logOwn('withdraw', 'WALLET', `Moved ${fmt(fromYocto(short))} NEAR from the pass to the account for ${what}`, explorerTx(moved.txHash));
+  }
+
+  // The mint carries a first deposit of one per-call cap, or less when that
+  // would leave the account too little for an agent's rental, bets and gas.
   const mint = () =>
     run('MINTING PASS', async () => {
       const fee = BigInt(config.mint_storage_fee);
-      const wanted = (BigInt(config.default_per_call_cap) * 3n) / 2n;
-      const spare = (await chain.balanceOf(state.session.accountId)) - fee - toYocto('0.12');
+      const wanted = BigInt(config.default_per_call_cap);
+      const spare = (await chain.balanceOf(state.session.accountId)) - fee - toYocto('0.2');
       const first = spare < wanted ? (spare > 0n ? spare : 0n) : wanted;
       const done = await chain.mintPass(state.session, fee + first);
       logOwn('mint', 'PASS', `Minted pass #${done.passId} with ${fmt(fromYocto(first))} NEAR inside`, explorerTx(done.txHash));
@@ -287,6 +308,10 @@ export function createLive(ui) {
     const amount = await amountPrompt('DEPOSIT TO PASS', `Moves NEAR from ${state.wallet.account} into pass #${state.pass.id}. The agent spends from the pass, never from the account.`, 0.1);
     if (!amount) return;
     await run('DEPOSITING', async () => {
+      const most = (await chain.balanceOf(state.session.accountId)) - RESERVE;
+      if (toYocto(amount) > most) {
+        throw new Error(`The account keeps ${fmt(fromYocto(RESERVE))} NEAR back for gas, so it can deposit up to ${fmt(Math.max(0, fromYocto(most)))} NEAR.`);
+      }
       await chain.deposit(state.session, state.pass.id, toYocto(amount));
       await refresh();
     });
@@ -311,6 +336,7 @@ export function createLive(ui) {
     });
     if (!yes) return;
     await run('CLAIMING', async () => {
+      await coverFromPass(0n, 'gas');
       const done = await chain.claimCard(state.session, state.pass.id);
       await refresh();
       ui.modal({
@@ -333,6 +359,7 @@ export function createLive(ui) {
       return undefined;
     }
     return run('SAVING LIMITS', async () => {
+      await coverFromPass(0n, 'gas');
       const done = await chain.setPolicy(state.session, state.pass.id, toYocto(perTx), toYocto(daily));
       state.policyDirty = false;
       logOwn('policy', 'POLICY', `Limits set: ${fmt(perTx)} NEAR per call, ${fmt(daily)} NEAR per day`, explorerTx(done.txHash));
@@ -351,6 +378,7 @@ export function createLive(ui) {
       const previous = state.agent;
       ui.stage.setAgent(def); // on stage while the transactions confirm
       try {
+        await coverFromPass(def.rented ? def.priceYocto : 0n, def.rented ? `${def.name}'s rental` : 'linking the agent');
         const linked = await chain.linkAgent(state.session, {
           passId: state.pass.id,
           kind: def.rented ? 'rented' : 'byo',
@@ -375,6 +403,7 @@ export function createLive(ui) {
   const unlink = () =>
     run('UNLINKING AGENT', async () => {
       if (!state.agent || state.deployed) return;
+      await coverFromPass(0n, 'gas');
       const done = await chain.unlinkAgent(state.session, state.pass.id, state.agent.publicKey);
       dropAgentKey(state.pass.id);
       ui.pushLog('KEY', 'Agent unlinked and its key removed', 0, { link: explorerTx(done.keyTx ?? done.unlinkTx) });
@@ -413,6 +442,8 @@ export function createLive(ui) {
     let live = false;
     try {
       const passId = state.pass.id;
+      // the agent key's calls are paid from the account too
+      await coverFromPass(0n, 'gas');
 
       step = term.line(`spending limits: ${fmt(state.policy.perTx)} NEAR per call, ${fmt(state.policy.daily)} NEAR per day`);
       if (state.policy.perTx !== policyOnChain.perTx || state.policy.daily !== policyOnChain.daily) {
@@ -475,6 +506,7 @@ export function createLive(ui) {
     run('TESTING THE LIMITS', async () => {
       if (!state.hasPass || !state.agent) return;
       const passId = state.pass.id;
+      await coverFromPass(0n, 'gas');
       const key = await agentKey();
       const agent = chain.agent(state.session.accountId, key.secretKey);
       const results = [];

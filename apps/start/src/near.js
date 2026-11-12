@@ -40,6 +40,7 @@ export const explorerAccount = (id) => `https://testnet.nearblocks.io/address/${
 // - 'protocol': the access key itself is not allowed to send this
 //               transaction, so it never reached the contract
 // - 'contract': any other panic in the contract
+// - 'funds':    the signing account cannot pay for the transaction
 // - 'other':    network trouble and the rest
 export function explainError(err) {
   const name = String(err?.name ?? '');
@@ -50,6 +51,9 @@ export function explainError(err) {
   const policy = /POLICY: [^"\\,}]+/.exec(message);
   if (policy) return { kind: 'policy', text: policy[0].trim(), name, txHash };
   if (name.startsWith('AccessKey')) return { kind: 'protocol', text: message, name: name.replace(/ActionError$/, ''), txHash: null };
+  if (/NotEnoughBalance|LackBalanceForState|enough balance/i.test(`${name} ${message}`)) {
+    return { kind: 'funds', text: 'The account does not hold enough NEAR for this and its gas. Withdraw some from the pass, then try again.', name, txHash: null };
+  }
   const panic = /Smart contract panicked: ([^"\\]+)/.exec(message);
   if (panic) return { kind: 'contract', text: panic[1].trim(), name, txHash };
   return { kind: 'other', text: message, name, txHash };
@@ -58,7 +62,11 @@ export function explainError(err) {
 // ---------------------------------------------------------------------------
 // steps: one description of an action, turned into whatever the signer wants
 // ---------------------------------------------------------------------------
-const call = (method, args = {}, { deposit = 0n, gas = 30 } = {}) => ({ type: 'FunctionCall', method, args, deposit: BigInt(deposit), gas: teraToGas(gas) });
+// The gas limit is kept low on purpose. An account must be able to prepay the
+// whole limit, at a price padded for the worst case, before the call runs:
+// about 0.001 NEAR per Tgas, most of it refunded afterwards. These calls burn
+// well under 10 Tgas.
+const call = (method, args = {}, { deposit = 0n, gas = 20 } = {}) => ({ type: 'FunctionCall', method, args, deposit: BigInt(deposit), gas: teraToGas(gas) });
 const addAgentKey = (publicKey, contractId) => ({ type: 'AddKey', publicKey, contractId });
 const deleteKey = (publicKey) => ({ type: 'DeleteKey', publicKey });
 
@@ -203,7 +211,7 @@ export function createChain({ contractId, rpcUrl = 'https://test.rpc.fastnear.co
     // ---- the owner's actions --------------------------------------------
     // Anything attached above the mint fee lands in the new pass's balance.
     async mintPass(session, depositYocto) {
-      const done = await session.send(contractId, [call('mint_pass', {}, { deposit: depositYocto, gas: 50 })]);
+      const done = await session.send(contractId, [call('mint_pass', {}, { deposit: depositYocto, gas: 30 })]);
       return { ...done, passId: String(done.value) };
     },
     deposit: (session, passId, yocto) => session.send(contractId, [call('deposit', { pass_id: String(passId) }, { deposit: yocto })]),
