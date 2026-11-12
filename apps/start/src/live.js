@@ -439,13 +439,16 @@ export function createLive(ui) {
       state.season = open.world_id;
 
       step = term.line(`seating ${state.agent.name} on Agent Island`);
-      await game.join(open.world_id, {
+      const seat = await game.join(open.world_id, {
         passId,
         name: state.agent.name,
         rosterId: state.agent.rented ? state.agent.key : null,
         accountId: state.session.accountId,
       });
       step.ok();
+      term.note(seat.starts_in_s == null
+        ? 'the season starts when the one now running has settled'
+        : `the season starts in about ${Math.round(seat.starts_in_s)} s, or sooner if it is started from the island`);
 
       ui.stage.beamOut();
       term.line(`${state.agent.name} is live`).ok();
