@@ -1,0 +1,173 @@
+name: contract-build
+
+# The questfi contract lives under contracts/. One job: the unit tests, a
+# reproducible build of questfi.wasm with `cargo near build reproducible-wasm`,
+# then the near-sandbox tests against that same wasm, so the tests run the
+# bytes that get uploaded. The reproducible build clones the checked-out
+# commit into a temporary directory and builds it inside the Docker image
+# named in contracts/questfi/Cargo.toml ([package.metadata.near.reproducible_build]);
+# the wasm carries NEP-330 metadata (`contract_source_metadata`) naming that
+# image, the build command, the contract path and the commit, so anyone with
+# the repository can rebuild it and compare SHA-256. Rust for the unit tests
+# and the sandbox tests comes from contracts/rust-toolchain.toml. The wasm is
+# uploaded as an artifact, with its SHA-256, code hash and embedded metadata
+# in the job summary. Nothing is deployed from here.
+on:
+  push:
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contract-build.yml"
+  pull_request:
+    paths:
+      - "contracts/**"
+      - ".github/workflows/contract-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: contracts
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_NEAR_VERSION: "0.23.0"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # On a pull request GitHub checks out a temporary merge commit, and
+          # a wasm built from it would name a revision no branch holds. Build
+          # the pull request's head commit instead, so the embedded revision
+          # always exists in the repository.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Rust from contracts/rust-toolchain.toml
+        run: |
+          # With no argument, rustup installs the toolchain the file selects.
+          rustup toolchain install --profile minimal
+          rustup target list --installed | grep -qx wasm32-unknown-unknown || rustup target add wasm32-unknown-unknown
+          rustup show active-toolchain
+          rustc --version
+          cargo --version
+
+      - name: Cache cargo registry and target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            contracts/target
+          key: contracts-${{ runner.os }}-${{ hashFiles('contracts/rust-toolchain.toml', 'contracts/Cargo.lock') }}
+          restore-keys: contracts-${{ runner.os }}-
+
+      - name: Install cargo-near ${{ env.CARGO_NEAR_VERSION }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          asset=cargo-near-x86_64-unknown-linux-gnu.tar.gz
+          base="https://github.com/near/cargo-near/releases/download/cargo-near-v${CARGO_NEAR_VERSION}"
+          curl -sSfL --retry 3 -O "$base/$asset" -O "$base/$asset.sha256"
+          sha256sum -c "$asset.sha256"
+          tar xzf "$asset"
+          mkdir -p "$HOME/.cargo/bin"
+          install -m 0755 cargo-near-x86_64-unknown-linux-gnu/cargo-near "$HOME/.cargo/bin/cargo-near"
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          "$HOME/.cargo/bin/cargo-near" near --version
+
+      - name: Unit tests
+        run: cargo test --locked -p questfi
+
+      - name: Working tree is the commit
+        # The reproducible build compiles a clone of HEAD and leaves anything
+        # uncommitted out; outside of `cargo near deploy` it only warns about
+        # a dirty tree. Fail here instead, so the uploaded wasm is the commit.
+        # Ignored paths (target/) don't count, as in cargo-near's own check.
+        run: |
+          git rev-parse HEAD
+          dirty="$(git status --porcelain --untracked-files=all)"
+          if [ -n "$dirty" ]; then
+            echo "::error::uncommitted changes in the checkout:"
+            echo "$dirty"
+            exit 1
+          fi
+          docker version --format 'docker {{.Server.Version}}'
+
+      - name: Build questfi.wasm (reproducible, in Docker)
+        working-directory: contracts/questfi
+        run: |
+          # A wasm left in the restored cache must not stand in for this build.
+          rm -f ../target/near/questfi/questfi.wasm
+          cargo near build reproducible-wasm
+          test -s ../target/near/questfi/questfi.wasm
+
+      - name: Sandbox tests (near-sandbox, on the reproducible wasm)
+        env:
+          QUESTFI_WASM: ${{ github.workspace }}/contracts/target/near/questfi/questfi.wasm
+        # --nocapture keeps the refusals the agent-key test prints in the log.
+        run: cargo test --locked -p integration-tests -- --test-threads=1 --nocapture
+
+      - name: Checksums and NEP-330 metadata
+        # near-sdk embeds the contract_source_metadata JSON as one string in
+        # the wasm's data section; this reads it back out of the file and
+        # checks that it describes a reproducible build of this commit.
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - target/near/questfi/questfi.wasm <<'EOF'
+          import hashlib, json, os, sys
+
+          B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+
+          def base58(b):
+              # A deployed account's code_hash (view_account) is the
+              # SHA-256 of its wasm in base58.
+              n, s = int.from_bytes(b, "big"), ""
+              while n:
+                  n, r = divmod(n, 58)
+                  s = B58[r] + s
+              return "1" * (len(b) - len(b.lstrip(b"\0"))) + s
+
+          def nep330(data):
+              found, i = [], data.find(b'{"version":')
+              while i != -1:
+                  try:
+                      obj, _ = json.JSONDecoder().raw_decode(data[i:].decode("utf-8", "replace"))
+                      if isinstance(obj, dict) and "standards" in obj:
+                          found.append(obj)
+                  except ValueError:
+                      pass
+                  i = data.find(b'{"version":', i + 1)
+              if len(found) != 1:
+                  sys.exit(f"expected one NEP-330 metadata string, found {len(found)}")
+              return found[0]
+
+          path = sys.argv[1]
+          head = os.environ["HEAD_SHA"]
+          data = open(path, "rb").read()
+          raw = hashlib.sha256(data).digest()
+          digest, code_hash = raw.hex(), base58(raw)
+          meta = nep330(data)
+          info = meta.get("build_info") or {}
+          snapshot = info.get("source_code_snapshot", "")
+          if not snapshot.endswith(f"?rev={head}"):
+              sys.exit(f"{path}: build_info.source_code_snapshot is {snapshot!r}, expected rev {head}")
+          print(f"{digest}  {path}  ({len(data)} bytes, code_hash {code_hash})")
+          print(json.dumps(meta, indent=2))
+
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+              out.write("### questfi.wasm (reproducible build)\n\n")
+              out.write(f"Commit `{head}`\n\n")
+              out.write("| File | Bytes | SHA-256 | As a NEAR code_hash (base58) |\n|---|---|---|---|\n")
+              out.write(f"| `questfi.wasm` | {len(data)} | `{digest}` | `{code_hash}` |\n\n")
+              out.write("#### Embedded NEP-330 metadata (`contract_source_metadata`)\n\n")
+              out.write(f"```json\n{json.dumps(meta, indent=2)}\n```\n")
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: questfi-wasm
+          path: contracts/target/near/questfi/questfi.wasm
+          if-no-files-found: error
