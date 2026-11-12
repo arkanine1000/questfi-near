@@ -522,6 +522,9 @@ export default function SandboxView() {
     'sbx-root',
     IS_TV ? 'sbx-root--tv' : '',
     crawlerActive ? 'sbx-root--crawler' : '',
+    // the finale card is up: the top bar and the market drawer stay above
+    // its dimming, usable (the drawer is where winnings are claimed)
+    status === 'ready' && world?.phase === 'finished' ? 'sbx-root--finale' : '',
   ].filter(Boolean).join(' ');
 
   return (

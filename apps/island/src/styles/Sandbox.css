@@ -840,11 +840,14 @@
   text-align: center;
   background: radial-gradient(ellipse at center, rgba(0, 20, 8, 0.2), rgba(0, 0, 0, 0.55));
   padding: 24px;
+  /* a wash over the island; only the card in it takes clicks */
+  pointer-events: none;
 }
 
 /* The content sits on its own darkened glass card — the full-viewport
    wash alone left ring/title/seats floating illegibly over the island. */
 .sbx-lobby__card {
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1200,13 +1203,22 @@ body:has(.crawler-hud) .sbx-promptchan {
   display: flex;
   align-items: center;
   justify-content: center;
+  /* centred in the room right of the market drawer (14 + 356px) once the
+     window is too narrow to centre it 20px clear of it (the card is at
+     most 460px) */
+  padding-left: clamp(0px, calc(1240px - 100vw), 390px);
   background: rgba(0, 0, 0, 0.62);
   animation: sbx-fade 400ms ease;
+  /* the wash is decoration: the drawer, the top bar and the island under
+     it stay usable; only the card takes clicks */
+  pointer-events: none;
 }
 
 @keyframes sbx-fade { from { opacity: 0; } to { opacity: 1; } }
 
 .sbx-winner__card {
+  pointer-events: auto;
+  max-width: 460px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1253,6 +1265,8 @@ body:has(.crawler-hud) .sbx-promptchan {
 .sbx-promptchan--finale { z-index: 934; }
 
 .sbx-winner__name {
+  overflow-wrap: anywhere;
+  text-align: center;
   font-size: 26px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -1641,9 +1655,12 @@ body:has(.crawler-hud) .sbx-promptchan {
    Recorded and replayed as compressed video, so every number a bettor acts
    on is large and bright, and nothing waits behind a hover. */
 
-/* above the finale's wash (.sbx-winner), where the CLAIM button lives */
-.sbx-market.is-finale { z-index: 935; }
-.sbx-market__handle.is-finale { z-index: 934; }
+/* While the finale card is up (.sbx-winner, 930), the market drawer, where
+   winnings are claimed, and the top bar, with the account, stay above its
+   dimming. The victory cameo sits at 934. */
+.sbx-root--finale .sbx-market__handle { z-index: 934; }
+.sbx-root--finale .sbx-roster { z-index: 935; }
+.sbx-root--finale .sbx-topbar { z-index: 936; }
 
 .sbx-market__note {
   padding: 8px 11px;
@@ -2384,6 +2401,7 @@ body:has(.crawler-hud) .sbx-promptchan {
   position: fixed;
   inset: 0;
   z-index: 940;
+  pointer-events: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2477,6 +2495,10 @@ body:has(.crawler-hud) .sbx-promptchan {
     --rail-scale: 0.88;
     max-height: calc((100vh - 58px) / 0.88);
   }
+
+  /* the finale card clears the (smaller) drawer here too: the NEAR
+     drawer ends at 8 + 356 × 0.88 ≈ 321px, the card starts 20px past it */
+  .sbx-winner { padding-left: clamp(0px, calc(1142px - 100vw), 340px); }
 
   /* the caster and her bubble come down to cameo size */
   .sbx-promptchan { right: 6px; }

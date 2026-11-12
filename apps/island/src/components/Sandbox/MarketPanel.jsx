@@ -665,9 +665,6 @@ export default function MarketPanel({ onFollow }) {
   // the lobby, and the game server locks it a few ticks into the season, so
   // on chain the lobby is when most bets are placed.
   if (world?.phase === 'lobby' && !onChain) return null;
-  // At the finale the winner card dims the island; on chain the drawer
-  // stays above it, because that is where the winnings are claimed.
-  const finale = onChain && world?.phase === 'finished' ? ' is-finale' : '';
 
   // Market order: the priciest names first, the fallen at the bottom.
   const living = roster.filter((a) => a.alive)
@@ -680,7 +677,7 @@ export default function MarketPanel({ onFollow }) {
     <>
       <button
         type="button"
-        className={`sbx-market__handle${collapsed ? '' : ' is-open'}${finale}`}
+        className={`sbx-market__handle${collapsed ? '' : ' is-open'}`}
         onClick={() => setCollapsed(false)}
         aria-expanded={!collapsed}
         tabIndex={collapsed ? 0 : -1}
@@ -690,7 +687,7 @@ export default function MarketPanel({ onFollow }) {
         <span className="sbx-market__handletext">market</span>
       </button>
       <nav
-        className={`sbx-roster sbx-market${collapsed ? ' is-folded' : ''}${onChain ? ' is-chain' : ''}${finale}`}
+        className={`sbx-roster sbx-market${collapsed ? ' is-folded' : ''}${onChain ? ' is-chain' : ''}`}
         aria-label="Prediction market"
         aria-hidden={collapsed}
         inert={collapsed || undefined}
