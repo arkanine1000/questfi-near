@@ -24,7 +24,7 @@ import { createDebug } from './debug.js';
 import { createGlobe } from './globe/globe.js';
 import { bandWeights } from './globe/bands.js';
 import { createImpostor } from './globe/impostor.js';
-import { createBeacons } from './globe/beacon.js';
+import { createBeacons } from './globe/markers.js';
 import { createOutskirts } from './globe/outskirts.js';
 import { createTitle } from './globe/title.js';
 import { createCinematic } from './globe/cinematic.js';
