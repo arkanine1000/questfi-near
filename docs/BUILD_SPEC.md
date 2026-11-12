@@ -812,7 +812,7 @@ from the README.
 | `apps/start/public/models/crew.glb` | questfi-lobby, also in quest-map |
 | `apps/start/public/models/viking.fbx`, `knight.fbx` | questfi-lobby |
 | `apps/start/public/img/logo.png` | questfi-lobby |
-| `apps/start/public/img/tcg/*.webp` | questfi-lpv2 (QuestFi's own card art) |
+| `apps/start/public/img/tcg/*.webp` | QuestFi's own card art (the card back is from questfi-lpv2) |
 | `apps/island/public/**` models and sprites | quest-map |
 
 ---

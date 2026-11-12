@@ -371,17 +371,24 @@ body[data-screen='deploy'] #left, body[data-screen='deploy'] #right { transform:
 .preview .slab { transition-duration: 0.15s, 0.6s; }
 .preview .slab-foil { animation: none; opacity: 0.6; }
 .preview .slab-glare { opacity: 1; }
-.preview .slab-lock { font-size: calc(21px * var(--s)); padding: 0 12px; }
 
 /* locked: full-colour slab with a stamp over it until the pass qualifies */
 .slab-lock {
   z-index: 5;
-  /* lifted in front of the slab's front face, which sits at translateZ(4px) */
-  position: absolute; left: 50%; top: 58%; transform: translate3d(-50%, -50%, 14px) rotate(-12deg);
-  font-family: 'VT323', monospace; font-size: 20px; letter-spacing: 0.2em;
-  color: var(--amber); border: 1px solid rgba(255, 214, 120, 0.7); background: rgba(1, 10, 5, 0.8);
-  padding: 0 8px; pointer-events: none;
+  /* a padlock badge, lifted in front of the slab's front face (translateZ 4px);
+     sized from --s so it scales with the small slab and the hover preview */
+  position: absolute; left: 50%; top: 58%;
+  width: calc(54px * var(--s)); height: calc(54px * var(--s));
+  transform: translate3d(-50%, -50%, 14px);
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: var(--amber);
+  background: rgba(1, 10, 5, 0.82);
+  border: 1px solid rgba(255, 214, 120, 0.8);
+  box-shadow: 0 0 calc(14px * var(--s)) rgba(255, 214, 120, 0.45);
+  pointer-events: none;
 }
+.slab-lock svg { width: 56%; height: 56%; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(255, 214, 120, 0.7)); }
 .slab-wrap:not(.locked) .slab-lock { display: none; }
 .slab-wrap.ready .slab-face { animation: slabpulse 1.8s ease-in-out infinite; }
 @keyframes slabpulse {
