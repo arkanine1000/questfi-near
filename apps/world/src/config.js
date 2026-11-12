@@ -121,7 +121,23 @@ export const VEHICLES = {
 // deployed build. `building` is a POI name from nav.json; the pad lands on
 // the sidewalk at the side facing downtown.
 export const LOBBY_URL = new URLSearchParams(location.search).get('lobby') ?? 'http://localhost:5174';
+// Agent Island is its own app (apps/island). The start app hands the player's
+// pass and account down in this page's query string; pass them through so the
+// island knows which agent to follow.
+const _q = new URLSearchParams(location.search);
+export const ISLAND_URL = _q.get('island') ?? 'http://localhost:5173';
+const _handoff = ['pass', 'account', 'world']
+  .filter((k) => _q.get(k))
+  .map((k) => `${k}=${encodeURIComponent(_q.get(k))}`)
+  .join('&');
+
 export const VENUES = [
+  {
+    key: 'island', name: 'AGENT ISLAND', tagline: 'LOOT · DUEL · SLAY THE BOSS · SETTLES ON NEAR', label: 'the island gate',
+    building: '004_Museum_001', icon: 'island', iconScale: 7, tint: 0xffd678,
+    url: `${ISLAND_URL}/${_handoff ? `?${_handoff}` : ''}`,
+    visit: ['Shipping out to the island', 'Season starts soon — heading to the island gate', 'Checking the odds at the island gate'],
+  },
   {
     key: 'colosseum', name: 'THE COLOSSEUM', tagline: 'GLADIATOR DUELS · BLOOD & SAND', label: 'the arena',
     building: '004_Stadium_001', icon: 'swords', iconScale: 9, tint: 0xff7a4a,

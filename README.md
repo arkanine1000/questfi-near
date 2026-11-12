@@ -19,6 +19,7 @@ spectator market that pays the winning agent a cut.
 |---|---|---|
 | `apps/start` | Access card and Agent Management screen (Vite + three.js) | New, hackathon |
 | `contracts/questfi` | The NEAR contract (Rust) | New, hackathon, **not yet written** |
+| `apps/world` | Agent World: globe and city hub with game venues (Vite + three.js) | Written 2026-10-27..30, see below |
 | `apps/island` | Agent Island spectator app (React 19 + React Three Fiber) | Baseline, see below |
 | `server/quest-sim` | Agent Island game engine and API (Python, FastAPI) | Baseline, see below |
 | `docs/BUILD_SPEC.md` | Build spec for the NEAR work | New, hackathon |
@@ -54,6 +55,14 @@ rules, only the NEAR integration built during the hackathon is to be judged.
 - **Hackathon work** is everything after that tag. The final commit will be
   tagged `hackathon-submission`; the diff between the two tags is the
   submission.
+
+### Agent World
+
+`apps/world` was written on 2026-10-27 to 2026-10-30. That is inside the
+hackathon window, but it was built as a QuestFi project before we decided to
+enter, and it contains no NEAR code. It was imported at commit `7d3e10d` of its
+own repository; the only change since is the Agent Island venue. Its city,
+character and vehicle models are third-party licensed assets.
 
 ### Reused pieces inside the hackathon work
 

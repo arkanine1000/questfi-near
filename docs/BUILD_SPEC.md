@@ -25,8 +25,8 @@ The user flow, start to finish:
    (rent a house agent or bring your own over MCP), set spending caps.
 2. **Deploy**: the agent gets a function-call access key scoped to the game
    methods, and stakes into a season from the pass balance.
-3. **Agent World** (the globe and city, not yet in this repo): the hub. Games
-   are venues in the city.
+3. **Agent World** (`apps/world`): the globe and city hub. Games are venues
+   in the city.
 4. **Agent Island** (`apps/island` + `server/quest-sim`): the one game wired
    end to end. Agents loot dungeons and kill each other; kills and the season
    result settle on chain; the spectator market takes real NEAR bets.
@@ -69,6 +69,8 @@ AI Swarms only if `pay_agent` (P2) lands and agents actually use it.
 ```
 questfi_near/
   apps/start/        NEW. Vite + three.js. A working UI with NO chain calls.
+  apps/world/        Agent World: globe and city hub. Vite + three.js. Written
+                     2026-10-27..30, imported at 7d3e10d, plus an Island venue.
   apps/island/       BASELINE. quest-map @ d45b6f7. React 19 + R3F spectator.
   server/quest-sim/  BASELINE. quest-sim @ beb90a2. Python FastAPI game engine.
   contracts/         does not exist yet (you create it)
@@ -79,8 +81,9 @@ questfi_near/
   hackathon work. Keep it that way: **never edit history before that tag.**
 - `apps/start` is a flow mockup. Every value in it is scripted in
   `apps/start/src/config.js`. Section 7 maps each fake to its real call.
-- The globe and city app (`agent_world`) and the 3D lobby are on the Windows
-  machine and not imported. See section 10 for why and what to do.
+- `apps/world` is the hub and already lists Agent Island as a venue. The 3D
+  lobby (poker, racing, colosseum) is on the Windows machine and not imported.
+  See section 10.
 
 ### Run what exists
 
@@ -95,7 +98,10 @@ cp .env.example .env                               # add an LLM key, or use the 
 uvicorn quest_sim.main:app --port 8000             # same entry point as the Procfile
 
 # island spectator
-cd apps/island && npm install && npm run dev       # proxies /api -> 127.0.0.1:8000
+cd apps/island && npm install && npm run dev       # http://localhost:5173, proxies /api -> 127.0.0.1:8000
+
+# agent world
+cd apps/world && npm install && npm run dev        # http://localhost:5175
 ```
 
 The game server's real docs are `server/quest-sim/docs/sandbox_demo.md`,
@@ -768,33 +774,41 @@ the agent summary in the server's state and stream payloads.
 
 ## 10. Agent World, the lobby, and assets
 
-`agent_world` (the globe that zooms into a city, with game venues) is the
-intended hub between the start app and the games. It is **not** in this repo
-yet, for two reasons the owner has to settle:
+`apps/world` is the hub between the start app and the games: a globe you dive
+into, a city with 18 agents, and venue portals that open a game full-screen
+over the city and return to it on exit.
 
-1. It ships a third-party city model (3DSkybuild "The City 1.0") and
-   third-party character and vehicle packs. Their licences may not allow
-   redistribution in a public repo.
-2. It was written 2026-10-27 to 10-30, inside the hackathon window but before
-   we decided to enter. The README must say so.
+- It was written 2026-10-27 to 10-30, inside the hackathon window but before
+  we decided to enter, and has no NEAR code. The README says so.
+- It is imported with its optimised models (about 66 MB, the city alone is
+  39 MB). The raw 2.3 GB asset drops are not in the repo.
+- **Agent Island is already a venue** (`VENUES` in `src/config.js`, at the
+  museum, with its own roof icon in `src/venues.js`). Its URL is
+  `?island=<url>`, default `http://localhost:5173`.
+- The start app opens the world with `?pass=<id>&account=<acct>`; the world
+  forwards `pass`, `account` and `world` to the island venue's URL. The island
+  app does not read them yet: use them in section 9 to pick which agent to
+  follow and which season to open. This hand-off has been built but **not
+  tested end to end**.
+- The other three venues (colosseum, poker, speedway) open the lobby app at
+  `?lobby=<url>`, default `http://localhost:5174`. The lobby is not in this
+  repo. For the demo either run it from the Windows machine, point `?lobby=`
+  at a hosted copy, or leave those portals dead and say "next" in the video.
 
-Until that is decided, the start app's **ENTER AGENT WORLD** button opens
-whatever is at `?world=<url>` (default `http://localhost:5175`).
+### Asset licences
 
-When it is imported (as `apps/world`):
+The owner's understanding is that the models were paid for and may be used
+freely, so they are in the repo. Nobody has re-read the licences. Using a
+purchased model in a shipped product and publishing its files in a public
+repository are often treated differently, so **check the city model's licence
+before the repo is made public.** If it forbids redistribution, remove
+`apps/world/public/models/` from git history, host a built copy, and link it
+from the README.
 
-- Add Agent Island to `VENUES` in `src/config.js`, pointing at the island
-  app's URL with `?world=<id>&pass=<pass_id>`. The venue launcher already
-  opens a game full-screen over the city and returns on exit.
-- If the models cannot be published, keep them out of git, host a built copy,
-  and link to it from the README.
-
-The same licence question applies to assets already in this repo. They are
-all files the owner has already published in their own GitHub repos, which is
-why they are included, but nobody has confirmed their licences:
-
-| File | From |
+| Files | From |
 |---|---|
+| `apps/world/public/models/city/*` | 3DSkybuild "The City 1.0", optimised |
+| `apps/world/public/models/npcs/*`, `vehicles/*` | Third-party character and vehicle packs |
 | `apps/start/public/models/crew.glb` | questfi-lobby, also in quest-map |
 | `apps/start/public/models/viking.fbx`, `knight.fbx` | questfi-lobby |
 | `apps/start/public/img/logo.png` | questfi-lobby |
@@ -818,7 +832,7 @@ Work top to bottom. Do not start a row until the one above runs.
 | P1 | Refusal demo (7.5) + the protocol-rejection integration test | Both refusals visible in the UI |
 | P1 | Card claim | Ticket returned at level 5 |
 | P1 | Start app activity log from chain | Kills appear within 5 s |
-| P2 | Agent World imported with an Island venue | Start → globe → city → island in one click path |
+| P2 | Start → globe → city → island hand-off verified, island reads `pass` and `world` | One click path lands on the right season following the right agent |
 | P2 | `pay_agent` and agents using it | |
 | P2 | Hand the agent key to an external (BYO) agent over MCP | |
 | P2 | Hosted demo (Railway for the server, Vercel for the apps) | |
@@ -862,7 +876,7 @@ From the hackathon rules (nearhackathon.com, HACKATHON.md):
 
 ## 13. Open decisions for the owner
 
-1. **Asset licences** (section 10). Blocks making the repo public.
+1. **Asset licences** (section 10). Check the city model before the repo goes public.
 2. **Is `quest-sim` (arkanine1000) fine to republish here?** It is a second
    GitHub org; confirm the other owner agrees.
 3. **Licence.** MIT is in place as a default.

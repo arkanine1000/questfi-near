@@ -459,7 +459,12 @@ function recall() {
 
 function openWorld() {
   $('world-title').textContent = `AGENT WORLD · ${state.agent.name} · PASS #${state.pass.id}`;
-  $('world-frame').src = WORLD_URL;
+  // hand the pass and account down so the world (and the island venue inside
+  // it) know whose agent this is
+  const url = new URL(WORLD_URL, location.href);
+  url.searchParams.set('pass', state.pass.id);
+  if (state.wallet) url.searchParams.set('account', state.wallet.account);
+  $('world-frame').src = url.href;
   $('world').hidden = false;
 }
 function closeWorld() {

@@ -127,7 +127,20 @@ export function createVenues(scene, nav) {
     return holoify(g, tint);
   }
 
-  const ICONS = { swords, cards, flag };
+  // Agent Island: a hex tile with three peaks, the island game's own motif
+  function island(tint) {
+    const g = new THREE.Group();
+    const tile = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.35, 6), new THREE.MeshBasicMaterial());
+    g.add(tile);
+    for (const [x, z, r, h] of [[-0.45, 0.1, 0.5, 1.5], [0.4, -0.25, 0.42, 1.1], [0.2, 0.55, 0.3, 0.75]]) {
+      const peak = new THREE.Mesh(new THREE.ConeGeometry(r, h, 6), new THREE.MeshBasicMaterial());
+      peak.position.set(x, 0.175 + h / 2, z);
+      g.add(peak);
+    }
+    return holoify(g, tint);
+  }
+
+  const ICONS = { swords, cards, flag, island };
 
   // --- build each venue -------------------------------------------------------
   VENUES.forEach((def) => {
