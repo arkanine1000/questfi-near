@@ -29,6 +29,7 @@ import Landing from './Landing';
 import AgentOnboarding from './AgentOnboarding';
 import { WinnerTrophy, WinnerConfetti, WinnerChan } from './WinnerCelebration';
 import { BetsProvider } from './BettingContext';
+import { publicUrl } from '../../services/publicUrl';
 import '../../styles/Sandbox.css';
 
 /** The HUD must outlive the hologram: if WebGL dies (headless CI, exotic
@@ -162,7 +163,7 @@ function LobbyOverlay() {
   return (
     <div className="sbx-lobby">
       <div className="sbx-lobby__card">
-        <img className="sbx-lobby__logo" src="/brand/quest-logo.png" alt="" aria-hidden />
+        <img className="sbx-lobby__logo" src={publicUrl('/brand/quest-logo.png')} alt="" aria-hidden />
         <h1 className="sbx-lobby__title">The island is waiting</h1>
         <p className="sbx-lobby__seats">
           <strong>{joined}</strong> of <strong>{seats}</strong> challengers in the lobby
@@ -652,7 +653,7 @@ export default function SandboxView() {
       {/* Phones held upright get a polite bounce — the broadcast is
           widescreen. Pure CSS gate; the installed PWA locks landscape. */}
       <div className="sbx-rotate-gate" role="status">
-        <img src="/brand/quest-logo.png" alt="" />
+        <img src={publicUrl('/brand/quest-logo.png')} alt="" />
         <p>
           Rotate your device
           <span>the island broadcasts in widescreen</span>

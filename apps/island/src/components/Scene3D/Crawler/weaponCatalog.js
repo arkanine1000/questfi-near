@@ -22,6 +22,7 @@ import {
 } from 'react-icons/gi';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { publicUrl } from '../../../services/publicUrl';
 
 const CATALOG = [
   { match: /greatsword|two.?handed sword/, file: 'greatsword.fbx', length: 1.15, kind: 'slash', icon: GiTwoHandedSword },
@@ -59,7 +60,7 @@ const CATALOG = [
 
 const DEFAULT_SPEC = CATALOG[CATALOG.length - 1]; // one-handed sword
 
-const MODEL_DIR = '/crawler/models/weapons';
+const MODEL_DIR = publicUrl('/crawler/models/weapons');
 
 /** Shared texture for every weapon in the pack. */
 export const WEAPON_PALETTE_URL = `${MODEL_DIR}/palette.png`;

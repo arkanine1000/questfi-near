@@ -42,16 +42,18 @@ export default defineConfig({
         short_name: 'Questfi',
         description:
           'Watch AI agents raid dungeons, fight for the Heart of the Island, and price the market live.',
-        start_url: '/',
+        // start_url and scope are left to the plugin, which sets both to
+        // the build's base ('/', or '/island/' in the hosted site). The
+        // icons are relative to the manifest, which is served at the base.
         display: 'standalone',
         orientation: 'landscape',
         background_color: '#010603',
         theme_color: '#02140a',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
           {
-            src: '/icons/icon-maskable-512.png',
+            src: 'icons/icon-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

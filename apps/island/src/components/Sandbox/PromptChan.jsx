@@ -10,6 +10,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSandbox } from '../../context/SandboxContext';
 import { speakLine, stopSpeaking } from './promptChanVoice';
+import { publicUrl } from '../../services/publicUrl';
 
 // Reading time: base + per-character, clamped so a monologue can't park
 // her on screen for half a minute.
@@ -21,27 +22,27 @@ const holdMs = (text) => Math.min(14000, 3800 + (text?.length ?? 0) * 55);
 // intros played before the flap starts.
 const MOODS = {
   neutral: {
-    talk: ['/prompt-chan/talk-1.webp', '/prompt-chan/talk-2.webp'],
-    rest: '/prompt-chan/talk-1.webp',
+    talk: [publicUrl('/prompt-chan/talk-1.webp'), publicUrl('/prompt-chan/talk-2.webp')],
+    rest: publicUrl('/prompt-chan/talk-1.webp'),
   },
   happy: {
     // happy-3 raises a fist — a hand pose, so it holds like a gesture
     // instead of strobing in a mouth flap.
-    talk: ['/prompt-chan/happy-1.webp', '/prompt-chan/happy-3.webp'],
+    talk: [publicUrl('/prompt-chan/happy-1.webp'), publicUrl('/prompt-chan/happy-3.webp')],
     holdMs: 3200,
-    rest: '/prompt-chan/happy-2.webp', // the eyes-closed grin
+    rest: publicUrl('/prompt-chan/happy-2.webp'), // the eyes-closed grin
   },
   surprised: {
     // A gasp is a pose, not a chatter: one small-o beat, then the big O
     // held for a few seconds — flapping it reads as jitter.
-    talk: ['/prompt-chan/surprised-1.webp', '/prompt-chan/surprised-2.webp'],
+    talk: [publicUrl('/prompt-chan/surprised-1.webp'), publicUrl('/prompt-chan/surprised-2.webp')],
     holdMs: 3200,
-    rest: '/prompt-chan/surprised-3.webp', // the hand-to-cheek shock
+    rest: publicUrl('/prompt-chan/surprised-3.webp'), // the hand-to-cheek shock
   },
 };
 const GESTURE = {
-  point: '/prompt-chan/gesture-point.webp',
-  wave: '/prompt-chan/gesture-wave.webp',
+  point: publicUrl('/prompt-chan/gesture-point.webp'),
+  wave: publicUrl('/prompt-chan/gesture-wave.webp'),
 };
 // A gesture is a pose, same as the gasp — a raised arm that vanishes in
 // under a second reads as a glitch, so she holds it before speaking.

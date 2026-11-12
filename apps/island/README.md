@@ -45,6 +45,8 @@ npm run dev
 
 `.env.example` lists them; copy it to `.env.local`.
 
+To serve the app under a sub-path, build with Vite's `--base`, as the hosted site does: `npx vite build --base=/island/`. Every file in `public/` is referenced through `publicUrl()` (`src/services/publicUrl.js`), so it follows the base, and so do the web app manifest and the service worker. `VITE_BACKEND_URL` and `VITE_GUEST_API` keep the addresses they are given (by default `/api` and `/api/guest` at the origin's root).
+
 URL escape hatches: `?view=tv` (lean-back TV broadcast, below), `?director=1` (start the regular view with the auto-director already engaged), `?world=<id>` (pin to a specific world — omit it for the landing view), `?pass=<pass id>` (follow the agent carrying that agent pass once the season starts), `?capture=1` (preserve the WebGL drawing buffer so headless tests can read real scene pixels).
 
 ### The market on NEAR

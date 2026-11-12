@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { speakLine } from './promptChanVoice';
 import { useSandbox } from '../../context/SandboxContext';
+import { publicUrl } from '../../services/publicUrl';
 
 // --- the trophy -------------------------------------------------------
 
@@ -150,7 +151,7 @@ export function WinnerChan({ name }) {
     <div className="sbx-promptchan sbx-promptchan--victory is-live" aria-live="polite">
       <img
         className="sbx-promptchan__sprite"
-        src="/prompt-chan/happy-3.webp"
+        src={publicUrl('/prompt-chan/happy-3.webp')}
         alt=""
         draggable="false"
       />
