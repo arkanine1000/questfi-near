@@ -62,6 +62,13 @@ export default defineConfig({
   ],
   server: {
     proxy: {
+      // Test accounts come from the start app's /api/guest. On the hosted
+      // site both apps share one origin; in development this forwards to the
+      // start app's dev server. Listed before /api, which is the game server.
+      '/api/guest': {
+        target: 'http://127.0.0.1:5177',
+        changeOrigin: true,
+      },
       '/api': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,

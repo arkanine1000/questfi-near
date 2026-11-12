@@ -7,4 +7,5 @@ scripts/prop-debug.png
 pw-shots*/
 .vercel
 .env*
+!.env.example
 temp/

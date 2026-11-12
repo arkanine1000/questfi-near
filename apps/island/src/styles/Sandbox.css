@@ -1604,6 +1604,110 @@ body:has(.crawler-hud) .sbx-promptchan {
   text-shadow: 0 0 10px rgba(255, 170, 0, 0.45);
 }
 
+/* the test account in the top bar */
+.sbx-account {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.sbx-account__pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px;
+  font-family: var(--font-mono);
+  color: #e8fff0;
+  text-decoration: none;
+  background: rgba(1, 14, 6, 0.7);
+  border: 1px solid rgba(255, 170, 0, 0.45);
+  border-radius: 999px;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.sbx-account__pill:hover {
+  border-color: var(--color-amber);
+  box-shadow: 0 0 16px rgba(255, 170, 0, 0.25);
+}
+
+.sbx-account__net {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffd27a;
+}
+
+.sbx-account__id {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.sbx-account__bal {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff3d6;
+  font-variant-numeric: tabular-nums;
+}
+
+.sbx-account__bal small {
+  font-size: 11px;
+  font-weight: 400;
+  color: #ffd27a;
+}
+
+.sbx-account__under {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: max-content;
+  max-width: min(420px, 80vw);
+}
+
+.sbx-account__made,
+.sbx-account__error {
+  margin: 0;
+  padding: 7px 11px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.4;
+  border-radius: 7px;
+  backdrop-filter: blur(6px);
+}
+
+.sbx-account__made {
+  color: #d6f6ff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: rgba(1, 14, 6, 0.9);
+  border: 1px solid rgba(0, 191, 255, 0.4);
+}
+
+.sbx-account__error {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: #ffe0e4;
+  background: rgba(40, 3, 10, 0.92);
+  border: 1px solid rgba(255, 0, 64, 0.55);
+}
+
+.sbx-account__error button {
+  appearance: none;
+  padding: 0 2px;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  opacity: 0.75;
+  cursor: pointer;
+}
+
 /* ── Descent interstitial ── */
 
 .sbx-descent {
@@ -1829,6 +1933,9 @@ body:has(.crawler-hud) .sbx-promptchan {
   .sbx-btn { font-size: 11px; padding: 6px 12px; }
   .sbx-btn--icon { padding: 6px 9px; }
   .sbx-speed__step { font-size: 10px; padding: 5px 9px; }
+  .sbx-account__pill { gap: 7px; padding: 3px 10px; }
+  .sbx-account__id { font-size: 11px; }
+  .sbx-account__bal { font-size: 14px; }
 
   /* the market rail shrinks as one piece — every internal proportion
      was tuned at full size, so a uniform scale beats re-tuning */

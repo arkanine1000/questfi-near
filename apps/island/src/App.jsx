@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import { SandboxProvider } from './context/SandboxContext';
+import { NearProvider } from './context/NearContext';
 import SandboxView from './components/Sandbox/SandboxView';
 
 // Dev-only viewmodel harness (?bench=weapon). Lazy + DEV-gated so it never
@@ -21,7 +22,9 @@ export default function App() {
   }
   return (
     <SandboxProvider>
-      <SandboxView />
+      <NearProvider>
+        <SandboxView />
+      </NearProvider>
     </SandboxProvider>
   );
 }

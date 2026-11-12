@@ -6,17 +6,78 @@
  * the settings gear belong to whoever holds this season's key; browsing,
  * opening lobbies and the operator key all live on the landing view now,
  * which the brand mark returns to. That leaves a watcher with a clock, a
- * phase, and the island.
+ * phase, and the island, plus, when the market runs on NEAR, the account
+ * they bet from.
  */
 
 import { useEffect, useState } from 'react';
 import { FaCog } from 'react-icons/fa';
 import { MdCast, MdCastConnected, MdVideocam } from 'react-icons/md';
 import { useSandbox } from '../../context/SandboxContext';
+import { useNear } from '../../context/NearContext';
 import {
   IS_TV, sendToTv, startCast, stopCast, subscribeCast, watchCastAvailability,
 } from '../../services/cast';
+import { formatNear } from '../../services/marketMath';
+import { explorerAccount, explorerTx, shortAccount, shortHash } from '../../services/explorer';
 import SettingsPanel from './SettingsPanel';
+
+/**
+ * The visitor's NEAR test account, when the market runs on chain: its id and
+ * spendable balance, or the offer to make one. Absent without a contract.
+ */
+function AccountControl() {
+  const near = useNear();
+  if (!near.enabled) return null;
+  const {
+    status, accountId, balance, error, createdTx, createTestAccount, dismissError,
+  } = near;
+  return (
+    <div className="sbx-account">
+      {status === 'ready' && accountId && (
+        <a
+          className="sbx-account__pill"
+          href={explorerAccount(accountId)}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Test account ${accountId} on the explorer`}
+        >
+          <span className="sbx-account__net">testnet</span>
+          <span className="sbx-account__id">{shortAccount(accountId)}</span>
+          <span className="sbx-account__bal">
+            {balance != null ? formatNear(balance) : '…'}
+            <small>NEAR</small>
+          </span>
+        </a>
+      )}
+      {(status === 'none' || status === 'creating') && (
+        <button
+          type="button"
+          className="sbx-btn sbx-btn--primary"
+          onClick={createTestAccount}
+          disabled={status === 'creating'}
+        >
+          {status === 'creating' ? 'Creating account…' : 'Play with a test account'}
+        </button>
+      )}
+      {(error || (createdTx && status === 'ready')) && (
+        <div className="sbx-account__under">
+          {createdTx && status === 'ready' && (
+            <a className="sbx-account__made" href={explorerTx(createdTx.txHash)} target="_blank" rel="noreferrer">
+              Test account created{createdTx.grant ? ` with ${createdTx.grant} NEAR` : ''} · tx {shortHash(createdTx.txHash)} ↗
+            </a>
+          )}
+          {error && (
+            <p className="sbx-account__error" role="alert">
+              <span>{error}</span>
+              <button type="button" onClick={dismissError} aria-label="Dismiss">✕</button>
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TopBar({ directorOn = false, onToggleDirector }) {
   // autoRunning stays: the phase pill still reads LIVE vs PAUSED.
@@ -69,6 +130,7 @@ export default function TopBar({ directorOn = false, onToggleDirector }) {
           couch can't click, and the casting phone holds the remote */}
       {!IS_TV && (
       <div className="sbx-topbar__controls">
+        <AccountControl />
         {phase === 'lobby' && canControl && (
           <button type="button" className="sbx-btn sbx-btn--primary" onClick={startSeason}>
             Begin Game
