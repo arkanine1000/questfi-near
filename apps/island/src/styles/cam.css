@@ -65,7 +65,7 @@
   position: absolute;
   inset: 0;
 
-  --cam-in: 22px;          /* plates' distance from the stage edge, inside the brackets */
+  --cam-in: 18px;          /* plates' distance from the stage edge, inside the brackets */
   --cam-col: 240px;        /* width of the bottom-left column (vitals, log) */
   --cam-side: calc(var(--cam-in) + var(--cam-col) + 18px); /* what a corner column needs */
   --cam-k: 1;              /* overall scale: the TV cut is larger */
@@ -86,10 +86,10 @@
 
 /* A narrow stage (both columns open, or a small window): smaller plates,
    fewer words. The same values for [data-compact], which the shell sets on
-   small windows whatever the stage. */
+   small windows whatever the stage; :where() keeps that rule's weight equal
+   to the container rules, so the narrowest-stage rule below still wins. */
 @container cam (max-width: 900px) {
   .qf-cam .qf-cam-layer {
-    --cam-in: 18px;
     --cam-col: 190px;
     --cam-num: 32px;
     --cam-den: 17px;
@@ -101,8 +101,7 @@
     --cam-log-more: none;
   }
 }
-.qf-shell[data-compact] .qf-cam .qf-cam-layer {
-  --cam-in: 18px;
+:where(.qf-shell[data-compact]) .qf-cam .qf-cam-layer {
   --cam-col: 190px;
   --cam-num: 32px;
   --cam-den: 17px;
