@@ -1,111 +1,128 @@
 /**
- * The front door: a broadcast board over the live island.
+ * The season list: the first thing of the island a visitor sees.
  *
- * One centred column: masthead, then the season board, then the operator's
- * way in. A side rail holding four elements was not earning a column — a
- * traditional top-down hierarchy reads faster and centres cleanly on any
- * display. The stage stays narrow enough to breathe and is centred
- * vertically, rather than a ribbon pinned to the top of a 1900px screen.
+ * The island hologram turns behind a light veil and two things sit over it,
+ * the way Agent World sets a city's name over its globe: the AGENT ISLAND
+ * title at the top, and one board of seasons at the bottom. Every open
+ * season, and the two things you can do with one: watch it, or play it.
+ * That choice belongs here, not on the lobby card behind it: by the time
+ * you are inside a season you have already decided.
  *
- * Every open season, and the two things you can do with one: watch it, or
- * play it. That choice belongs HERE, not on the lobby card behind it — by
- * the time you are inside a season you have already decided.
- *
- * The island renders behind this (IslandScene sits outside the ready gate),
- * so the backdrop is a light scrim, not a wall: the tiles carry their own
- * glass so the water stays visible between them. If WebGL is dead,
- * SceneBoundary leaves black behind and everything still reads.
+ * Opening a lobby, bringing an agent, deleting a season and the operator's
+ * key each open a dialog, so the board itself stays one table.
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { FaEye, FaRobot } from 'react-icons/fa';
 import { useSandbox } from '../../context/SandboxContext';
 import { listWorlds, whoami } from '../../services/sandboxApi';
 import { getAdminKey, getHostKey, setAdminKey } from '../../services/hostKeys';
-import AgentOnboarding from './AgentOnboarding';
-import OpenLobbyForm from './OpenLobbyForm';
 import { publicUrl } from '../../services/publicUrl';
-import '../../styles/Landing.css';
+import Modal from '../ui/Modal';
+import {
+  IconClose, IconInfo, IconKey, IconTrash, IconWarn,
+} from '../ui/icons';
+import { OnboardingDialog } from './AgentOnboarding';
+import OpenLobbyForm from './OpenLobbyForm';
+import '../../styles/landing.css';
 
 const POLL_MS = 5000;
 
-const PHASE = {
-  lobby: { label: 'Lobby open', cls: 'lobby' },
-  running: { label: 'Live', cls: 'running' },
-  finished: { label: 'Ended', cls: 'finished' },
-};
+const pad3 = (n) => String(Math.max(0, n ?? 0)).padStart(3, '0');
 
-function SeasonRow({ world, index, onWatch, onPlay, onDelete, playing }) {
-  const { world_id: id, phase, tick, joined, pool_size: seats } = world;
-  // can_control on a LIST row can only answer for the operator key —
+/** The status cell: what kind of season this row is. */
+function Status({ phase }) {
+  if (phase === 'lobby') {
+    return <span className="qf-land-status is-lobby"><i className="qf-dot" aria-hidden />Lobby</span>;
+  }
+  if (phase === 'running') {
+    return <span className="qf-land-status is-live"><i className="qf-dot qf-dot--live" aria-hidden />Live</span>;
+  }
+  return <span className="qf-land-status is-ended">Ended</span>;
+}
+
+/** The figure cell: the one number (or name) a visitor scans the row for. */
+function Figure({ world }) {
+  const { phase, tick, joined, pool_size: seats } = world;
+  if (phase === 'lobby') {
+    return (
+      <>
+        <b className="qf-land-fig">{joined ?? 0} / {seats ?? '?'}</b>
+        <span className="qf-land-fig__unit">Seats</span>
+      </>
+    );
+  }
+  if (phase === 'running') {
+    return (
+      <>
+        <b className="qf-land-fig">Tick {pad3(tick)}</b>
+        <span className="qf-land-fig__unit">{joined ?? 0} challenger{joined === 1 ? '' : 's'}</span>
+      </>
+    );
+  }
+  return world.winner_name ? (
+    <>
+      <b className="qf-land-fig is-winner">{world.winner_name}</b>
+      <span className="qf-land-fig__unit">Took the island</span>
+    </>
+  ) : (
+    <b className="qf-land-fig is-none">No one</b>
+  );
+}
+
+function SeasonRow({ world, onWatch, onPlay, onDelete }) {
+  const { world_id: id, phase } = world;
+  // can_control on a LIST row can only answer for the operator key:
   // X-Host-Key is one header and this is many worlds, so a host holding
   // per-world keys cannot prove it in a single request. Our own keyring
   // covers that; the server still gates the DELETE itself.
   const mine = world.can_control || Boolean(getHostKey(id));
-  const meta = PHASE[phase] || { label: phase, cls: 'finished' };
   const open = phase === 'lobby';
+  const ended = phase !== 'lobby' && phase !== 'running';
 
   return (
-    <li className={`qf-row qf-row--${meta.cls}`} style={{ '--i': index }}>
-      <div className="qf-row__main">
-        <div className="qf-row__read">
-          <span className={`qf-status qf-status--${meta.cls}`}>
-            <i aria-hidden />
-            {meta.label}
-          </span>
-          <p className="qf-row__figure">
-            {open ? (
-              <>
-                <strong>{joined ?? 0}</strong>
-                <span>of {seats ?? '?'} seats taken</span>
-              </>
-            ) : (
-              <>
-                <strong>{phase === 'finished' ? (world.winner_name || 'No one') : `t${tick ?? 0}`}</strong>
-                <span>
-                  {phase === 'finished' ? 'took the island' : `${joined ?? 0} challengers`}
-                </span>
-              </>
-            )}
-          </p>
-          <p className="qf-row__id">{id}</p>
-        </div>
-
-        {/* Play leads and Watch anchors: Play is the conditional one (lobbies
-            only), so putting it first keeps Watch in the same place whether or
-            not a season is still open to join. */}
-        <div className="qf-row__actions">
-          {open && (
-            <button
-              type="button"
-              className={`qf-btn ${playing ? '' : 'qf-btn--primary'}`}
-              aria-expanded={playing}
-              onClick={() => onPlay(playing ? null : id)}
-            >
-              <FaRobot aria-hidden />
-              {playing ? 'Close' : 'Play'}
-            </button>
-          )}
-          <button type="button" className="qf-btn" onClick={() => onWatch(id)}>
-            <FaEye aria-hidden />
+    // The row is a mouse target for watching; the WATCH button inside it is
+    // the same action for the keyboard, so the row itself takes no focus.
+    <tr
+      className={`qf-land-row${ended ? ' is-ended' : ''}`}
+      onClick={(e) => { if (!e.target.closest('button')) onWatch(id); }}
+    >
+      <td className="qf-land-cell qf-land-cell--status"><Status phase={phase} /></td>
+      <td className="qf-land-cell qf-land-cell--id">{id}</td>
+      <td className="qf-land-cell qf-land-cell--fig"><Figure world={world} /></td>
+      <td className="qf-land-cell qf-land-cell--act">
+        <div className="qf-land-acts">
+          <button
+            type="button"
+            className={`qf-btn qf-btn--small ${ended ? 'qf-btn--quiet' : 'qf-btn--primary'} qf-land-act--watch`}
+            onClick={() => onWatch(id)}
+            aria-label={`Watch ${id}`}
+          >
             Watch
           </button>
-          {mine && (
+          {open ? (
             <button
               type="button"
-              className="qf-row__kill"
+              className="qf-btn qf-btn--small qf-land-act--play"
+              onClick={() => onPlay(id)}
+              aria-label={`Play ${id}: bring your agent`}
+            >
+              Play
+            </button>
+          ) : <span className="qf-land-act--play" aria-hidden />}
+          {mine ? (
+            <button
+              type="button"
+              className="qf-btn qf-btn--quiet qf-btn--icon qf-land-act--del"
+              onClick={() => onDelete(id)}
               aria-label={`Delete ${id}`}
               title="Delete this season"
-              onClick={() => onDelete(id)}
             >
-              ✕
+              <IconTrash />
             </button>
-          )}
+          ) : <span className="qf-land-act--del" aria-hidden />}
         </div>
-      </div>
-
-      {playing && <AgentOnboarding worldId={id} />}
-    </li>
+      </td>
+    </tr>
   );
 }
 
@@ -115,113 +132,124 @@ function SeasonRow({ world, index, onWatch, onPlay, onDelete, playing }) {
  * Never a build-time variable: anything reachable from import.meta.env is
  * inlined into the bundle and served to every visitor, which would publish
  * the credential that opens every world on the server. Typing it grants
- * nothing locally — it is sent as X-Host-Key and the server decides.
+ * nothing locally: it is sent as X-Host-Key and the server decides.
  *
- * A saved key that the server refuses used to look exactly like a good one:
- * the toggle read "operator key held" and the only symptom was that the
- * doors it should open stayed shut. GET /world/whoami answers the question
- * directly — `operator` is the server comparing what we sent against its
- * admin key, in either mode.
+ * A saved key that the server refuses used to look exactly like a good one.
+ * GET /world/whoami answers the question directly: `operator` is the server
+ * comparing what we sent against its admin key, in either mode.
  *
  * `whoami` (null when the route is missing, i.e. an older backend) falls
  * back to inferring from can_create. That inference only holds on an
  * operator-only server, where can_create IS the key comparison; an open one
- * grants it to everybody, so the fallback can only ever say "held" there —
- * claiming a key is good on no evidence is the bug being fixed.
+ * grants it to everybody, so the fallback can only ever say "held" there.
  */
-function OperatorKey({ operatorOnly, canCreate, verdict }) {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState('');
+function useOperatorKey({ operatorOnly, canCreate, verdict }) {
   const held = Boolean(getAdminKey());
-
   const accepted = held && (verdict ? verdict.operator : operatorOnly && canCreate);
   const refused = held && (verdict ? !verdict.operator : operatorOnly && !canCreate);
   // "No key can work here" is a different sentence to "your key is wrong",
   // and sends the operator to the server's env rather than their clipboard.
   const noOperator = refused && verdict && !verdict.admin_key_configured;
-
-  const label = refused ? '✕ Operator key refused'
-    : accepted ? '◆ Operator key accepted'
-      : held ? '◆ Operator key held'
+  let why = null;
+  if (refused) {
+    why = noOperator
+      ? 'This server has no operator key configured, so no key can grant operator access here.'
+      : operatorOnly
+        ? 'The server refused this operator key. Seasons can only be opened here by the operator, so nothing you do will take effect until it is replaced.'
+        : 'The server refused this operator key. You can still open your own lobbies — anyone may — but you will not be able to control seasons opened by someone else.';
+  }
+  const label = refused ? 'Operator key refused'
+    : accepted ? 'Operator key accepted'
+      : held ? 'Operator key held'
         : 'Operator sign-in';
+  return {
+    held, refused, why, label,
+  };
+}
 
-  // The refusal has to survive the panel being shut — the operator may
-  // never reopen the form to find out why their key does nothing.
-  const notice = refused && (
-    <p className="qf-operator__refused" role="status">
-      {noOperator
-        ? 'This server has no operator key configured, so no key can grant operator access here.'
-        : operatorOnly
-          ? 'The server refused this operator key. Seasons can only be opened here by the operator, so nothing you do will take effect until it is replaced.'
-          : 'The server refused this operator key. You can still open your own lobbies — anyone may — but you will not be able to control seasons opened by someone else.'}
-    </p>
-  );
-
-  if (!open) {
-    return (
-      <>
+function OperatorDialog({ op, onClose }) {
+  const [value, setValue] = useState('');
+  const save = (e) => {
+    e.preventDefault();
+    setAdminKey(value.trim() || null);
+    window.location.reload(); // everything on screen was fetched without it
+  };
+  const footer = (
+    <>
+      {op.held && (
         <button
           type="button"
-          className={`qf-operator__toggle${refused ? ' is-refused' : ''}`}
-          onClick={() => setOpen(true)}
+          className="qf-btn qf-btn--quiet"
+          onClick={() => { setAdminKey(null); window.location.reload(); }}
         >
-          {label}
+          Clear
         </button>
-        {notice}
-      </>
-    );
-  }
+      )}
+      <button type="submit" form="qf-land-opkey" className="qf-btn qf-btn--primary">Save</button>
+    </>
+  );
   return (
-    <form
-      className="qf-operator"
-      onSubmit={(e) => {
-        e.preventDefault();
-        setAdminKey(value.trim() || null);
-        window.location.reload(); // everything on screen was fetched without it
-      }}
-    >
-      <label className="qf-operator__label" htmlFor="qf-opkey">Operator key</label>
-      <div className="qf-operator__row">
-        <input
-          id="qf-opkey"
-          type="password"
-          autoComplete="off"
-          className="qf-input"
-          placeholder={held ? '•••••••• saved' : 'paste key'}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-        />
-        <button type="submit" className="qf-btn qf-btn--primary">Save</button>
-        {held && (
-          <button
-            type="button"
-            className="qf-btn"
-            onClick={() => { setAdminKey(null); window.location.reload(); }}
-          >
-            Clear
-          </button>
-        )}
-      </div>
-      {notice}
-      <p className="qf-operator__hint">
-        Or from the console: <code>window.questfi.setOperatorKey("…")</code>
+    <Modal title="Operator sign-in" onClose={onClose} footer={footer}>
+      <form id="qf-land-opkey" className="qf-land-form" onSubmit={save}>
+        <div className="qf-land-field">
+          <label className="qf-land-field__label" htmlFor="qf-land-opkey-input">Operator key</label>
+          <div className="qf-land-field__control">
+            <input
+              id="qf-land-opkey-input"
+              type="password"
+              autoComplete="off"
+              className="qf-land-input"
+              placeholder={op.held ? '•••••••• saved' : 'paste key'}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+            />
+          </div>
+        </div>
+      </form>
+      {op.why && <p className="qf-land-refused" role="status">{op.why}</p>}
+      <p className="qf-muted qf-land-hint">
+        Or from the console: <code>window.questfi.setOperatorKey(&quot;…&quot;)</code>
       </p>
-    </form>
+    </Modal>
+  );
+}
+
+function DeleteDialog({ worldId, onCancel, onConfirm }) {
+  const [busy, setBusy] = useState(false);
+  const footer = (
+    <>
+      <button type="button" className="qf-btn qf-btn--quiet" onClick={onCancel} disabled={busy}>Cancel</button>
+      <button
+        type="button"
+        className={`qf-btn qf-btn--danger${busy ? ' is-busy' : ''}`}
+        disabled={busy}
+        onClick={async () => { setBusy(true); await onConfirm(); }}
+      >
+        Delete
+      </button>
+    </>
+  );
+  return (
+    <Modal title="Delete season" onClose={busy ? undefined : onCancel} footer={footer} className="qf-land-danger">
+      <p className="qf-body">Delete {worldId}? This erases the season for everyone.</p>
+    </Modal>
   );
 }
 
 export default function Landing() {
   const { attachWorld, deleteSeason, notice, dismissNotice } = useSandbox();
   const [worlds, setWorlds] = useState(null); // null = first load pending
-  const [playing, setPlaying] = useState(null);
+  const [playing, setPlaying] = useState(null); // world id whose onboarding is open
+  const [deleting, setDeleting] = useState(null); // world id awaiting confirmation
   const [opening, setOpening] = useState(false);
+  const [operatorOpen, setOperatorOpen] = useState(false);
   const [error, setError] = useState(null);
   // Assume creation is allowed until told otherwise, so a slow first poll
   // doesn't flash the locked-down copy at everyone.
   const [canCreate, setCanCreate] = useState(true);
   const [operatorOnly, setOperatorOnly] = useState(false);
   // The server's verdict on the saved operator key. null = never asked, or
-  // asked a backend too old to answer — OperatorKey falls back to inference.
+  // asked a backend too old to answer; the key's label falls back to inference.
   const [keyVerdict, setKeyVerdict] = useState(null);
 
   const refresh = useCallback(async () => {
@@ -236,8 +264,8 @@ export default function Landing() {
       setWorlds((prev) => prev ?? []);
     }
     // Only worth asking when we're holding something to ask about. A failure
-    // here is not an outage — the listing above is what says the island is
-    // up — so it clears the verdict rather than raising an alarm.
+    // here is not an outage (the listing above is what says the island is
+    // up), so it clears the verdict rather than raising an alarm.
     if (!getAdminKey()) {
       setKeyVerdict(null);
       return;
@@ -255,112 +283,128 @@ export default function Landing() {
     return () => clearInterval(id);
   }, [refresh]);
 
-  const handleDelete = useCallback(async (worldId) => {
-    // eslint-disable-next-line no-alert
-    if (!window.confirm(`Delete ${worldId}? This erases the season for everyone.`)) return;
+  const confirmDelete = useCallback(async () => {
+    const worldId = deleting;
     try {
       await deleteSeason(worldId);
     } catch {
       setError('That season could not be deleted.');
     }
+    setDeleting(null);
     refresh();
-  }, [deleteSeason, refresh]);
+  }, [deleting, deleteSeason, refresh]);
+
+  const op = useOperatorKey({ operatorOnly, canCreate, verdict: keyVerdict });
 
   const live = (worlds || []).filter((w) => w.phase === 'lobby' || w.phase === 'running');
   const over = (worlds || []).filter((w) => w.phase === 'finished').slice(0, 3);
   const rows = [...live, ...over];
 
+  let empty = null;
+  if (worlds === null) empty = 'Scanning for seasons…';
+  else if (rows.length === 0) {
+    empty = canCreate
+      ? 'Nothing on air. Open a lobby and point an agent at it.'
+      : 'Nothing on air. Seasons here are opened by the operator — check back shortly.';
+  }
+
   return (
-    <div className="qf-landing">
-      <div className="qf-landing__veil" aria-hidden />
-      <div className="qf-landing__scroll">
-        <div className="qf-landing__stage">
+    <div className="qf-land">
+      <div className="qf-land-veil" aria-hidden />
 
-          {/* ---- masthead ---- */}
-          <header className="qf-brand">
-            <div className="qf-brand__lockup">
-              <img className="qf-brand__mark" src={publicUrl('/brand/quest-logo.png')} alt="" aria-hidden />
-              <span className="qf-brand__word">QUESTFI</span>
-            </div>
-            <h1 className="qf-brand__title">Agent Island</h1>
-            {/* <p className="qf-brand__sub">
-              Coding agents land on a hostile island. One walks off.
-            </p> */}
-            <span className="qf-brand__onair">
-              <i className="qf-brand__dot" aria-hidden />
-              {live.length > 0
-                ? `${live.length} season${live.length === 1 ? '' : 's'} on air`
-                : 'Standing by'}
+      <div className="qf-land-frame">
+        <header className="qf-land-title">
+          <img className="qf-land-title__logo" src={publicUrl('/brand/quest-logo.png')} alt="" aria-hidden />
+          <p className="qf-land-title__kicker">QuestFi</p>
+          {/* two words, so a small window can stack them */}
+          <h1 className="qf-land-title__name"><span>Agent</span> <span>Island</span></h1>
+          <p className="qf-land-title__tag">Loot · Duel · Slay the boss · Settles on NEAR</p>
+          {live.length > 0 ? (
+            <span className="qf-pill qf-land-onair">
+              <i className="qf-dot qf-dot--live" aria-hidden />
+              {live.length} season{live.length === 1 ? '' : 's'} on air
             </span>
-          </header>
+          ) : (
+            <span className="qf-pill qf-pill--off qf-land-onair">Standing by</span>
+          )}
+        </header>
 
-          {/* ---- season board ---- */}
-          <main className="qf-board">
-            <div className="qf-board__head">
-              <h2 className="qf-board__title">Seasons</h2>
-              {canCreate ? (
-                <button
-                  type="button"
-                  className={`qf-btn ${opening ? '' : 'qf-btn--primary'}`}
-                  aria-expanded={opening}
-                  onClick={() => setOpening((v) => !v)}
-                >
-                  {opening ? 'Cancel' : 'Open a lobby'}
-                </button>
-              ) : operatorOnly && (
-                <span className="qf-board__locked">Operator-run server</span>
-              )}
-            </div>
-
-            {notice && (
-              <p className="qf-alert" role="status">
-                <span>{notice}</span>
-                <button type="button" className="qf-alert__x" onClick={dismissNotice} aria-label="Dismiss">✕</button>
-              </p>
+        <main className="qf-panel qf-land-board" aria-labelledby="qf-land-board-title">
+          <div className="qf-head qf-land-board__head">
+            <h2 id="qf-land-board-title" className="qf-land-board__title">Seasons</h2>
+            {canCreate ? (
+              <button type="button" className="qf-btn qf-btn--small qf-btn--primary" onClick={() => setOpening(true)}>
+                Open a lobby
+              </button>
+            ) : operatorOnly && (
+              <span className="qf-label qf-label--small">Operator-run server</span>
             )}
-            {error && <p className="qf-alert qf-alert--bad" role="status"><span>{error}</span></p>}
+          </div>
 
-            {canCreate && opening && (
-              <div className="qf-panel">
-                <OpenLobbyForm onDone={() => setOpening(false)} onCancel={() => setOpening(false)} />
-              </div>
+          {notice && (
+            <p className="qf-land-notice" role="status">
+              <IconInfo className="qf-land-notice__icon" />
+              <span>{notice}</span>
+              <button type="button" className="qf-land-notice__x" onClick={dismissNotice} aria-label="Dismiss">
+                <IconClose size={14} />
+              </button>
+            </p>
+          )}
+          {error && (
+            <p className="qf-land-notice is-bad" role="status">
+              <IconWarn className="qf-land-notice__icon" />
+              <span>{error}</span>
+            </p>
+          )}
+
+          <div className="qf-land-list qf-scroll">
+            {empty ? (
+              <p className="qf-land-empty">{empty}</p>
+            ) : (
+              <table className="qf-land-table">
+                <caption className="qf-land-sr">Seasons on this server</caption>
+                <thead className="qf-land-sr">
+                  <tr>
+                    <th scope="col">Status</th>
+                    <th scope="col">Season</th>
+                    <th scope="col">Now</th>
+                    <th scope="col">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((w) => (
+                    <SeasonRow
+                      key={w.world_id}
+                      world={w}
+                      onWatch={attachWorld}
+                      onPlay={setPlaying}
+                      onDelete={setDeleting}
+                    />
+                  ))}
+                </tbody>
+              </table>
             )}
+          </div>
+        </main>
 
-            {worlds === null && <p className="qf-empty">Scanning for seasons…</p>}
-            {worlds !== null && rows.length === 0 && !opening && (
-              <p className="qf-empty">
-                {canCreate
-                  ? 'Nothing on air. Open a lobby and point an agent at it.'
-                  : 'Nothing on air. Seasons here are opened by the operator — check back shortly.'}
-              </p>
-            )}
-
-            {rows.length > 0 && (
-              <ul className="qf-list">
-                {rows.map((w, i) => (
-                  <SeasonRow
-                    key={w.world_id}
-                    world={w}
-                    index={i}
-                    playing={playing === w.world_id}
-                    onWatch={attachWorld}
-                    onPlay={setPlaying}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </ul>
-            )}
-          </main>
-
-          <footer className="qf-foot">
-            <OperatorKey
-              operatorOnly={operatorOnly}
-              canCreate={canCreate}
-              verdict={keyVerdict}
-            />
-          </footer>
-        </div>
+        <footer className="qf-land-foot">
+          <button
+            type="button"
+            className={`qf-land-op${op.refused ? ' is-refused' : op.held ? ' is-held' : ''}`}
+            onClick={() => setOperatorOpen(true)}
+          >
+            <IconKey size={12} />
+            {op.label}
+          </button>
+        </footer>
       </div>
+
+      {opening && canCreate && <OpenLobbyForm onClose={() => setOpening(false)} />}
+      {playing && <OnboardingDialog worldId={playing} onClose={() => setPlaying(null)} />}
+      {deleting && (
+        <DeleteDialog worldId={deleting} onCancel={() => setDeleting(null)} onConfirm={confirmDelete} />
+      )}
+      {operatorOpen && <OperatorDialog op={op} onClose={() => setOperatorOpen(false)} />}
     </div>
   );
 }

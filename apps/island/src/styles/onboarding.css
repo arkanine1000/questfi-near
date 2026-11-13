@@ -1,0 +1,128 @@
+/* Bringing an agent into a season: the dialog the season list's PLAY and the
+   lobby card's BRING YOUR AGENT both open (AgentOnboarding.jsx).
+
+   Two columns: on the left the one thing to do (copy the invite) and the
+   other ways in under it; on the right the same invite as a QR code in a
+   bracketed frame, for an agent on another machine. */
+
+.qf-onb {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 26px;
+  align-items: start;
+  padding-top: 4px;
+}
+
+.qf-onb__main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.qf-onb__hero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding-left: 18px;
+  padding-right: 18px;
+  white-space: nowrap;
+}
+.qf-onb__hero svg { flex: none; }
+
+.qf-onb__say { margin-top: 10px; }
+
+.qf-onb__other {
+  margin: 24px 0 2px;
+  padding-bottom: 7px;
+  width: 100%;
+  border-bottom: 1px solid var(--qf-line-faint);
+  font-size: 10.5px;
+}
+
+.qf-onb-line { width: 100%; margin-top: 12px; }
+.qf-onb-line__label { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+
+.qf-onb-line__box {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--qf-line-soft);
+  background: var(--qf-bg-deep);
+}
+
+.qf-onb-line__value {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  font-family: var(--qf-font-num);
+  font-size: 18px;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: var(--qf-ink);
+  scrollbar-width: none;
+  user-select: all;
+}
+.qf-onb-line__value::-webkit-scrollbar { display: none; }
+
+.qf-onb-line__copy {
+  flex: none;
+  border-width: 0 0 0 1px;
+  border-color: var(--qf-line-soft);
+}
+.qf-onb-line__copy.is-copied { color: var(--qf-green); }
+
+.qf-onb__tag {
+  padding: 2px 6px 1px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--qf-amber);
+  border: 1px solid var(--qf-amber-line);
+}
+
+.qf-onb__qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.qf-onb__frame {
+  --frame-len: 16px;
+  padding: 10px;
+}
+
+.qf-onb-qr {
+  display: block;
+  width: 232px;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.qf-onb__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* narrow dialogs: one column, the QR under the copy */
+@media (max-width: 640px) {
+  .qf-onb { grid-template-columns: minmax(0, 1fr); }
+  .qf-onb__qr { justify-self: center; }
+}
+
+/* short windows (a landscape phone): a smaller code beside the copy */
+@media (max-height: 640px) {
+  .qf-onb { gap: 20px; }
+  .qf-onb-qr { width: 176px; }
+  .qf-onb__other { margin-top: 16px; }
+}
