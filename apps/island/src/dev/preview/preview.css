@@ -52,31 +52,20 @@
 
 /* ---- the finale ---- */
 .pv-trophy {
-  width: 170px;
-  height: 170px;
-  margin: -14px 0 -10px;
   display: grid;
   place-items: center;
   position: relative;
-  color: #ffcf6a;
+  color: var(--qf-amber, #ffcf6a);
 }
 
 .pv-trophy svg {
   width: 62%;
   height: 62%;
   fill: rgba(255, 170, 0, 0.18);
-  stroke: #ffcf6a;
+  stroke: currentColor;
   stroke-width: 2;
 }
 
-.pv-trophy span {
-  position: absolute;
-  bottom: 14px;
-  font-size: 9px;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  opacity: 0.55;
-}
 
 .pv-confetti {
   position: absolute;
@@ -99,7 +88,7 @@
   overflow: auto;
   padding: 28px 32px 48px;
   color: #c8ffd4;
-  font-family: var(--font-mono);
+  font-family: var(--qf-font, monospace);
   background: radial-gradient(ellipse at 50% 30%, #04210f 0%, #010603 70%);
   z-index: 1;
 }
@@ -189,7 +178,7 @@
   padding: 32px;
   background: #1a0005;
   color: #ffb3c0;
-  font: 14px/1.5 var(--font-mono);
+  font: 14px/1.5 var(--qf-font, monospace);
   white-space: pre-wrap;
   overflow: auto;
 }

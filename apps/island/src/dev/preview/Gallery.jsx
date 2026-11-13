@@ -11,7 +11,9 @@
  * The beacons, rings, monuments and combat pillars are meshes, not DOM.
  */
 
+// the app's own stylesheets, in SandboxView's order: stage.css restyles the tags
 import '../../styles/Sandbox.css';
+import '../../styles/stage.css';
 import { BOSS_SITE_NAME, GALLERY_ROSTER } from './scenarios';
 
 /** drei's <Html center>: an absolutely placed box, centred on its point. */

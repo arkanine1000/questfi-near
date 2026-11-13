@@ -211,13 +211,14 @@ becomes ready (`data-preview-error` says what it was waiting for).
 `running-locked`, `running-sim`, `no-account`, `follow-overworld`,
 `hex-picker`, `follow-dungeon`, `follow-dungeon-pvp`, `follow-dungeon-death`,
 `finale-won`, `finale-lost`, `finale-refund`, `finale-settling`,
-`finale-none`, `tv`, and `gallery` (the DOM that drei's `<Html>` projects out
-of the 3D scenes: name tags, the boss crown, rival tags). Sub-states are extra
-parameters on top of a scenario:
+`finale-none`, `finale-sim`, `tv`, and `gallery` (the DOM that drei's
+`<Html>` projects out of the 3D scenes: name tags, the boss crown, rival
+tags). Sub-states are extra parameters on top of a scenario:
 
 | Parameter | Effect |
 |-----------|--------|
-| `step=<name>` | An interaction performed once the data is in: `open-lobby`, `play`, `operator`, `delete`, `start-now`, `bring-agent`, `copy-invite`, `booth`, `sound`, `create-account`, `bet`, `claim`, `help`, `fold`, `tab-bets`, `tab-chain`, `fold-field`, `fold-both`, `dossier`, `dossier-dead`, `dossiers` |
+| `step=<name>` | An interaction performed once the data is in. Season list: `open-lobby`, `play`, `operator`, `delete`. Lobby: `start-now`, `bring-agent`, `copy-invite`. Top bar: `booth`, `sound`, `create-account`. Market: `bet`, `claim`, `help`, `fold`, `tab-bets`, `tab-chain`. Field: `fold-field`, `fold-both`, `dossier`, `dossier-dead` (with `fallen=1`), `dossiers` (two windows) |
+| `tab=bets\|chain`, `fold=dock\|field\|both` | Shorthands for the market tab and the folded columns |
 | `tx=pending\|fail\|ok` | What the chain does with a bet or claim |
 | `guest=pending\|fail\|ok` | What the test-account service does |
 | `follow=slip` | Follow an agent on the surface, so the bet slip has someone to back |
@@ -225,8 +226,10 @@ parameters on top of a scenario:
 | `paused=1`, `feed=1`, `chain=error\|off`, `rpc=down`, `account=none\|gone` | Clock stopped; the visitor's own transactions in the on-chain feed; the server's chain trouble, or a season off chain; the RPC unreachable; no test account, or one that no longer exists |
 | `net=hold\|down` | The scenario's main request never answers / fails |
 | `hex=q,r` | Click that hex (the crowded-hex picker) |
+| `fallen=1`, `low=1`, `stall=1`, `cut=blow` | A running season with Vex cut down; the dungeon HUD at low health; the dungeon curtain past its 12 s ceiling; the HUD at the killing blow |
+| `embed=1` | The scenario inside a frame, as Agent World opens it (the app sees `window.self !== window.top`) |
 | `wait=countdown\|player\|running_season\|chain` | What an arena lobby waits for |
-| `view=tv` | The TV cut |
+| `view=tv`, `director=1` | The app's own parameters: the TV cut, the auto-director on |
 
 Steps find their controls by accessible name (an `aria-label`, else the
 text), never by class name; when a redesign renames one, update `STEPS` in

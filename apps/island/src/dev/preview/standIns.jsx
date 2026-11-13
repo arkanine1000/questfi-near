@@ -71,15 +71,15 @@ function DungeonBackdrop({ queue, onReady }) {
 
 // ---- the finale ----------------------------------------------------------
 
+/** In the finale card's trophy box (Finale's qf-fin-trophy, which sizes it). */
 function TrophyPlaceholder() {
   return (
-    <div className="pv-trophy" data-preview-backdrop="trophy" aria-hidden>
+    <div className="qf-fin-trophy pv-trophy" data-preview-backdrop="trophy" aria-hidden>
       <svg viewBox="0 0 100 100" width="100%" height="100%">
         <path d="M30 18h40v14c0 16-8 28-20 30-12-2-20-14-20-30z" />
         <path d="M30 24H18c0 12 6 18 14 20M70 24h12c0 12-6 18-14 20" fill="none" />
         <path d="M46 62h8v12h-8zM34 74h32v8H34z" />
       </svg>
-      <span>trophy</span>
     </div>
   );
 }
@@ -111,7 +111,8 @@ function ConfettiStill() {
 
 /**
  * The real drawing (InviteQr's own draw()), made on a detached canvas and
- * shown as an image. Mirrors InviteQr's markup so its styles apply.
+ * shown as an image. Wears InviteQr's class (qf-onb-qr) so its styles apply;
+ * change it here if that markup changes.
  */
 function QrImage({ text, draw, size = 512 }) {
   const [src, setSrc] = useState(null);
@@ -127,18 +128,16 @@ function QrImage({ text, draw, size = 512 }) {
       setSrc(null);
     }
   }, [text, draw, size]);
+  if (!src) return <span className="qf-onb-qr" data-preview-backdrop="qr" />;
   return (
-    <div className="qf-inviteqr" data-preview-backdrop="qr">
-      {src && (
-        <img
-          src={src}
-          width={size}
-          height={size}
-          className="qf-inviteqr__canvas"
-          alt="QR code for this lobby's agent invite"
-        />
-      )}
-    </div>
+    <img
+      src={src}
+      width={size}
+      height={size}
+      className="qf-onb-qr"
+      data-preview-backdrop="qr"
+      alt="QR code for this lobby's agent invite"
+    />
   );
 }
 
