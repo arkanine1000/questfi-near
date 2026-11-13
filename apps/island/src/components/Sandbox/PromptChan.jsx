@@ -1,9 +1,13 @@
 /**
- * Prompt-chan — the island's caster, bottom-left of both the god view and
- * the crawler. She materializes with a line, holds long enough to read it,
- * then takes her leave.
+ * Prompt-chan, the island's caster. On the island she stands at the stage's
+ * bottom-left as a full figure with her caption as a desk in front of her;
+ * over the dungeon feed, after the season, and wherever the stage is narrow
+ * she is a small camera square (head and shoulders, cut from the same sprite
+ * frames) beside the caption. One markup serves both forms; the stylesheet
+ * chooses. She comes in with a line, holds it long enough to read, then
+ * falls quiet: the caption goes and she dims until the next line.
  *
- * Names in her lines are live: click one to ride that challenger — the
+ * Names in her lines are live: click one to ride that challenger. The
  * caster is a camera director who doesn't know it.
  */
 
@@ -95,8 +99,8 @@ export function CastLine({ text, roster, onFollow }) {
           <button
             key={`${m.index}-${agent.agent_id}`}
             type="button"
-            className="sbx-promptchan__namelink"
-            style={{ '--chip-color': agent.color }}
+            className="qf-caster-name"
+            style={{ '--agent': agent.color }}
             onClick={() => onFollow?.(agent)}
             title={`Follow ${agent.name}`}
           >
@@ -117,15 +121,11 @@ export function CastLine({ text, roster, onFollow }) {
 
 export default function PromptChan({ onFollow }) {
   const {
-    commentary, roster, latestFrame, followedAgent, world,
+    commentary, roster, latestFrame, followedAgent,
   } = useSandbox();
-  // Extinction ending: no crown means no WinnerChan cameo, so the live
-  // booth carries the sign-off itself — it must clear the winner overlay's
-  // dim rather than sit under it.
-  const finale = world?.phase === 'finished';
   // Voice is an island-view thing: underground the dungeon feed owns the
-  // audio stage, so she goes silent (and stays readable via the bubble
-  // when back topside).
+  // audio stage, so she stops speaking there; her caption still carries
+  // the line.
   const underground = followedAgent?.position?.kind === 'dungeon';
   const undergroundRef = useRef(underground);
   undergroundRef.current = underground;
@@ -229,24 +229,24 @@ export default function PromptChan({ onFollow }) {
     };
   }, [line]);
 
+  // Nothing until her first line: a server without a commentator has no
+  // caster at all, rather than a camera that never speaks.
   if (!line) return null;
   return (
-    <div
-      className={`sbx-promptchan${live ? ' is-live' : ''}${finale ? ' sbx-promptchan--finale' : ''}`}
-      aria-live="polite"
-    >
-      <img
-        className="sbx-promptchan__sprite"
-        src={sprite}
-        alt=""
-        draggable="false"
-      />
-      <div className="sbx-promptchan__bubble">
-        <span className="sbx-promptchan__name">PROMPT-CHAN</span>
-        <p className="sbx-promptchan__text">
+    <section className={`qf-caster${live ? ' is-live' : ''}`} aria-label="Prompt-chan, the caster">
+      <div className="qf-caster-cam qf-frame" aria-hidden>
+        <img src={sprite} alt="" draggable="false" />
+        <span className="qf-caster-live"><i className="qf-dot qf-dot--live" />Live</span>
+      </div>
+      <div className="qf-panel qf-caster-caption" aria-live="polite">
+        <header className="qf-caster-head">
+          <span className="qf-caster-who">Prompt-chan</span>
+          <span className="qf-caster-role">Caster</span>
+        </header>
+        <p className="qf-caster-line">
           <CastLine text={line.text} roster={roster} onFollow={onFollow} />
         </p>
       </div>
-    </div>
+    </section>
   );
 }

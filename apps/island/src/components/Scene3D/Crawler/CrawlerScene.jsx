@@ -1,7 +1,10 @@
-import { Component, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Component, Suspense, useEffect, useMemo, useRef, useState,
+} from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
-import { canUseBloom } from '../worldUtils';
+import { canUseBloom, COLORS } from '../worldUtils';
+import HouseFx, { houseFxAllowedByUrl } from '../HouseFx';
+import { look } from '../look';
 import CrawlerRig from './CrawlerRig';
 import CrawlerMaze from './CrawlerMaze';
 import CrawlerEnemy from './CrawlerEnemy';
@@ -10,7 +13,7 @@ import CrawlerAmbience from './CrawlerAmbience';
 import CrawlerLightPool from './CrawlerLightPool';
 import CrawlerWeapon from './CrawlerWeapon';
 
-const FOG_COLOR = '#010603';
+const FOG_COLOR = COLORS.bg;
 
 // Frames to let land after the shader warm-up, before calling the scene
 // presentable. Postprocessing compiles its own chain on the composer's first
@@ -87,10 +90,32 @@ class PostFxBoundary extends Component {
 }
 
 /**
+ * The house lens at point-of-view values: the island's bloom and CRT pass
+ * with the stronger green grade and aberration Agent World switches to when
+ * it looks through an agent's eyes. Values are the look's `dungeon*` keys.
+ */
+function DungeonFx({ reducedMotion }) {
+  return (
+    <HouseFx
+      bloomIntensity={look.dungeonBloomIntensity}
+      bloomThreshold={look.dungeonBloomThreshold}
+      bloomRadius={look.dungeonBloomRadius}
+      grade={look.dungeonGrade}
+      aberration={look.dungeonAberration}
+      scan={look.dungeonScan}
+      vignette={look.dungeonVignette}
+      noise={look.dungeonNoise}
+      reducedMotion={reducedMotion}
+    />
+  );
+}
+
+/**
  * The crawler canvas: wide-FOV first-person view drowned in dense phosphor
  * fog, lit almost entirely by the player's flickering torch. Postprocessing
- * (Bloom + Noise + Vignette) rides the same capability gate as the island —
- * the emissive materials must read on their own without it.
+ * (the shared HouseFx lens) rides the same capability gate as the island —
+ * the emissive materials must read on their own without it — and `?fx=0`
+ * turns it off.
  */
 export default function CrawlerScene({
   model, queue, activeBeat, weapon, reducedMotion,
@@ -122,13 +147,17 @@ export default function CrawlerScene({
   // crawler", and silently turns a teardown into a failed assertion.
   useEffect(() => () => { delete window.__crawler; }, []);
 
+  // Preview mode (dev only, src/dev/preview) puts a DOM backdrop here: no canvas.
+  if (import.meta.env.DEV && window.__questfiPreview) return window.__questfiPreview.standIn('dungeon', { queue, onReady });
+
   return (
     <Canvas
       dpr={capture ? 1 : [1, 1.5]} // capture mode eases software-GL memory pressure
       gl={{ antialias: true, powerPreference: 'default', preserveDrawingBuffer: capture }}
       camera={{ fov: 90, near: 0.1, far: 40, position: [0, 1.7, 0] }}
       onCreated={({ gl, scene }) => {
-        setPostFx(canUseBloom() && !!gl.getContext()?.getContextAttributes?.());
+        setPostFx(canUseBloom() && houseFxAllowedByUrl()
+          && !!gl.getContext()?.getContextAttributes?.());
         // Test seam, gated on the same ?capture=1 flag as the preserved
         // drawing buffer: scripts/pw-crawler.mjs reads renderer.info to
         // assert the light pool never grows the shader program count.
@@ -137,7 +166,7 @@ export default function CrawlerScene({
     >
       <color attach="background" args={[FOG_COLOR]} />
       <fog attach="fog" args={[FOG_COLOR, 2, 22]} />
-      <ambientLight color="#0d5a2b" intensity={0.8} />
+      <ambientLight color={COLORS.deep} intensity={0.8} />
 
       {/* Rig first: it advances the beat queue for everyone downstream */}
       <CrawlerRig model={model} queue={queue} reducedMotion={reducedMotion} />
@@ -159,17 +188,7 @@ export default function CrawlerScene({
 
       {postFx && (
         <PostFxBoundary>
-          <EffectComposer>
-            <Bloom
-              mipmapBlur
-              intensity={0.9}
-              luminanceThreshold={0.18}
-              luminanceSmoothing={0.3}
-              radius={0.75}
-            />
-            <Noise premultiply opacity={0.35} />
-            <Vignette eskil={false} offset={0.2} darkness={0.85} />
-          </EffectComposer>
+          <DungeonFx reducedMotion={reducedMotion} />
         </PostFxBoundary>
       )}
     </Canvas>

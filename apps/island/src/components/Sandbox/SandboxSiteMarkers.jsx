@@ -1,23 +1,28 @@
 /**
  * Dungeon mouths on the war table — each entrance is a real monument now:
  * a dark descending pit ringed in phosphor, flanked by two standing stones
- * under a lintel. The boss site rises taller in crown-amber with a pulse.
- * Still deliberately sparse — sites announce themselves through the ticker,
- * not through labels (the crown alone is named).
+ * under a lintel, drawn the house way (dark fill, bright edges). The boss
+ * site rises taller in crown-amber with a pulse. Still deliberately sparse —
+ * sites announce themselves through the ticker, not through labels (the
+ * crown alone is named).
  */
 
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
-import { axialToWorld } from '../Scene3D/worldUtils';
+import { axialToWorld, COLORS } from '../Scene3D/worldUtils';
+import { IconCrown } from '../ui/icons';
 
-const RING_COLOR = '#2dff6e';
-const BOSS_COLOR = '#ffaa00';
-const PIT_COLOR = '#000d04';
+const RING_COLOR = COLORS.green;
+const BOSS_COLOR = COLORS.amber;
+const PIT_COLOR = COLORS.bg;
+const STONE_FILL = 0.12; // stone faces: the site colour, nearly black
 
 const pillarGeo = new THREE.BoxGeometry(0.055, 0.3, 0.055);
 const lintelGeo = new THREE.BoxGeometry(0.34, 0.05, 0.07);
+const pillarEdges = new THREE.EdgesGeometry(pillarGeo);
+const lintelEdges = new THREE.EdgesGeometry(lintelGeo);
 const pitGeo = new THREE.CircleGeometry(0.24, 24);
 const ringGeo = new THREE.RingGeometry(0.26, 0.31, 32);
 
@@ -27,9 +32,15 @@ function Mouth({ position, boss, reducedMotion }) {
   const s = boss ? 1.5 : 1;
 
   const stoneMat = useMemo(() => new THREE.MeshBasicMaterial({
-    color: new THREE.Color(color).multiplyScalar(0.55),
+    color: new THREE.Color(color).multiplyScalar(STONE_FILL),
     toneMapped: false,
   }), [color]);
+  const edgeMat = useMemo(() => new THREE.LineBasicMaterial({
+    color,
+    transparent: true,
+    opacity: boss ? 0.95 : 0.75,
+    toneMapped: false,
+  }), [color, boss]);
   const pitMat = useMemo(() => new THREE.MeshBasicMaterial({
     color: PIT_COLOR,
     toneMapped: false,
@@ -57,13 +68,13 @@ function Mouth({ position, boss, reducedMotion }) {
         position={[0, 0.012, 0]} raycast={() => null} />
       <mesh ref={ringRef} geometry={ringGeo} material={ringMat}
         rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} raycast={() => null} />
-      {/* standing stones + lintel over the descent */}
+      {/* standing stones + lintel over the descent: dark faces, bright edges */}
       <mesh geometry={pillarGeo} material={stoneMat} position={[-0.14, 0.15, -0.22]} raycast={() => null} />
       <mesh geometry={pillarGeo} material={stoneMat} position={[0.14, 0.15, -0.22]} raycast={() => null} />
       <mesh geometry={lintelGeo} material={stoneMat} position={[0, 0.32, -0.22]} raycast={() => null} />
-      {/* mouth-glow rising out of the pit */}
-      <pointLight position={[0, 0.18, 0]} color={color}
-        intensity={boss ? 2.6 : 1.1} distance={1.6} decay={2} />
+      <lineSegments geometry={pillarEdges} material={edgeMat} position={[-0.14, 0.15, -0.22]} raycast={() => null} />
+      <lineSegments geometry={pillarEdges} material={edgeMat} position={[0.14, 0.15, -0.22]} raycast={() => null} />
+      <lineSegments geometry={lintelEdges} material={edgeMat} position={[0, 0.32, -0.22]} raycast={() => null} />
     </group>
   );
 }
@@ -111,7 +122,7 @@ export default function SandboxSiteMarkers({ islandMap, reducedMotion }) {
           style={{ pointerEvents: 'none' }}
         >
           <div className="sbx-boss-tag">
-            <span className="sbx-boss-tag__crown">♛</span> {boss.name}
+            <span className="sbx-boss-tag__crown"><IconCrown size={11} /></span> {boss.name}
           </div>
         </Html>
       )}

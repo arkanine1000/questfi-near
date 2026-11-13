@@ -5,6 +5,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { axialToWorld, COLORS } from './worldUtils';
 import { getActiveMapId } from '../../data/maps';
 import { BOOT, bootRamp } from './bootFx';
+import { holoFillMaterial, holoWireMaterial, holoRamp } from './holo';
 
 // Global miniaturization knob — relics are set dressing, not centerpieces
 const RELIC_SCALE = 0.4;
@@ -13,10 +14,11 @@ const RELIC_SCALE = 0.4;
 const FLOAT_ALTITUDE = 0.34;
 const BOB_AMPLITUDE = 0.025;
 const BOB_SPEED = 0.9;
-const SOLID_FILL = '#032012';
 
-const GREEN = new THREE.Color(COLORS.green);
-const CYAN = new THREE.Color(COLORS.cyan);
+// House hologram recipe: a weak emissive fill (small subjects, mostly black
+// land) under a bright wire
+const FILL_INTENSITY = 0.12;
+const WIRE_OPACITY = 0.8;
 
 // mergeGeometries needs uniform indexing; normalize every part first
 // (same convention as TerrainProps)
@@ -171,17 +173,18 @@ function buildBow() {
   return geo;
 }
 
-// Relic armory — visual definitions. `cyan` shifts the wire hue, `tilt` is
-// a fixed lean so silhouettes stay readable while they spin.
+// Relic armory — visual definitions. `bright` moves the wire along the
+// house ramp (green toward bright green), `tilt` is a fixed lean so
+// silhouettes stay readable while they spin.
 const WEAPONS = [
-  { key: 'sword', build: buildSword, scale: 1.35, intensity: 0.95, cyan: 0.3, tilt: 0.16, spin: 0.4 },
-  { key: 'trident', build: buildTrident, scale: 1.3, intensity: 0.9, cyan: 0.45, tilt: 0.12, spin: 0.34 },
-  { key: 'axe', build: buildAxe, scale: 1.3, intensity: 0.9, cyan: 0.12, tilt: 0.2, spin: 0.45 },
-  { key: 'scythe', build: buildScythe, scale: 1.3, intensity: 0.9, cyan: 0.25, tilt: 0.18, spin: 0.3 },
-  { key: 'hammer', build: buildHammer, scale: 1.35, intensity: 0.9, cyan: 0.1, tilt: 0.14, spin: 0.38 },
-  { key: 'staff', build: buildStaff, scale: 1.3, intensity: 1.0, cyan: 0.5, tilt: 0.1, spin: 0.28 },
-  { key: 'shield', build: buildShield, scale: 1.4, intensity: 0.95, cyan: 0.2, tilt: 0.08, spin: 0.32 },
-  { key: 'bow', build: buildBow, scale: 1.3, intensity: 0.9, cyan: 0.18, tilt: 0.22, spin: 0.42 },
+  { key: 'sword', build: buildSword, scale: 1.35, intensity: 0.95, bright: 0.3, tilt: 0.16, spin: 0.4 },
+  { key: 'trident', build: buildTrident, scale: 1.3, intensity: 0.9, bright: 0.45, tilt: 0.12, spin: 0.34 },
+  { key: 'axe', build: buildAxe, scale: 1.3, intensity: 0.9, bright: 0.12, tilt: 0.2, spin: 0.45 },
+  { key: 'scythe', build: buildScythe, scale: 1.3, intensity: 0.9, bright: 0.25, tilt: 0.18, spin: 0.3 },
+  { key: 'hammer', build: buildHammer, scale: 1.35, intensity: 0.9, bright: 0.1, tilt: 0.14, spin: 0.38 },
+  { key: 'staff', build: buildStaff, scale: 1.3, intensity: 1.0, bright: 0.5, tilt: 0.1, spin: 0.28 },
+  { key: 'shield', build: buildShield, scale: 1.4, intensity: 0.95, bright: 0.2, tilt: 0.08, spin: 0.32 },
+  { key: 'bow', build: buildBow, scale: 1.3, intensity: 0.9, bright: 0.18, tilt: 0.22, spin: 0.42 },
 ];
 
 // Per-map hex placements. Island: ringed around the caldera. B4LK4N:
@@ -203,10 +206,12 @@ function Weapon({ def, hex, index, reducedMotion }) {
   const spinRef = useRef();
   const geometry = useMemo(def.build, [def]);
   const world = useMemo(() => axialToWorld(hex[0], hex[1]), [hex]);
-  const wireColor = useMemo(
-    () => GREEN.clone().lerp(CYAN, def.cyan).multiplyScalar(def.intensity),
-    [def],
+  const wireColor = useMemo(() => holoRamp(def.bright, def.intensity), [def]);
+  const fillMaterial = useMemo(
+    () => holoFillMaterial(COLORS.fill, { intensity: FILL_INTENSITY }),
+    [],
   );
+  const wireMaterial = useMemo(() => holoWireMaterial(wireColor, WIRE_OPACITY), [wireColor]);
 
   const baseY = world.y + FLOAT_ALTITUDE;
   const phase = index * 1.7;
@@ -226,25 +231,11 @@ function Weapon({ def, hex, index, reducedMotion }) {
     <group>
       <group ref={spinRef} position={[world.x, baseY, world.z]} rotation-y={phase}>
         <group rotation-z={def.tilt} scale={def.scale * RELIC_SCALE}>
-          {/* Solid pass — near-black fill so wires read as volume edges */}
-          <mesh geometry={geometry} raycast={() => null}>
-            <meshBasicMaterial color={SOLID_FILL} toneMapped={false} />
-          </mesh>
+          {/* Fill pass — dark emissive body so the wires read as volume edges */}
+          <mesh geometry={geometry} material={fillMaterial} raycast={() => null} />
           {/* Wire pass is the hologram itself — always on, independent of
               the terrain wireframe toggle */}
-          <mesh geometry={geometry} raycast={() => null}>
-            <meshBasicMaterial
-              wireframe
-              color={wireColor}
-              transparent
-              opacity={0.8}
-              depthWrite={false}
-              polygonOffset
-              polygonOffsetFactor={-1}
-              polygonOffsetUnits={-1}
-              toneMapped={false}
-            />
-          </mesh>
+          <mesh geometry={geometry} material={wireMaterial} raycast={() => null} />
         </group>
       </group>
 

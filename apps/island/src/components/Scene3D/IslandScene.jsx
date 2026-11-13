@@ -1,21 +1,50 @@
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import {
+  Suspense, useCallback, useEffect, useMemo, useRef, useState,
+} from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import Terrain from './Terrain';
 import TerrainProps from './TerrainProps';
 import FloatingWeapons from './FloatingWeapons';
 import EnemyHolograms from './EnemyHolograms';
 import HexGrid3D from './HexGrid3D';
 import CameraRig from './CameraRig';
-import Effects from './Effects';
+import HouseFx, { houseFxAllowedByUrl } from './HouseFx';
+import TableStage from './TableStage';
 import MissileArc from './MissileArc';
 import {
   prefersReducedMotion, canUseBloom, isTouchDevice, COLORS,
 } from './worldUtils';
+import { look } from './look';
 import { IS_TV } from '../../services/cast';
 import '../../styles/Scene3D.css';
 
 // Clicks that follow an orbit drag larger than this (px) don't deselect
 const DRAG_CLICK_PX = 5;
+
+/** Keeps the fog density on the look value. */
+function LookFog() {
+  useFrame(({ scene }) => {
+    if (scene.fog) scene.fog.density = look.fogDensity;
+  });
+  return null;
+}
+
+/** The house post pass with the island's look values. */
+function IslandFx({ reducedMotion }) {
+  return (
+    <HouseFx
+      bloomIntensity={look.bloomIntensity}
+      bloomThreshold={look.bloomThreshold}
+      bloomRadius={look.bloomRadius}
+      grade={look.grade}
+      aberration={look.aberration}
+      scan={look.scan}
+      vignette={look.vignette}
+      noise={look.noise}
+      reducedMotion={reducedMotion}
+    />
+  );
+}
 
 /**
  * The holographic war table. Renders fullscreen behind the DOM UI chrome;
@@ -39,6 +68,7 @@ export default function IslandScene({
   const [focusRequest, setFocusRequest] = useState(null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
   const bloomEnabled = useMemo(canUseBloom, []);
+  const fxEnabled = useMemo(() => bloomEnabled && houseFxAllowedByUrl(), [bloomEnabled]);
   const downPos = useRef({ x: 0, y: 0 });
 
   // Double-click a hex -> fly the camera in (sandbox also rides along)
@@ -82,6 +112,9 @@ export default function IslandScene({
   const dpr = IS_TV || !interactive ? 1
     : bloomEnabled && isTouchDevice() ? [1, 1.5] : [1, 2];
 
+  // Preview mode (dev only, src/dev/preview) puts a DOM backdrop here: no canvas.
+  if (import.meta.env.DEV && window.__questfiPreview) return window.__questfiPreview.standIn('island', { onSelectHex });
+
   return (
     <div
       className="island-scene"
@@ -94,18 +127,23 @@ export default function IslandScene({
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         onPointerMissed={handlePointerMissed}
       >
-        {/* Matches the fog color exactly — anything fogged fades TO this,
-            so there's no edge where geometry (always at least faintly
-            green-tinted through the fog) meets the pure-black void. */}
-        <color attach="background" args={['#01140a']} />
-        <fogExp2 attach="fog" args={['#01140a', 0.04]} />
+        {/* The table is a hologram over a dark room: near-black background,
+            a slightly greener fog that the far side of the island fades to */}
+        <color attach="background" args={[COLORS.bg]} />
+        <fogExp2 attach="fog" args={[COLORS.fog, look.fogDensity]} />
+        <LookFog />
 
-        {/* Holograms barely need light — emissives carry the look */}
+        {/* The land is unlit; the lights only shape the hologram fills of
+            the relics, creatures and the wyvern */}
         <ambientLight color={COLORS.green} intensity={0.25} />
         <directionalLight position={[5, 9, -7]} color="#9dffb8" intensity={0.8} />
 
+        {/* Sea lattice, projector rings and motes: no loading, so the table
+            is up before the terrain arrives */}
+        <TableStage reducedMotion={reducedMotion} />
+
         <Suspense fallback={null}>
-          <Terrain reducedMotion={reducedMotion} wireframe={wireframe} />
+          <Terrain wireframe={wireframe} />
           <TerrainProps reducedMotion={reducedMotion} wireframe={wireframe} />
           <FloatingWeapons reducedMotion={reducedMotion} />
           <EnemyHolograms reducedMotion={reducedMotion} />
@@ -131,7 +169,7 @@ export default function IslandScene({
           reducedMotion={reducedMotion}
         />
 
-        {bloomEnabled && <Effects />}
+        {fxEnabled && <IslandFx reducedMotion={reducedMotion} />}
       </Canvas>
     </div>
   );

@@ -1,0 +1,321 @@
+/* The field: the left-hand column (components/Sandbox/Field.jsx).
+
+   One flush panel, as tall as its rows. A row is a grid of three: the
+   agent's hexagon, its name over one status line, and its price. The info
+   button that opens the dossier sits in a narrow strip on the right, quiet
+   at rest and full on hover, on keyboard focus, and on a touch screen. */
+
+/* The panel hugs its rows, so the island shows below a short roster; a
+   long one scrolls inside the column's height. The empty column under it
+   lets clicks through to the island. */
+.qf-shell .qf-col--field { pointer-events: none; }
+.qf-field {
+  flex: 0 1 auto;
+  max-height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+}
+
+/* ---------- head ---------- */
+.qf-field-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 9px 8px 16px;
+}
+.qf-field-title {
+  flex: 1;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--qf-dim);
+}
+.qf-field-count {
+  font-family: var(--qf-font-num);
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  color: var(--qf-ink);
+  white-space: nowrap;
+}
+.qf-field-count small { font-size: 17px; color: var(--qf-faint); }
+.qf-shell .qf-field-fold { padding: 6px 7px; }
+.qf-field-fold svg { width: 15px; height: 15px; }
+
+.qf-field-list {
+  list-style: none;
+  flex: 0 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- a row ---------- */
+.qf-field-row {
+  --agent: var(--qf-green);
+  /* the agent's colour lifted toward the ink, so dark colours stay legible */
+  --agent-ink: color-mix(in srgb, var(--agent) 78%, var(--qf-ink-hi));
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px;
+  border-left: 2px solid transparent;
+  animation: qf-rise 0.4s var(--qf-ease) both;
+  transition: background 0.15s, border-color 0.15s;
+}
+.qf-field-row { border-bottom: 1px solid var(--qf-line-faint); }
+.qf-field-row:last-child { border-bottom: 0; }
+
+.qf-field-row.qf-frame { --frame-len: 10px; }
+.qf-field-row.is-followed {
+  border-left-color: var(--agent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--agent) 16%, transparent), color-mix(in srgb, var(--agent) 5%, transparent));
+}
+
+.qf-field-main {
+  appearance: none;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 2px 10px 14px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+}
+button.qf-field-main { cursor: pointer; }
+button.qf-field-main:hover { background: rgba(var(--qf-green-rgb), 0.06); }
+.qf-field-main:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: -2px; }
+
+/* the hexagon */
+.qf-hex.qf-field-hex {
+  --agent: var(--qf-green);
+  color: color-mix(in srgb, var(--agent) 70%, var(--qf-ink-hi));
+  text-shadow: 0 0 8px color-mix(in srgb, var(--agent) 60%, transparent);
+}
+.qf-hex.qf-field-hex.is-dead { --hex-edge: var(--qf-line-soft); color: var(--qf-faint); text-shadow: none; }
+.qf-field-hex.is-dead svg { width: 50%; height: 50%; }
+.qf-field-hex-fight {
+  position: absolute;
+  top: -1px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--qf-red);
+  box-shadow: 0 0 8px var(--qf-red);
+  animation: qf-rec 1.1s steps(2) infinite;
+}
+
+/* the name block */
+.qf-field-who { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.qf-field-name { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.qf-field-name-text {
+  flex: 0 1 auto;
+  min-width: 3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--agent-ink);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--agent) 45%, transparent);
+}
+.qf-field-tag {
+  flex: none;
+  padding: 1px 4px 0;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--qf-dim);
+  border: 1px solid var(--qf-line-soft);
+  white-space: nowrap;
+}
+.qf-field-tag--ice { color: var(--qf-ice); border-color: var(--qf-ice-line); }
+
+/* the status line */
+.qf-field-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--qf-dim);
+}
+/* a health bar of fixed width, its numerals, then the location (or the
+   fight) taking whatever the line has left */
+.qf-field-hp { flex: none; display: inline-flex; align-items: center; gap: 7px; }
+.qf-field-hpbar { flex: 0 0 64px; width: 64px; height: 3px; background: rgba(var(--qf-green-rgb), 0.16); }
+.qf-field-hpbar > i {
+  display: block;
+  height: 100%;
+  background: var(--agent);
+  box-shadow: 0 0 6px var(--agent);
+  transition: width 0.6s var(--qf-ease);
+}
+.qf-field-hp.is-low .qf-field-hpbar > i { background: var(--qf-red); box-shadow: 0 0 6px var(--qf-red); }
+.qf-field-hpnum {
+  font-family: var(--qf-font-num);
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--qf-ink-soft);
+}
+.qf-field-hp.is-low .qf-field-hpnum { color: var(--qf-red); }
+.qf-field-kills {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--qf-font-num);
+  font-size: 15px;
+  line-height: 1;
+  color: var(--qf-ink-soft);
+}
+.qf-field-kills svg { flex: none; color: var(--qf-dim); }
+/* the place underground, on the name line after the name and its tags: it
+   takes the room up to the price, and gives way first */
+.qf-field-where {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 2px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--qf-dim);
+}
+.qf-field-where svg { flex: none; color: var(--qf-faint); }
+.qf-field-where span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.qf-field-combat {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--qf-red);
+  text-shadow: 0 0 8px rgba(var(--qf-red-rgb), 0.6);
+  animation: qf-rec 1.1s steps(2) infinite;
+}
+
+/* the price: one width on every row, so the names line up; the viewer's
+   stake, when there is one, spills left into the space under the status
+   line instead of widening the column */
+.qf-field-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  width: 56px;
+  text-align: right;
+}
+.qf-field-prob {
+  font-family: var(--qf-font-num);
+  font-size: 22px;
+  line-height: 0.9;
+  letter-spacing: 0.02em;
+  color: var(--qf-ink);
+}
+.qf-field-odds { font-size: 11px; letter-spacing: 0.06em; color: var(--qf-dim); white-space: nowrap; }
+.qf-field-nopass { color: var(--qf-faint); }
+.qf-field-stake {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--qf-ice);
+  white-space: nowrap;
+}
+.qf-field-stake b { font-family: var(--qf-font-num); font-size: 14px; font-weight: 400; letter-spacing: 0.02em; }
+
+/* the dossier button: always there, quiet until the row is pointed at */
+.qf-field-info {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--qf-dim);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  opacity: 0.35;
+  transition: opacity 0.15s, color 0.15s;
+}
+.qf-field-row:hover .qf-field-info,
+.qf-field-row:focus-within .qf-field-info { opacity: 1; }
+.qf-field-info:hover { color: var(--qf-ink); }
+.qf-field-info:focus-visible { opacity: 1; outline: 2px solid var(--qf-ink); outline-offset: -4px; }
+@media (hover: none) {
+  .qf-field-info { opacity: 0.8; }
+}
+
+/* ---------- the fallen ---------- */
+.qf-field-rule {
+  padding: 12px 16px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--qf-faint);
+}
+
+.qf-field-row.is-dead .qf-field-main { opacity: 0.5; filter: saturate(0.35); }
+.qf-field-fate {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- small windows: a narrower column, tighter rows ---------- */
+.qf-shell[data-compact] .qf-field-main { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 9px; padding-left: 10px; }
+.qf-shell[data-compact] .qf-field-row { grid-template-columns: minmax(0, 1fr) 24px; }
+.qf-shell[data-compact] .qf-field .qf-field-hex { --hex: 26px !important; }
+.qf-shell[data-compact] .qf-field-hpbar { flex-basis: 40px; width: 40px; }
+.qf-shell[data-compact] .qf-field-status { gap: 7px; }
+.qf-shell[data-compact] .qf-field-hp { gap: 5px; }
+.qf-shell[data-compact] .qf-field-combat { letter-spacing: 0.08em; }
+.qf-shell[data-compact] .qf-field-where { letter-spacing: 0.03em; }
+
+/* ---------- the TV: no pointer, read from the sofa ---------- */
+.qf-shell[data-tv] .qf-field-main { grid-template-columns: 34px minmax(0, 1fr) auto; padding-right: 14px; }
+.qf-shell[data-tv] .qf-field-row { grid-template-columns: minmax(0, 1fr); }
+.qf-shell[data-tv] .qf-field .qf-field-hex { --hex: 34px !important; }
+.qf-shell[data-tv] .qf-field-name-text { font-size: 14px; }
+.qf-shell[data-tv] .qf-field-status { font-size: 12.5px; }
+.qf-shell[data-tv] .qf-field-hpnum,
+.qf-shell[data-tv] .qf-field-kills { font-size: 17px; }
+.qf-shell[data-tv] .qf-field-where { font-size: 11px; }
+.qf-shell[data-tv] .qf-field-prob { font-size: 26px; }
+.qf-shell[data-tv] .qf-field-price { width: 66px; }
+.qf-shell[data-tv] .qf-field-odds { font-size: 12.5px; }
+.qf-shell[data-tv] .qf-field-title { font-size: 13.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .qf-field-row { animation: none; }
+  .qf-field-hex-fight, .qf-field-combat { animation: none; }
+}

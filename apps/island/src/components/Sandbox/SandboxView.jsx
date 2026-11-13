@@ -1,23 +1,26 @@
 /**
- * The sandbox spectator — full-bleed island under a thin overlay HUD.
+ * The island spectator: the full-bleed 3D island under the frame described
+ * in styles/shell.css (top bar, the field on the left, the market dock on
+ * the right, the stage between them).
  *
- * God view stays clean: colored beacons, dungeon-mouth rings, one crown tag,
- * a quiet ticker. Clicking a beacon or a roster chip enters FOLLOW mode:
- * the camera flies to the agent; if they're underground the first-person
- * crawler takes over (M6). Escape always returns to the god view.
+ * God view stays clean: coloured beacons, dungeon-mouth rings, one crown
+ * tag. Clicking a beacon or a row in the field enters FOLLOW mode: the
+ * camera flies to the agent, and if it is underground the first-person
+ * dungeon feed takes the stage. Escape always returns to the god view.
  */
 
 import {
   Component, useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import IslandScene from '../Scene3D/IslandScene';
-import { ISLAND_MASK, axialToPixel, getHexPoints } from '../HexGrid/hexUtils';
 import { useSandbox } from '../../context/SandboxContext';
-import { getArena, startArena } from '../../services/sandboxApi';
+import { useLayout } from '../../context/LayoutContext';
 import { IS_TV, onTvCommand, sendToTv } from '../../services/cast';
 import useTvDirector from '../../hooks/useTvDirector';
 import { axialToWorld, prefersReducedMotion } from '../Scene3D/worldUtils';
 import TopBar from './TopBar';
+import Field from './Field';
+import Dossier from './Dossier';
 import MarketPanel from './MarketPanel';
 import SandboxAgentMarkers from './SandboxAgentMarkers';
 import SandboxSiteMarkers from './SandboxSiteMarkers';
@@ -26,11 +29,18 @@ import SandboxCrawler from './SandboxCrawler';
 import PromptChan from './PromptChan';
 import FollowThoughts from './FollowThoughts';
 import Landing from './Landing';
-import AgentOnboarding from './AgentOnboarding';
-import { WinnerTrophy, WinnerConfetti, WinnerChan } from './WinnerCelebration';
+import LobbyOverlay from './Lobby';
+import WinnerBanner from './Finale';
+import FollowNav, { HexPicker } from './FollowNav';
+import { BootCurtain, OfflineOverlay, RotateGate } from './SystemScreens';
 import { BetsProvider } from './BettingContext';
-import { publicUrl } from '../../services/publicUrl';
-import '../../styles/Sandbox.css';
+// the stage's furniture, and the 3D name tags the scenes project into the DOM
+import '../../styles/stage.css';
+
+/** Dossier windows open at once; opening one more closes the oldest. */
+const MAX_DOSSIERS = 3;
+/** Each further dossier opens this far down and right of the last. */
+const DOSSIER_CASCADE = 28;
 
 /** The HUD must outlive the hologram: if WebGL dies (headless CI, exotic
  * GPUs, context loss), the island degrades to a quiet backdrop and the
@@ -50,217 +60,9 @@ class SceneBoundary extends Component {
   }
 
   render() {
-    if (this.state.dead) return <div className="sbx-fallback" aria-hidden />;
+    if (this.state.dead) return <div className="qf-stage-fallback" aria-hidden />;
     return this.props.children;
   }
-}
-
-// The exit control wears the island itself — the real hex mask shrunk to
-// a glyph, so "back to the island" is a picture, not a caption.
-const MINI_HEX = 3.2;
-const MINI_ISLAND = (() => {
-  const hexPts = getHexPoints(MINI_HEX * 0.88);
-  let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
-  const cells = [...ISLAND_MASK].map((key) => {
-    const [q, r] = key.split(',').map(Number);
-    const { x, y } = axialToPixel(q, r, MINI_HEX);
-    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-    return { key, x, y };
-  });
-  const pad = MINI_HEX * 1.5;
-  return {
-    cells,
-    hexPts,
-    viewBox: `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`,
-  };
-})();
-
-function MiniIsland() {
-  return (
-    <svg viewBox={MINI_ISLAND.viewBox} className="sbx-exit-pill__island" aria-hidden>
-      {MINI_ISLAND.cells.map(({ key, x, y }) => (
-        <polygon key={key} points={MINI_ISLAND.hexPts} transform={`translate(${x} ${y})`} />
-      ))}
-    </svg>
-  );
-}
-
-/**
- * The arena's view of this lobby, when the server runs it by itself: no host
- * presses Begin there. The season starts on a countdown after the first
- * seat, and anyone watching can start it sooner. Null for a hosted lobby, or
- * when the server has no arena.
- */
-function useArenaLobby(worldId) {
-  const [lobby, setLobby] = useState(null);
-  useEffect(() => {
-    if (!worldId) return undefined;
-    let live = true;
-    const read = async () => {
-      try {
-        const arena = await getArena();
-        if (live) setLobby(arena?.enabled && arena.lobby?.world_id === worldId ? arena.lobby : null);
-      } catch {
-        if (live) setLobby(null);
-      }
-    };
-    read();
-    const timer = setInterval(read, 2000);
-    return () => { live = false; clearInterval(timer); };
-  }, [worldId]);
-  return lobby;
-}
-
-function arenaWaiting(lobby) {
-  switch (lobby.waiting_for) {
-    case 'countdown': return 'The season starts in';
-    case 'running_season': return 'The season starts when the one now running has settled.';
-    case 'chain': return 'Opening the season on NEAR…';
-    default: return 'The season starts once a challenger takes a seat.';
-  }
-}
-
-function LobbyOverlay() {
-  const { world, roster, canControl, invite } = useSandbox();
-  const arenaLobby = useArenaLobby(world?.world_id);
-  const [starting, setStarting] = useState(false);
-  const [startNote, setStartNote] = useState('');
-  const joined = roster.length;
-  const seats = world?.pool_size ?? 10;
-  if (!world) return null;
-
-  // Deciding to play or watch happened on the landing view — by the time
-  // you are looking at this card, you chose. So the card does one job:
-  // report who has arrived, and say what everyone is waiting for.
-  const waiting = canControl
-    ? 'Press Begin when the roster looks right.'
-    : 'Waiting on the host to begin…';
-
-  const canStartArena = arenaLobby && !IS_TV
-    && (arenaLobby.waiting_for === 'countdown' || arenaLobby.waiting_for === 'player');
-  const startNow = async () => {
-    setStarting(true);
-    setStartNote('');
-    try {
-      await startArena();
-    } catch (err) {
-      // 429: a season with no challenger ran too recently. 409: one is running.
-      setStartNote(err.status === 429
-        ? 'A season with no challenger ran a few minutes ago. Take a seat, or try again shortly.'
-        : 'The season could not be started just now.');
-      setStarting(false);
-    }
-  };
-
-  // Whoever opened this lobby lands straight here, and the invite is the
-  // only thing they can act on — sending them back to the landing board to
-  // find their own season was the long way round. The create response's
-  // invite_url is the one that carries ?code= for an invite-only lobby;
-  // it only applies to the world it was minted for.
-  const invitePath = invite?.worldId === world.world_id ? invite.url : undefined;
-
-  return (
-    <div className="sbx-lobby">
-      <div className="sbx-lobby__card">
-        <img className="sbx-lobby__logo" src={publicUrl('/brand/quest-logo.png')} alt="" aria-hidden />
-        <h1 className="sbx-lobby__title">The island is waiting</h1>
-        <p className="sbx-lobby__seats">
-          <strong>{joined}</strong> of <strong>{seats}</strong> challengers in the lobby
-        </p>
-        {joined > 0 && (
-          <ul className="sbx-lobby__list">
-            {roster.map((a) => (
-              <li key={a.agent_id} style={{ '--chip-color': a.color }}>
-                <i />{a.name}
-                {a.brain === 'external' ? ' · API' : ''}
-                {a.ready ? ' ✓' : ''}
-              </li>
-            ))}
-          </ul>
-        )}
-        {/* the TV has no pointer and no clipboard — it only ever waits */}
-        {!IS_TV && (
-          <div className="sbx-lobby__invite">
-            <AgentOnboarding worldId={world.world_id} invitePath={invitePath} />
-          </div>
-        )}
-        {arenaLobby ? (
-          <>
-            <p className="sbx-lobby__waiting sbx-lobby__waiting--arena">
-              {arenaWaiting(arenaLobby)}
-              {arenaLobby.waiting_for === 'countdown' && arenaLobby.starts_in_s != null && (
-                <strong className="sbx-lobby__count">{Math.ceil(arenaLobby.starts_in_s)} s</strong>
-              )}
-            </p>
-            {canStartArena && (
-              <button type="button" className="sbx-btn sbx-btn--primary sbx-lobby__start" onClick={startNow} disabled={starting}>
-                {starting ? 'Starting…' : 'Start the season now'}
-              </button>
-            )}
-            {startNote && <p className="sbx-lobby__note">{startNote}</p>}
-          </>
-        ) : (
-          <p className="sbx-lobby__waiting">{IS_TV ? 'Waiting on the host to begin…' : waiting}</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function WinnerBanner() {
-  const { world, detachWorld } = useSandbox();
-  if (!world || world.phase !== 'finished') return null;
-  const reason = {
-    boss: 'slew the Heart of the Island',
-    last_alive: 'outlived every rival',
-    timeout: 'outlasted the bell',
-    extinction: null,
-  }[world.win_reason];
-  const won = Boolean(world.winner_name);
-  return (
-    <div className="sbx-winner">
-      {won && <WinnerConfetti />}
-      <div className="sbx-winner__card">
-        {won ? <WinnerTrophy /> : <div className="sbx-winner__crown">☠</div>}
-        {won ? (
-          <>
-            <h1 className="sbx-winner__name">{world.winner_name}</h1>
-            <p className="sbx-winner__reason">{reason}</p>
-          </>
-        ) : (
-          <h1 className="sbx-winner__name">No one survived</h1>
-        )}
-        {/* The season is over, so the only move is out of it. This used to
-            open a lobby directly — either with silent server defaults or,
-            later, a setup form bolted onto the finale card. Both made the
-            finale carry a decision that the landing board already handles
-            better, next to every other season on air. The TV has no pointer
-            and stays put; the phone drives it. */}
-        {!IS_TV && (
-          <button
-            type="button"
-            className="sbx-btn sbx-btn--primary"
-            onClick={() => detachWorld()}
-          >
-            Back to seasons
-          </button>
-        )}
-      </div>
-      {won && <WinnerChan name={world.winner_name} />}
-    </div>
-  );
-}
-
-function OfflineOverlay() {
-  return (
-    <div className="sbx-lobby">
-      <h1 className="sbx-lobby__title">Signal lost</h1>
-      <p className="sbx-lobby__hint">
-        The island isn't answering. Check that the backend is up, then reload.
-      </p>
-    </div>
-  );
 }
 
 export default function SandboxView() {
@@ -268,6 +70,7 @@ export default function SandboxView() {
     status, world, islandMap, roster, followedAgentId, followedAgent, setFollowedAgentId,
     eventLog,
   } = useSandbox();
+  const { shellProps, fieldOpen, setFieldOpen } = useLayout();
   const [focusRequest, setFocusRequest] = useState(null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
   // Clicking a crowded hex offers its occupants: { key, agents: [...] }
@@ -400,6 +203,24 @@ export default function SandboxView() {
       && followedAgent.position.site_id,
   );
 
+  // The dungeon feed wants the width: fold the field while it has the stage
+  // and reopen it on the way out if it was open before. The viewer can still
+  // open it by hand meanwhile. A TV has no pointer to bring it back, so there
+  // the field stays where it is.
+  const fieldOpenRef = useRef(fieldOpen);
+  fieldOpenRef.current = fieldOpen;
+  const fieldBeforeCam = useRef(null);
+  useEffect(() => {
+    if (IS_TV) return;
+    if (crawlerActive) {
+      if (fieldBeforeCam.current == null) fieldBeforeCam.current = fieldOpenRef.current;
+      setFieldOpen(false);
+    } else if (fieldBeforeCam.current != null) {
+      if (fieldBeforeCam.current) setFieldOpen(true);
+      fieldBeforeCam.current = null;
+    }
+  }, [crawlerActive, setFieldOpen]);
+
   const handleDeselect = useCallback(() => {
     setHexPicker(null);
     setFollowedAgentId(null);
@@ -478,9 +299,14 @@ export default function SandboxView() {
 
   // Clicking a hex resolves to the agents standing on it (or descended
   // through its mouth): one occupant follows immediately, a crowd offers
-  // a picker.
-  const handleSelectHex = useCallback((hex) => {
-    const key = `${hex.q},${hex.r}`;
+  // a picker. A single click arrives as (q, r) and a double click as the
+  // hex object, so both forms are read.
+  const handleSelectHex = useCallback((hexOrQ, maybeR) => {
+    const isObj = hexOrQ != null && typeof hexOrQ === 'object';
+    const q = isObj ? hexOrQ.q : hexOrQ;
+    const r = isObj ? hexOrQ.r : maybeR;
+    if (q == null || r == null) return;
+    const key = `${q},${r}`;
     const here = roster.filter((a) => {
       if (!a.alive) return false;
       const pos = a.position || {};
@@ -502,6 +328,35 @@ export default function SandboxView() {
     return () => window.removeEventListener('keydown', onKey);
   }, [userDeselect]);
 
+  // Dossier windows, one per agent, oldest first. Each opens cascading from
+  // the stage's top-left corner; the window remembers where it was dragged.
+  const stageRef = useRef(null);
+  const [dossiers, setDossiers] = useState([]); // [{ id, initial, nonce }]
+  const openDossier = useCallback((agent) => {
+    if (!agent?.agent_id) return;
+    const rect = stageRef.current?.getBoundingClientRect();
+    const origin = { x: (rect?.left ?? 80) + 16, y: (rect?.top ?? 80) + 16 };
+    setDossiers((prev) => {
+      const open = prev.find((d) => d.id === agent.agent_id);
+      // Already open: bring it back to the front of the pile.
+      if (open) {
+        return [...prev.filter((d) => d !== open), { ...open, nonce: open.nonce + 1 }];
+      }
+      const slot = Math.min(prev.length, MAX_DOSSIERS - 1);
+      const entry = {
+        id: agent.agent_id,
+        nonce: 0,
+        initial: { x: origin.x + slot * DOSSIER_CASCADE, y: origin.y + slot * DOSSIER_CASCADE },
+      };
+      return [...prev, entry].slice(-MAX_DOSSIERS);
+    });
+  }, []);
+  const closeDossier = useCallback((id) => {
+    setDossiers((prev) => prev.filter((d) => d.id !== id));
+  }, []);
+  // A new season has new agents.
+  useEffect(() => { setDossiers([]); }, [world?.world_id]);
+
   const agentLayer = useCallback(({ reducedMotion: sceneReducedMotion }) => (
     <>
       <SandboxAgentMarkers
@@ -519,17 +374,17 @@ export default function SandboxView() {
     combatBeacons, handleBeaconDone,
   ]);
 
-  const rootCls = [
-    'sbx-root',
-    IS_TV ? 'sbx-root--tv' : '',
-    crawlerActive ? 'sbx-root--crawler' : '',
-    // the finale card is up: the top bar and the market drawer stay above
-    // its dimming, usable (the drawer is where winnings are claimed)
-    status === 'ready' && world?.phase === 'finished' ? 'sbx-root--finale' : '',
-  ].filter(Boolean).join(' ');
+  const ready = status === 'ready' && Boolean(world);
+  const phase = world?.phase;
 
   return (
-    <div className={rootCls}>
+    <div
+      className="qf-shell"
+      {...shellProps}
+      data-phase={ready ? phase : undefined}
+      data-follow={ready && followedAgent ? '' : undefined}
+      data-cam={ready && crawlerActive ? '' : undefined}
+    >
       <SceneBoundary>
         <IslandScene
           wireframe={false}
@@ -543,128 +398,84 @@ export default function SandboxView() {
         />
       </SceneBoundary>
 
-      {status === 'ready' && world && (
+      {ready && (
         <BetsProvider>
-          {/* FOLLOW MODE: underground agents take over the screen with the
-              first-person crawler; the roster rail stays on top so the
-              spectator can hop between agents without surfacing. */}
+          {/* FOLLOW MODE: an underground agent hands the stage to the
+              first-person dungeon feed. It places itself; the columns and
+              the stage furniture stay above it, so the viewer can hop
+              between agents without surfacing. */}
           {crawlerActive && (
-            <div className="sbx-crawler-overlay">
-              <SandboxCrawler
-                key={`${followedAgent.agent_id}:${followedAgent.position.site_id}`}
-                agent={followedAgent}
-                worldId={world.world_id}
-                siteId={followedAgent.position.site_id}
-              />
-            </div>
+            <SandboxCrawler
+              key={`${followedAgent.agent_id}:${followedAgent.position.site_id}`}
+              agent={followedAgent}
+              worldId={world.world_id}
+              siteId={followedAgent.position.site_id}
+            />
           )}
 
           <TopBar
             directorOn={directorOn}
             onToggleDirector={() => setDirectorOn((v) => !v)}
           />
-          {/* the drawer decides for itself whether the lobby gets a market */}
+          {/* the left column: who is on the island */}
+          <Field onFollow={userFollow} onInfo={openDossier} />
+          {/* the right-hand dock decides for itself whether the lobby gets a market */}
           <MarketPanel onFollow={userFollow} />
-          {world.phase === 'lobby' && <LobbyOverlay />}
-          {/* the caster works both desks: god view AND over the crawler —
-              and her name-drops are camera cues (click to follow). During
-              a crowned finale the victory cameo takes her chair instead. */}
-          {world.phase !== 'lobby' && !(world.phase === 'finished' && world.winner_name) && (
-            <PromptChan onFollow={userFollow} />
-          )}
+          {phase === 'lobby' && <LobbyOverlay />}
 
-          {/* crowded-hex picker: choose who to ride */}
-          {hexPicker && !followedAgent && (
-            <div className="sbx-hexpicker" role="menu">
-              <span className="sbx-hexpicker__label">Follow</span>
-              {hexPicker.agents.map((a) => (
-                <button
-                  key={a.agent_id}
-                  type="button"
-                  style={{ '--chip-color': a.color }}
-                  onClick={() => userFollow(a)}
-                >
-                  <i aria-hidden />{a.name}
-                </button>
-              ))}
-              <button
-                type="button"
-                className="sbx-hexpicker__close"
-                onClick={() => setHexPicker(null)}
-                aria-label="Close"
-              >
-                ✕
-              </button>
-            </div>
-          )}
+          <div className="qf-stage" ref={stageRef}>
+            {/* follow mode always shows the way home, flanked by the
+                previous and next living agent: pointless on a TV, where
+                the director cuts */}
+            {followedAgent && !IS_TV && (
+              <FollowNav
+                agent={followedAgent}
+                prevAgent={prevAgent}
+                nextAgent={nextAgent}
+                onCam={crawlerActive}
+                onFollow={userFollow}
+                onExit={userDeselect}
+                onInfo={openDossier}
+              />
+            )}
 
-          {/* follow mode always shows the way home, flanked by prev/next
-              spectator-cycle buttons when there's another living agent
-              to jump to — pointless on a TV, where the director cuts */}
-          {followedAgent && !IS_TV && (
-            <div className="sbx-agent-nav">
-              {prevAgent && (
-                <button
-                  type="button"
-                  className="sbx-agent-nav__btn sbx-agent-nav__btn--prev"
-                  style={{ '--chip-color': prevAgent.color }}
-                  onClick={() => userFollow(prevAgent)}
-                  title={`Follow ${prevAgent.name}`}
-                >
-                  <span className="sbx-agent-nav__arrow" aria-hidden>←</span>
-                  <span className="sbx-agent-nav__name">{prevAgent.name}</span>
-                </button>
-              )}
-              <button
-                type="button"
-                className="sbx-exit-pill"
-                onClick={userDeselect}
-                title="Back to island view"
-                aria-label="Back to island view (Esc)"
-              >
-                <span className="sbx-exit-pill__back" aria-hidden>⬑</span>
-                <MiniIsland />
-                <span className="sbx-exit-pill__key">esc</span>
-              </button>
-              {nextAgent && (
-                <button
-                  type="button"
-                  className="sbx-agent-nav__btn sbx-agent-nav__btn--next"
-                  style={{ '--chip-color': nextAgent.color }}
-                  onClick={() => userFollow(nextAgent)}
-                  title={`Follow ${nextAgent.name}`}
-                >
-                  <span className="sbx-agent-nav__name">{nextAgent.name}</span>
-                  <span className="sbx-agent-nav__arrow" aria-hidden>→</span>
-                </button>
-              )}
-            </div>
-          )}
-          {/* Above ground the thought stream has no crawler HUD to ride on —
-              same toasts, same bottom-center slot, fed from agentFeeds. */}
-          {followedAgent && !crawlerActive && world.phase !== 'lobby' && (
-            <FollowThoughts agent={followedAgent} reducedMotion={reducedMotion} />
-          )}
+            {/* crowded-hex picker: choose who to ride */}
+            {hexPicker && !followedAgent && (
+              <HexPicker agents={hexPicker.agents} onFollow={userFollow} onClose={() => setHexPicker(null)} />
+            )}
+
+            {/* Above ground the followed agent's thoughts stack over the
+                caster's band; underground the dungeon HUD shows them. */}
+            {followedAgent && !crawlerActive && phase !== 'lobby' && (
+              <FollowThoughts agent={followedAgent} reducedMotion={reducedMotion} />
+            )}
+
+            {/* The caster works both desks, the god view and over the
+                dungeon feed, and her name-drops are camera cues (click to
+                follow). During a crowned finale the victory cameo takes
+                her chair instead. */}
+            {phase !== 'lobby' && !(phase === 'finished' && world.winner_name) && (
+              <PromptChan onFollow={userFollow} />
+            )}
+          </div>
 
           <WinnerBanner />
+
+          {dossiers.map((d) => (
+            <Dossier
+              key={`${d.id}:${d.nonce}`}
+              agentId={d.id}
+              initial={d.initial}
+              onClose={() => closeDossier(d.id)}
+              onFollow={userFollow}
+            />
+          ))}
         </BetsProvider>
       )}
 
-      {/* Phones held upright get a polite bounce — the broadcast is
-          widescreen. Pure CSS gate; the installed PWA locks landscape. */}
-      <div className="sbx-rotate-gate" role="status">
-        <img src={publicUrl('/brand/quest-logo.png')} alt="" />
-        <p>
-          Rotate your device
-          <span>the island broadcasts in widescreen</span>
-        </p>
-      </div>
+      <RotateGate />
 
-      {status === 'connecting' && (
-        <div className="sbx-boot" aria-label="Connecting">
-          <span className="sbx-boot__pulse" />
-        </div>
-      )}
+      {status === 'connecting' && <BootCurtain />}
       {status === 'landing' && <Landing />}
       {status === 'offline' && <OfflineOverlay />}
     </div>

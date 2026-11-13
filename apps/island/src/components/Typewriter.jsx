@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 
 const TYPE_CPS = 68; // reveal speed, chars/second
 
-// Shared terminal-style reveal. Used by the crawler HUD's thought toasts
-// and by the overworld follow-mode toasts, so both read as the same voice.
+// Shared terminal-style reveal. Used by the dungeon HUD's thought cards and
+// by the thoughts shown over the island, so both read as the same voice.
+// The cursor is a thin blinking block (`.qf-type-cursor`, styles/stage.css)
+// in the colour set by `--type-cursor` on any parent, the text's own colour
+// otherwise.
 export default function Typewriter({ text, reducedMotion }) {
   const [shown, setShown] = useState(reducedMotion ? text?.length ?? 0 : 0);
 
@@ -29,7 +32,7 @@ export default function Typewriter({ text, reducedMotion }) {
   return (
     <>
       {text.slice(0, shown)}
-      {shown < text.length && <span className="quest-panel__cursor">_</span>}
+      {shown < text.length && <span className="qf-type-cursor" aria-hidden />}
     </>
   );
 }

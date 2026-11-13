@@ -25,6 +25,8 @@ const MAX_ANGLE = 0.78; // full squeeze: swings the ~90° elbow down to ~45°
 
 export const BELLOWS_MAX_ANGLE = MAX_ANGLE;
 
+const _v = new THREE.Vector3(); // pumpBellows runs every frame: no allocation
+
 /**
  * Build the bellows rig for a cloned accordion, or throw if the model does
  * not match the authored pose the hinge constants were measured against.
@@ -89,7 +91,7 @@ export function rigBellows(root) {
  * rather than incrementally, so repeated calls never accumulate drift.
  */
 export function pumpBellows(rig, angle) {
-  const v = new THREE.Vector3();
+  const v = _v;
   for (const p of rig.parts) {
     const { attr, base, weight, back } = p;
     for (let i = 0; i < attr.count; i++) {

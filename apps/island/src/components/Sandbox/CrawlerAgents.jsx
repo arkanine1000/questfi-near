@@ -20,6 +20,8 @@ import { CELL, cellCenter } from '../Scene3D/Crawler/CrawlerMaze';
 import { loaderFor, weaponModelUrl, weaponSpecFor } from '../Scene3D/Crawler/weaponCatalog';
 import { useRoomLight, LIGHT_PRIORITY } from '../Scene3D/Crawler/CrawlerLightPool';
 import { AGENT_MODEL_URL as AGENT_MODEL } from '../Scene3D/Crawler/crawlerAssets';
+import { COLORS } from '../Scene3D/worldUtils';
+import { holoFillMaterial, holoWireMaterial } from '../Scene3D/holo';
 import { useSandbox } from '../../context/SandboxContext';
 
 const AGENT_H = 1.7;
@@ -33,6 +35,17 @@ const ANIM_NAMES = [
   'Idle_Loop', 'Walk_Loop', 'Jog_Fwd_Loop', 'Sword_Idle', 'Sword_Attack',
   'Punch_Cross', 'Hit_Chest', 'Hit_Head', 'Roll', 'Death01', 'Dance_Loop',
 ];
+
+// House hologram values (holo.js), a step brighter than the start app's
+// figure so a rival stays readable against the near-black dungeon stone
+const RIVAL_FILL_INTENSITY = 0.36;
+const RIVAL_FILL_OPACITY = 0.55;
+const RIVAL_WIRE_OPACITY = 0.6;
+const HIT_FILL_INTENSITY = 0.9;
+const HELD_FILL_INTENSITY = 0.6;
+const HELD_WIRE_OPACITY = 0.7;
+const RIVAL_LIGHT = 3;
+const HIT_COLOR = new THREE.Color(COLORS.red);
 
 const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
 const _target = new THREE.Vector3();
@@ -110,29 +123,17 @@ function makeColoredRig(scene, color) {
   const rig = skeletonClone(scene);
   rig.rotation.y = Math.PI; // source mannequin is authored backward
 
-  const tint = new THREE.Color(color || '#69ff8f');
-  const fillMat = new THREE.MeshStandardMaterial({
-    color: tint.clone().multiplyScalar(0.18),
-    emissive: tint,
-    emissiveIntensity: 0.42,
-    roughness: 1,
-    metalness: 0,
-    transparent: true,
-    opacity: 0.55,
-    toneMapped: false,
-    side: THREE.DoubleSide,
-  });
-  const wireMat = new THREE.MeshBasicMaterial({
-    color: tint,
-    wireframe: true,
-    transparent: true,
-    opacity: 0.65,
-    depthWrite: false,
-    polygonOffset: true,
-    polygonOffsetFactor: -1,
-    polygonOffsetUnits: -1,
-    toneMapped: false,
-  });
+  const tint = new THREE.Color(color || COLORS.greenBright);
+  const fillMat = holoFillMaterial(tint, { intensity: RIVAL_FILL_INTENSITY });
+  fillMat.roughness = 1;
+  fillMat.metalness = 0;
+  fillMat.transparent = true;
+  fillMat.opacity = RIVAL_FILL_OPACITY;
+  fillMat.toneMapped = false;
+  const wireMat = holoWireMaterial(tint, RIVAL_WIRE_OPACITY);
+  wireMat.polygonOffset = true;
+  wireMat.polygonOffsetFactor = -1;
+  wireMat.polygonOffsetUnits = -1;
 
   // Collect first, mutate after — adding pass meshes mid-traverse would
   // visit the passes themselves and re-skin them as fills.
@@ -158,24 +159,29 @@ function makeColoredRig(scene, color) {
     }
   }
 
-  return { rig, fillMat, wireMat };
+  return {
+    rig, fillMat, wireMat, tint,
+  };
 }
 
-/** Clone and normalize one of the map's existing low-poly weapon models. */
+/** Clone and normalize one of the map's existing low-poly weapon models,
+ * in the same fill-plus-wire dress as the rig that holds it. */
 function makeHeldWeapon(model, spec, color) {
-  const tint = new THREE.Color(color || '#69ff8f');
-  const material = new THREE.MeshStandardMaterial({
-    color: tint.clone().multiplyScalar(0.24),
-    emissive: tint,
-    emissiveIntensity: 0.72,
-    roughness: 0.55,
-    metalness: 0.16,
-    toneMapped: false,
-  });
+  const tint = new THREE.Color(color || COLORS.greenBright);
+  const material = holoFillMaterial(tint, { intensity: HELD_FILL_INTENSITY, base: 0.24 });
+  material.toneMapped = false;
+  const wireMat = holoWireMaterial(tint, HELD_WIRE_OPACITY);
   const source = model.clone(true);
+  const meshes = [];
   source.traverse((object) => {
-    if (object.isMesh) object.material = material;
+    if (object.isMesh) meshes.push(object);
   });
+  for (const mesh of meshes) {
+    mesh.material = material;
+    if (triangleCount(mesh.geometry) < WIRE_TRI_LIMIT) {
+      mesh.add(new THREE.Mesh(mesh.geometry, wireMat));
+    }
+  }
 
   const normalized = new THREE.Group();
   normalized.add(source);
@@ -291,8 +297,8 @@ function AnimatedAgent({
     x: 0,
     y: 0.65,
     z: 0,
-    color: agent.color || '#69ff8f',
-    intensity: 2.4,
+    color: agent.color || COLORS.greenBright,
+    intensity: RIVAL_LIGHT,
     distance: 4.5,
     decay: 2,
     priority: LIGHT_PRIORITY.prop,
@@ -671,14 +677,15 @@ function AnimatedAgent({
     rivalLight.pos.set(px, 0.65, pz);
 
     // Lobby-style red material hit flash, restored every other frame.
+    // Copies prebuilt colours: parsing a colour string every frame allocates.
     if (takingHit && queue.progress < 0.72) {
-      colored.fillMat.emissive.set('#ff2020');
-      colored.fillMat.emissiveIntensity = 0.9;
-      colored.wireMat.color.set('#ff5d5d');
+      colored.fillMat.emissive.copy(HIT_COLOR);
+      colored.fillMat.emissiveIntensity = HIT_FILL_INTENSITY;
+      colored.wireMat.color.copy(HIT_COLOR);
     } else {
-      colored.fillMat.emissive.set(agent.color || '#69ff8f');
-      colored.fillMat.emissiveIntensity = 0.42;
-      colored.wireMat.color.set(agent.color || '#69ff8f');
+      colored.fillMat.emissive.copy(colored.tint);
+      colored.fillMat.emissiveIntensity = RIVAL_FILL_INTENSITY;
+      colored.wireMat.color.copy(colored.tint);
     }
   });
 
@@ -723,7 +730,7 @@ export default function CrawlerAgents({ model, queue, reducedMotion }) {
         const identity = rosterById[entry.id] || {};
         out.push({
           ...entry,
-          color: entry.color || identity.color || '#69ff8f',
+          color: entry.color || identity.color || COLORS.greenBright,
           preset: identity.preset || 'fighter',
           weapon: identity.weapon || null,
           roomId: room.id,

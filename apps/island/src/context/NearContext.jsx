@@ -58,12 +58,14 @@ const OFF = {
 
 const NearContext = createContext(OFF);
 
-export function NearProvider({ children }) {
-  if (!CONTRACT_ID) return <NearContext.Provider value={OFF}>{children}</NearContext.Provider>;
-  return <LiveNearProvider>{children}</LiveNearProvider>;
+// `contractId` defaults to VITE_CONTRACT_ID; preview mode (src/dev/preview)
+// names its own, or '' for a season with no chain.
+export function NearProvider({ children, contractId = CONTRACT_ID }) {
+  if (!contractId) return <NearContext.Provider value={OFF}>{children}</NearContext.Provider>;
+  return <LiveNearProvider contractId={contractId}>{children}</LiveNearProvider>;
 }
 
-function LiveNearProvider({ children }) {
+function LiveNearProvider({ children, contractId }) {
   const [chain, setChain] = useState(null);
   const [config, setConfig] = useState(null);
   const [session, setSession] = useState(null);
@@ -80,13 +82,13 @@ function LiveNearProvider({ children }) {
     import('../services/near.js')
       .then((near) => {
         if (cancelled) return;
-        setChain(near.createChain({ contractId: CONTRACT_ID, rpcUrl: RPC_URL, guestApi: GUEST_API }));
+        setChain(near.createChain({ contractId, rpcUrl: RPC_URL, guestApi: GUEST_API }));
       })
       .catch(() => {
         if (!cancelled) setError('The NEAR module failed to load. Reload the page to try again.');
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [contractId]);
 
   // The contract's Config: the minimum bet and the market cuts. Retried
   // until it arrives; until then the market stays on simulated chips.

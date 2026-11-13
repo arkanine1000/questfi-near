@@ -1,0 +1,276 @@
+/* The lobby card (Lobby.jsx): a card in the stage, the clear area between
+   the two side columns, so the market dock stays visible and usable beside
+   it (bets are open while the lobby fills).
+
+     +------------------------------------------+
+     | SEASON w-…                       [LOBBY] |
+     |           THE SEASON STARTS IN           |   or the sentence the
+     |                  1:12                    |   season is waiting on
+     |             4 / 6 SEATS TAKEN            |
+     |      <K> <M> <D> <B> < > < >             |   a hexagon per seat
+     |        [ START THE SEASON NOW ]          |
+     |------------------------------------------|
+     |            [BRING YOUR AGENT]            |
+     +------------------------------------------+ */
+
+.qf-lobby {
+  position: fixed;
+  top: var(--stage-t);
+  right: var(--stage-r);
+  bottom: var(--stage-b);
+  left: var(--stage-l);
+  display: grid;
+  place-items: center;
+  padding: 14px 0;
+  pointer-events: none;
+  z-index: var(--qf-z-card);
+  transition: left 0.5s var(--qf-ease), right 0.5s var(--qf-ease);
+}
+
+.qf-panel.qf-lobby-card {
+  pointer-events: auto;
+  width: min(620px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 14px 22px 14px;
+  animation: qf-rise 0.5s var(--qf-ease) both;
+}
+
+.qf-lobby-card__top {
+  align-self: stretch;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.qf-lobby-card__top .qf-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- the headline: what everyone is waiting for ---------- */
+.qf-lobby-card__headline {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 18px;
+  animation: qf-rise 0.5s var(--qf-ease) 0.1s both;
+}
+
+.qf-label.qf-lobby-card__when { font-size: 11px; letter-spacing: 0.3em; margin-right: -0.3em; }
+
+.qf-lobby-count {
+  margin-top: 6px;
+  font-family: var(--qf-font-num);
+  font-size: clamp(64px, 9vw, 96px);
+  line-height: 0.85;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: var(--qf-ink-hi);
+  text-shadow:
+    0 0 6px rgba(var(--qf-green-rgb), 0.9),
+    0 0 22px rgba(var(--qf-green-rgb), 0.5);
+}
+
+.qf-lobby-wait {
+  max-width: 26em;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--qf-ink-hi);
+  text-shadow: var(--qf-text-glow);
+}
+
+/* ---------- the seats ---------- */
+.qf-lobby-card__seats {
+  align-self: stretch;
+  margin-top: 22px;
+  animation: qf-rise 0.5s var(--qf-ease) 0.2s both;
+}
+
+.qf-lobby-taken {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 10px;
+}
+.qf-lobby-taken .qf-num { font-size: 26px; }
+
+.qf-lobby-seats {
+  --gap-x: 6px;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px var(--gap-x);
+  /* wide enough for --per-row seats and no more (set per lobby) */
+  max-width: calc(var(--per-row, 8) * (var(--seat-hex) + 12px + var(--gap-x)));
+  margin: 12px auto 0;
+  --seat-hex: 56px;
+}
+
+.qf-lobby-seat {
+  --agent: var(--qf-green);
+  width: calc(var(--seat-hex) + 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.qf-hex.qf-lobby-seat__hex {
+  --hex: var(--seat-hex);
+  --hex-edge: var(--agent);
+  --hex-fill: color-mix(in srgb, var(--agent) 18%, #021209);
+  color: color-mix(in srgb, var(--agent) 70%, white);
+  text-transform: uppercase;
+  text-shadow: 0 0 10px var(--agent);
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--agent) 40%, transparent));
+}
+
+.qf-lobby-seat__name {
+  max-width: 100%;
+  min-height: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--agent) 72%, white);
+}
+
+/* how the agent plays and whether it is ready; held open on every seat so
+   the names line up */
+.qf-lobby-seat__meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 12px;
+}
+.qf-lobby-seat__api {
+  padding: 0 3px;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 10px;
+  letter-spacing: 0.14em;
+  color: var(--qf-dim);
+  border: 1px solid var(--qf-line-soft);
+}
+.qf-lobby-seat__ready { color: var(--qf-green); }
+
+/* an open seat: the same hexagon, dashed and dim, nobody in it */
+.qf-lobby-seat.is-open .qf-hex.qf-lobby-seat__hex {
+  --hex-edge: transparent;
+  --hex-fill: rgba(var(--qf-green-rgb), 0.03);
+  filter: none;
+}
+.qf-lobby-seat__dash {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.qf-lobby-seat__dash polygon {
+  fill: none;
+  stroke: rgba(var(--qf-green-rgb), 0.38);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+  vector-effect: non-scaling-stroke;
+}
+
+/* ---------- starting it, and bringing an agent ---------- */
+.qf-lobby-card__start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 22px;
+  animation: qf-rise 0.5s var(--qf-ease) 0.3s both;
+}
+.qf-lobby-note { max-width: 32em; }
+
+.qf-lobby-card__foot {
+  align-self: stretch;
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--qf-line-faint);
+  animation: qf-rise 0.5s var(--qf-ease) 0.3s both;
+}
+.qf-lobby-card__foot .qf-btn { display: inline-flex; align-items: center; gap: 8px; }
+
+/* While an agent is followed, the frame's follow controls hold the top of
+   the stage: the card is placed in what is left below them. */
+.qf-shell[data-follow] .qf-lobby { padding-top: 56px; }
+
+/* ---------- small windows: fits in 390px of height ---------- */
+.qf-shell[data-compact] .qf-lobby { padding: 8px 0; }
+.qf-shell[data-compact][data-follow] .qf-lobby { padding-top: 56px; }
+.qf-shell[data-compact] .qf-panel.qf-lobby-card { padding: 9px 16px 10px; }
+.qf-shell[data-compact] .qf-lobby-card__headline { margin-top: 6px; }
+.qf-shell[data-compact] .qf-lobby-count { font-size: 56px; margin-top: 2px; }
+.qf-shell[data-compact] .qf-lobby-wait { font-size: 15px; }
+.qf-shell[data-compact] .qf-lobby-card__seats { margin-top: 10px; }
+.qf-shell[data-compact] .qf-lobby-taken .qf-num { font-size: 21px; }
+.qf-shell[data-compact] .qf-lobby-seats {
+  --seat-hex: 40px;
+  --gap-x: 4px;
+  max-width: calc(var(--per-row-compact, 10) * (var(--seat-hex) + 12px + var(--gap-x)));
+  row-gap: 8px;
+  margin-top: 8px;
+}
+.qf-shell[data-compact] .qf-lobby-seat { gap: 4px; }
+
+/* starting it and bringing an agent share one line, the start note under them */
+.qf-shell[data-compact] .qf-panel.qf-lobby-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 10px;
+  justify-items: center;
+}
+.qf-shell[data-compact] .qf-panel.qf-lobby-card > * { grid-column: 1 / -1; justify-self: stretch; }
+.qf-shell[data-compact] .qf-lobby-card__start { display: contents; }
+.qf-shell[data-compact] .qf-lobby-card__start > .qf-btn {
+  grid-column: 1;
+  justify-self: end;
+  margin-top: 10px;
+  padding: 9px 18px;
+  font-size: 12.5px;
+}
+.qf-shell[data-compact] .qf-lobby-card__start > .qf-lobby-note {
+  order: 1;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.qf-shell[data-compact] .qf-lobby-card__foot {
+  margin-top: 10px;
+  padding-top: 8px;
+}
+.qf-shell[data-compact] .qf-lobby-card__start ~ .qf-lobby-card__foot {
+  grid-column: 2;
+  justify-self: start;
+  align-self: center;
+  margin-top: 10px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* the TV reads from the sofa */
+.qf-shell[data-tv] .qf-panel.qf-lobby-card { zoom: 1.15; }
+
+@media (prefers-reduced-motion: reduce) {
+  .qf-panel.qf-lobby-card,
+  .qf-lobby-card__headline,
+  .qf-lobby-card__seats,
+  .qf-lobby-card__start,
+  .qf-lobby-card__foot { animation: none; }
+}

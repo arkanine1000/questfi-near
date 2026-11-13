@@ -9,8 +9,8 @@
  * The operator's skeleton key (QUEST_SIM_ADMIN_KEY) is a BACKEND variable and
  * must never be built into this bundle — anything reachable from
  * import.meta.env is inlined into the JS at build time and served to every
- * visitor. The operator types it into Settings at runtime instead, and it
- * lives here in their browser only.
+ * visitor. The operator types it into the season list's operator sign-in at
+ * runtime instead, and it lives here in their browser only.
  *
  * Nothing here decides anything. The key is sent; the server answers with
  * can_control. There is no client-side notion of "am I an admin".

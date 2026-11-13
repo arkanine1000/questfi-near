@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { CELL, cellCenter } from '../Scene3D/Crawler/CrawlerMaze';
 import { useRoomLight, LIGHT_PRIORITY } from '../Scene3D/Crawler/CrawlerLightPool';
+import { COLORS } from '../Scene3D/worldUtils';
 
 const RING_Y = 2.72; // just under the crawler ceiling
 const ringGeo = new THREE.TorusGeometry(0.72, 0.045, 10, 40);
@@ -17,7 +18,7 @@ const shaftGeo = new THREE.CylinderGeometry(0.55, 0.72, RING_Y, 24, 1, true);
 function Portal({ x, z, reducedMotion }) {
   const ringRef = useRef();
   const ringMat = useMemo(() => new THREE.MeshBasicMaterial({
-    color: '#2dff6e',
+    color: COLORS.green,
     transparent: true,
     opacity: 0.85,
     blending: THREE.AdditiveBlending,
@@ -25,7 +26,7 @@ function Portal({ x, z, reducedMotion }) {
     toneMapped: false,
   }), []);
   const shaftMat = useMemo(() => new THREE.MeshBasicMaterial({
-    color: '#1eff5e',
+    color: COLORS.green,
     transparent: true,
     opacity: 0.05,
     blending: THREE.AdditiveBlending,
@@ -41,7 +42,7 @@ function Portal({ x, z, reducedMotion }) {
   });
 
   useRoomLight({
-    x, y: RING_Y - 0.5, z, color: '#2dff6e', intensity: 2.2, distance: 5, decay: 2,
+    x, y: RING_Y - 0.5, z, color: COLORS.green, intensity: 2.2, distance: 5, decay: 2,
     priority: LIGHT_PRIORITY.prop,
   });
 

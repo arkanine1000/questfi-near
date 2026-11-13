@@ -355,6 +355,18 @@ export function useChainMarket({ near, world, roster }) {
   const myTotal = fromYocto(stakedY);
   const probHistory = useProbHistory(readState === 'live' ? seasonId : null, world?.tick, pools);
 
+  // The terms the market runs on, for the screen that explains them: the
+  // two cuts as percentages of the losing side (null until the contract's
+  // Config is read) and the tick the game server locks betting at, when the
+  // server's near block names it.
+  const agentCutPct = config ? Number(cuts.agentBps) / 100 : null;
+  const houseCutPct = config ? Number(cuts.houseBps) / 100 : null;
+  const lockAt = Number(world?.near?.lock_tick);
+  const lockTick = Number.isFinite(lockAt) && lockAt > 0 ? lockAt : null;
+  // The agent the contract settled the season on, once it has.
+  const winnerId = market?.winner != null ? agentByPass.get(String(market.winner))?.agent_id ?? null : null;
+  const contractId = chain?.contractId ?? null;
+
   // The drawer shows this market for every season on chain, account or not.
   // Practice chips are left only where they are honest: the server says the
   // season is off chain, or (a server with no near block) the contract has
@@ -397,9 +409,15 @@ export function useChainMarket({ near, world, roster }) {
     accountError: near.error,
     createTestAccount,
     minBet: fromYocto(minBet),
+    contractId,
+    agentCutPct,
+    houseCutPct,
+    lockTick,
+    winnerId,
   }), [balance, bets, myTotal, pools, odds, prob, probHistory, place, payout, bettingOpen,
        stakes, quote, ifWins, canBack, claim, pending, notice, feedError, txs, status, readState,
-       seasonId, accountId, hasAccount, near.status, near.error, createTestAccount, minBet]);
+       seasonId, accountId, hasAccount, near.status, near.error, createTestAccount, minBet,
+       contractId, agentCutPct, houseCutPct, lockTick, winnerId]);
 
   return { active, note, value };
 }

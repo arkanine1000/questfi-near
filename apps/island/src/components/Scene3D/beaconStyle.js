@@ -26,3 +26,24 @@ export function makeBeamGeometry() {
   geo.translate(0, 0.5, 0);
   return geo;
 }
+
+/**
+ * Flat hexagonal outline lying in the XZ plane, pointy-top like the grid
+ * cells (HexGrid3D), between radius `inner` and `outer`. Used for the tile an
+ * agent stands on and for the focus ring around the followed agent.
+ */
+export function makeHexOutlineGeometry(outer, inner) {
+  const corners = (radius) => {
+    const pts = [];
+    for (let i = 0; i < 6; i++) {
+      const a = (Math.PI / 180) * (60 * i - 30);
+      pts.push(new THREE.Vector2(radius * Math.cos(a), radius * Math.sin(a)));
+    }
+    return pts;
+  };
+  const shape = new THREE.Shape(corners(outer));
+  shape.holes.push(new THREE.Path(corners(inner).reverse()));
+  const geo = new THREE.ShapeGeometry(shape);
+  geo.rotateX(-Math.PI / 2);
+  return geo;
+}

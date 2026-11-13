@@ -1,0 +1,195 @@
+/* Preview mode only (src/dev/preview). Its own pv-* classes; the app's
+   classes are never styled from here. */
+
+/* ---- the island: where the 3D war table would be ---- */
+.pv-backdrop--island {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 55% at 52% 55%, rgba(0, 255, 65, 0.10), rgba(0, 255, 65, 0.03) 55%, transparent 75%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='97' viewBox='0 0 56 97'%3E%3Cg fill='none' stroke='%2300ff41' stroke-opacity='0.11' stroke-width='1'%3E%3Cpath d='M28 1 L55 16.5 L55 47.5 L28 63 L1 47.5 L1 16.5 Z'/%3E%3Cpath d='M28 63 L28 97 M1 47.5 L-26 63 M55 47.5 L82 63'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 50% 50%, #04210f 0%, #021208 45%, #010603 100%);
+  background-size: auto, 56px 97px, auto;
+}
+
+/* ---- the dungeon: a corridor in green-black ---- */
+.pv-backdrop--dungeon {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 18% 22% at 50% 46%, #000 0%, rgba(0, 0, 0, 0.85) 60%, transparent 100%),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.10) 0%, rgba(0, 255, 65, 0.02) 28%, transparent 38%, transparent 62%, rgba(0, 255, 65, 0.02) 72%, rgba(0, 255, 65, 0.10) 100%),
+    linear-gradient(180deg, rgba(0, 255, 65, 0.06) 0%, transparent 30%, transparent 60%, rgba(0, 255, 65, 0.05) 100%),
+    #010603;
+}
+
+.pv-dungeon__floor {
+  position: absolute;
+  left: -50%;
+  right: -50%;
+  bottom: -10%;
+  height: 60%;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0, 255, 65, 0.16) 0 1px, transparent 1px 80px),
+    repeating-linear-gradient(0deg, rgba(0, 255, 65, 0.16) 0 1px, transparent 1px 80px);
+  transform: perspective(380px) rotateX(62deg);
+  transform-origin: 50% 100%;
+  mask-image: linear-gradient(to top, #000 10%, transparent 85%);
+}
+
+.pv-dungeon__door {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 11%;
+  height: 26%;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(0, 255, 65, 0.22);
+  box-shadow: 0 0 40px rgba(0, 255, 65, 0.08) inset;
+}
+
+/* ---- the finale ---- */
+.pv-trophy {
+  display: grid;
+  place-items: center;
+  position: relative;
+  color: var(--qf-amber, #ffcf6a);
+}
+
+.pv-trophy svg {
+  width: 62%;
+  height: 62%;
+  fill: rgba(255, 170, 0, 0.18);
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+
+.pv-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.pv-confetti i {
+  position: absolute;
+  width: 8px;
+  height: 4px;
+  opacity: 0.8;
+}
+
+/* ---- the scenario index and the gallery ---- */
+.pv-page {
+  position: fixed;
+  inset: 0;
+  overflow: auto;
+  padding: 28px 32px 48px;
+  color: #c8ffd4;
+  font-family: var(--qf-font, monospace);
+  background: radial-gradient(ellipse at 50% 30%, #04210f 0%, #010603 70%);
+  z-index: 1;
+}
+
+.pv-page h1 {
+  font-size: 18px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.pv-page p {
+  font-size: 13px;
+  color: rgba(200, 255, 212, 0.65);
+  margin-bottom: 20px;
+  max-width: 70ch;
+}
+
+.pv-index {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 6px 18px;
+}
+
+.pv-index a {
+  display: block;
+  color: #69ff8f;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 3px 0;
+}
+
+.pv-index a small {
+  display: block;
+  font-size: 11px;
+  color: rgba(200, 255, 212, 0.5);
+}
+
+.pv-gallery section {
+  margin-bottom: 30px;
+}
+
+.pv-gallery h2 {
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(200, 255, 212, 0.7);
+  margin-bottom: 4px;
+}
+
+.pv-gallery h2 + p {
+  margin-bottom: 12px;
+}
+
+.pv-gallery__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 26px 34px;
+  align-items: flex-end;
+}
+
+.pv-gallery__cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 90px;
+}
+
+.pv-gallery__cell > small {
+  font-size: 10px;
+  color: rgba(200, 255, 212, 0.5);
+  letter-spacing: 0.08em;
+}
+
+/* drei's <Html center> wraps its children like this: a positioned box,
+   translated by half its size */
+.pv-gallery__html {
+  position: relative;
+  pointer-events: none;
+}
+
+.pv-error {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  padding: 32px;
+  background: #1a0005;
+  color: #ffb3c0;
+  font: 14px/1.5 var(--qf-font, monospace);
+  white-space: pre-wrap;
+  overflow: auto;
+}
+
+/* embed=1: the host page's frame */
+.pv-embed {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  z-index: 1;
+  background: #010603;
+}
