@@ -26,6 +26,7 @@ import {
   IconYou, IconClose,
 } from '../ui/icons';
 import SettingsPanel, { setSfxOff, useSfxMuted } from './SettingsPanel';
+import { useBets } from './BettingContext';
 import '../../styles/top.css';
 
 /** A season id cut to fit the pill. */
@@ -144,6 +145,9 @@ export default function TopBar({ directorOn = false, onToggleDirector }) {
   const [showBooth, setShowBooth] = useState(false);
   const [cast, setCast] = useState({ supported: false, available: false, casting: false });
   const sfxMuted = useSfxMuted();
+  // The tick at which the chain market stops taking bets, when the game
+  // server says (its near block's lock_tick); absent off chain.
+  const { lockTick } = useBets();
 
   // The cast button appears only where the browser can cast, dimmed until a
   // TV is reachable, lit while casting.
@@ -163,6 +167,9 @@ export default function TopBar({ directorOn = false, onToggleDirector }) {
   // The season's last tick, when the server says (GET /state's max_ticks).
   const lastTick = Number.isFinite(world.max_ticks) && world.max_ticks > 0 ? world.max_ticks : null;
   const progress = lastTick ? Math.min(1, Math.max(0, tick / lastTick)) : null;
+  const lockAt = lastTick && Number.isFinite(lockTick) && lockTick > 0 && lockTick <= lastTick
+    ? lockTick / lastTick
+    : null;
   const quietBack = embedded || compact;
 
   return (
@@ -201,7 +208,7 @@ export default function TopBar({ directorOn = false, onToggleDirector }) {
       <div
         className="qf-top-clock"
         role="timer"
-        aria-label={lastTick ? `Tick ${tick} of ${lastTick}` : `Tick ${tick}`}
+        aria-label={`${lastTick ? `Tick ${tick} of ${lastTick}` : `Tick ${tick}`}${lockAt != null ? `; betting locks at tick ${lockTick}` : ''}`}
       >
         <span className="qf-top-clock-label" aria-hidden>Tick</span>
         <span className="qf-top-tick" aria-hidden>{String(tick).padStart(3, '0')}</span>
@@ -279,6 +286,13 @@ export default function TopBar({ directorOn = false, onToggleDirector }) {
       {progress != null && (
         <div className="qf-top-timeline" aria-hidden>
           <i style={{ width: `${progress * 100}%` }} />
+          {lockAt != null && (
+            <span
+              className={`qf-top-lock${tick >= lockTick ? ' is-past' : ''}`}
+              style={{ left: `${lockAt * 100}%` }}
+              title={`Betting locks at tick ${lockTick}`}
+            />
+          )}
         </div>
       )}
 
