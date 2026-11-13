@@ -50,6 +50,7 @@ const FLAME_STANDOFF = FLAME_SIZE * 0.5 + 0.04;
 // (3.0), past which the corner offset inverts and it would overhang.
 const COBWEB_SIZE = 2.25; // ~56% of the 4-wide face, 75% of the 3-tall one
 const COBWEB_OPACITY = 0.35;
+const COBWEB_GLOW = 0.08; // the strands' own faint glow, away from any light
 
 const TORCH_CHANCE = 0.5;
 // Torches only ever claim E/W walls, so a room's N/S walls are always free
@@ -330,10 +331,15 @@ export default function CrawlerAmbience({ model, reducedMotion }) {
     cobwebTex.colorSpace = THREE.SRGBColorSpace;
     // The one prop in the scene that must NOT be additive: a cobweb
     // occludes the brick behind it, it doesn't glow. Additive would make it
-    // read as light and vanish against the dark walls.
+    // read as light and vanish against the dark walls. The stone is near
+    // black away from a torch now, so the strands carry a faint glow of
+    // their own to stay visible there.
     return new THREE.MeshStandardMaterial({
       map: cobwebTex,
       color: COLORS.bright,
+      emissive: COLORS.green,
+      emissiveMap: cobwebTex,
+      emissiveIntensity: COBWEB_GLOW,
       transparent: true,
       opacity: COBWEB_OPACITY,
       depthWrite: false,
