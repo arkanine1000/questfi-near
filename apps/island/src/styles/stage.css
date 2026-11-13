@@ -448,7 +448,8 @@
 /* ======================================================================
    The dossier window
    ====================================================================== */
-.qf-dossier { max-height: min(640px, calc(100vh - 24px)); }
+/* short enough to open under the top bar and still end on screen */
+.qf-dossier { max-height: min(640px, calc(100vh - 80px)); }
 .qf-dossier-body {
   --agent: var(--qf-green);
   display: flex;

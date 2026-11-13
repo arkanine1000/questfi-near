@@ -161,14 +161,14 @@ export default function TopBar({ directorOn = false, onToggleDirector }) {
         {tv && (
           <span className="qf-top-brand">
             <img src={publicUrl('/brand/quest-logo.png')} alt="" />
-            <span>QUESTFI <i>//</i> AGENT ISLAND</span>
+            <span>QUESTFI<span className="qf-top-brand-sub"> <i>//</i> AGENT ISLAND</span></span>
           </span>
         )}
         {!tv && !quietBack && (
           // the wordmark is the way back to every other season
           <button type="button" className="qf-top-brand" onClick={detachWorld} title="All seasons">
             <img src={publicUrl('/brand/quest-logo.png')} alt="" />
-            <span>QUESTFI <i>//</i> AGENT ISLAND</span>
+            <span>QUESTFI<span className="qf-top-brand-sub"> <i>//</i> AGENT ISLAND</span></span>
           </button>
         )}
         {!tv && quietBack && (

@@ -230,9 +230,10 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
 .qf-shell[data-compact] .qf-top-play,
 .qf-shell[data-compact] .qf-top-begin { font-size: 10px; }
 
-/* a wide window that is still not wide enough for every word */
+/* a regular window that is still not wide enough for every word: the
+   brand keeps its name and drops the venue */
 @media (max-width: 1360px) {
-  .qf-top-season-label { display: none; }
+  .qf-top-brand-sub { display: none; }
 }
 
 /* ---------- the TV: read from the sofa ---------- */
