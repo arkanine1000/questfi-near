@@ -87,8 +87,12 @@ async function runStep(step) {
     const ok = await until(() => window.__questfiPreview?.selectHex?.({ q, r }), 6000);
     if (!ok) throw new Error(`step: nothing took the click on hex ${step.hex}`);
   } else if (step.click) {
-    const el = await until(() => findClickable(step.click), 8000);
-    if (!el) throw new Error(`step: no visible, enabled control named ${step.click}`);
+    // an optional step (opening a folded column first) is skipped quietly
+    const el = await until(() => findClickable(step.click), step.optional ? 600 : 8000);
+    if (!el) {
+      if (step.optional) return;
+      throw new Error(`step: no visible, enabled control named ${step.click}`);
+    }
     el.click();
   }
   await sleep(step.settleMs ?? 450);

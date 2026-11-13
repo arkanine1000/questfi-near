@@ -403,6 +403,13 @@ function chainSeason(seasonId, {
 // steps: interactions the preview performs once the data is in. Targets are
 // found by accessible name (aria-label, else text), never by class name.
 // ---------------------------------------------------------------------------
+// On a compact screen both side columns start folded: a step that needs one
+// opens it first, and does nothing when it is already open.
+const OPEN_DOCK = { click: /^Open the market/, optional: true };
+const OPEN_FIELD = { click: /^Field$/, optional: true };
+const FOLD_DOCK = { click: /^Fold the market away$/, optional: true };
+const FOLD_FIELD = { click: /^Fold the field away$/, optional: true };
+
 export const STEPS = {
   // the season list
   'open-lobby': [{ click: /^Open a lobby$/ }],
@@ -419,18 +426,18 @@ export const STEPS = {
   sound: [{ click: /^Sound effects$/ }],
   'create-account': [{ click: /^Play with a test account/ }],
   // the market dock
-  bet: [{ click: /^Bet [\d.]+ NEAR on / }],
-  claim: [{ click: /^Claim$/ }],
-  help: [{ click: /^How betting works$/ }],
-  fold: [{ click: /^Fold the market away$/ }],
-  'tab-bets': [{ click: /^Your bets/ }],
-  'tab-chain': [{ click: /^On chain$/ }],
+  bet: [OPEN_DOCK, { click: /^Bet [\d.]+ NEAR on / }],
+  claim: [OPEN_DOCK, { click: /^Claim$/ }],
+  help: [OPEN_DOCK, { click: /^How betting works$/ }],
+  fold: [FOLD_DOCK],
+  'tab-bets': [OPEN_DOCK, { click: /^Your bets/ }],
+  'tab-chain': [OPEN_DOCK, { click: /^On chain$/ }],
   // the field
-  'fold-field': [{ click: /^Fold the field away$/ }],
-  'fold-both': [{ click: /^Fold the field away$/ }, { click: /^Fold the market away$/ }],
-  dossier: [{ click: /^Open the dossier on Kell$/ }],
-  'dossier-dead': [{ click: /^Open the dossier on Vex$/ }],
-  dossiers: [{ click: /^Open the dossier on Kell$/ }, { click: /^Open the dossier on Bren$/ }],
+  'fold-field': [FOLD_FIELD],
+  'fold-both': [FOLD_FIELD, FOLD_DOCK],
+  dossier: [OPEN_FIELD, { click: /^Open the dossier on Kell$/ }],
+  'dossier-dead': [OPEN_FIELD, { click: /^Open the dossier on Vex$/ }],
+  dossiers: [OPEN_FIELD, { click: /^Open the dossier on Kell$/ }, { click: /^Open the dossier on Bren$/ }],
 };
 
 // ---------------------------------------------------------------------------
