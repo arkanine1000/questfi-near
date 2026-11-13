@@ -249,7 +249,11 @@ export default function Landing() {
   const [deleting, setDeleting] = useState(null); // world id awaiting confirmation
   const [opening, setOpening] = useState(false);
   const [operatorOpen, setOperatorOpen] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(null); // an action that failed (a delete)
+  // The listing itself failed: the server is not answering. Nothing about
+  // its seasons is known then, so the board says only that.
+  const [noSignal, setNoSignal] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   // Assume creation is allowed until told otherwise, so a slow first poll
   // doesn't flash the locked-down copy at everyone.
   const [canCreate, setCanCreate] = useState(true);
@@ -265,8 +269,9 @@ export default function Landing() {
       setCanCreate(listing.can_create !== false);
       setOperatorOnly(Boolean(listing.operator_only));
       setError(null);
+      setNoSignal(false);
     } catch {
-      setError('The island is not answering.');
+      setNoSignal(true);
       setWorlds((prev) => prev ?? []);
     }
     // Only worth asking when we're holding something to ask about. A failure
@@ -289,6 +294,13 @@ export default function Landing() {
     return () => clearInterval(id);
   }, [refresh]);
 
+  // asks again at once; the polling carries on regardless
+  const retry = useCallback(async () => {
+    setRetrying(true);
+    await refresh();
+    setRetrying(false);
+  }, [refresh]);
+
   const confirmDelete = useCallback(async () => {
     const worldId = deleting;
     try {
@@ -302,15 +314,17 @@ export default function Landing() {
 
   const op = useOperatorKey({ operatorOnly, canCreate, verdict: keyVerdict });
 
-  const live = (worlds || []).filter((w) => w.phase === 'lobby' || w.phase === 'running');
-  const over = (worlds || []).filter((w) => w.phase === 'finished').slice(0, 3);
+  const known = noSignal ? [] : (worlds || []);
+  const live = known.filter((w) => w.phase === 'lobby' || w.phase === 'running');
+  const over = known.filter((w) => w.phase === 'finished').slice(0, 3);
   const rows = [...live, ...over];
   // A column of buttons exists only when some row has that button, so the
   // buttons that are there sit against the board's right edge.
   const slots = { play: rows.some((w) => w.phase === 'lobby'), del: rows.some(canDelete) };
 
   let empty = null;
-  if (worlds === null) empty = 'Scanning for seasons…';
+  if (noSignal) empty = null;
+  else if (worlds === null) empty = 'Scanning for seasons…';
   else if (rows.length === 0) {
     empty = canCreate
       ? 'Nothing on air. Open a lobby and point an agent at it.'
@@ -328,7 +342,9 @@ export default function Landing() {
           {/* two words, so a small window can stack them */}
           <h1 className="qf-title qf-land-title__name"><span>Agent</span> <span>Island</span></h1>
           <p className="qf-land-title__tag">Loot · Duel · Slay the boss · Settles on NEAR</p>
-          {live.length > 0 ? (
+          {noSignal ? (
+            <span className="qf-pill qf-land-onair is-nosignal">No signal</span>
+          ) : live.length > 0 ? (
             <span className="qf-pill qf-land-onair">
               <i className="qf-dot qf-dot--live" aria-hidden />
               {live.length} season{live.length === 1 ? '' : 's'} on air
@@ -342,7 +358,12 @@ export default function Landing() {
           <div className="qf-head qf-land-board__head">
             <h2 id="qf-land-board-title" className="qf-land-board__title">Seasons</h2>
             {canCreate ? (
-              <button type="button" className="qf-btn qf-btn--small qf-btn--primary" onClick={() => setOpening(true)}>
+              <button
+                type="button"
+                className="qf-btn qf-btn--small qf-btn--primary"
+                onClick={() => setOpening(true)}
+                disabled={noSignal}
+              >
                 Open a lobby
               </button>
             ) : operatorOnly && (
@@ -359,42 +380,58 @@ export default function Landing() {
               </button>
             </p>
           )}
-          {error && (
+          {noSignal && (
+            <p className="qf-land-notice is-bad" role="status">
+              <IconWarn className="qf-land-notice__icon" />
+              <span>The island is not answering.</span>
+              <button
+                type="button"
+                className={`qf-btn qf-btn--small qf-btn--quiet qf-land-notice__retry${retrying ? ' is-busy' : ''}`}
+                onClick={retry}
+                disabled={retrying}
+              >
+                {retrying ? 'Retrying…' : 'Retry'}
+              </button>
+            </p>
+          )}
+          {error && !noSignal && (
             <p className="qf-land-notice is-bad" role="status">
               <IconWarn className="qf-land-notice__icon" />
               <span>{error}</span>
             </p>
           )}
 
-          <div className="qf-land-list qf-scroll">
-            {empty ? (
-              <p className="qf-land-empty">{empty}</p>
-            ) : (
-              <table className="qf-land-table">
-                <caption className="qf-sr">Seasons on this server</caption>
-                <thead className="qf-sr">
-                  <tr>
-                    <th scope="col">Status</th>
-                    <th scope="col">Season</th>
-                    <th scope="col">Now</th>
-                    <th scope="col">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((w) => (
-                    <SeasonRow
-                      key={w.world_id}
-                      world={w}
-                      slots={slots}
-                      onWatch={attachWorld}
-                      onPlay={setPlaying}
-                      onDelete={setDeleting}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+          {!noSignal && (
+            <div className="qf-land-list qf-scroll">
+              {empty ? (
+                <p className="qf-land-empty">{empty}</p>
+              ) : (
+                <table className="qf-land-table">
+                  <caption className="qf-sr">Seasons on this server</caption>
+                  <thead className="qf-sr">
+                    <tr>
+                      <th scope="col">Status</th>
+                      <th scope="col">Season</th>
+                      <th scope="col">Now</th>
+                      <th scope="col">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((w) => (
+                      <SeasonRow
+                        key={w.world_id}
+                        world={w}
+                        slots={slots}
+                        onWatch={attachWorld}
+                        onPlay={setPlaying}
+                        onDelete={setDeleting}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
         </main>
 
         <footer className="qf-land-foot">
