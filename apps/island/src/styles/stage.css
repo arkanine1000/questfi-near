@@ -366,6 +366,15 @@
   .qf-caster-cam { display: none; }
 }
 
+/* Over the dungeon feed the HUD's plates hold both bottom corners (the
+   vitals on the left, the weapon on the right): the band keeps 280px clear
+   at each side. Where that leaves under 420px, the camera goes and the
+   caption keeps the band. */
+.qf-shell[data-cam] .qf-stage > .qf-caster { width: max(240px, min(760px, calc(100% - 560px))); }
+@container stage (max-width: 979px) {
+  .qf-shell[data-cam] .qf-caster-cam { display: none; }
+}
+
 /* ---- the full form: the presenter at her desk ----
    On the overworld (no dungeon feed), in a regular window, on a stage wide
    enough for the figure and a caption beside it. */
