@@ -4,12 +4,25 @@
  * line that reports a bet or a claim.
  */
 
+import { useEffect, useRef } from 'react';
 import { formatNear } from '../../../services/marketMath';
 import { explorerTx, shortHash } from '../../../services/explorer';
 import { IconClose, IconExternal } from '../../ui/icons';
 
 /** A payout multiple as text: two decimals while it is small. */
 export const fmtOdds = (x) => (x < 10 ? x.toFixed(2) : x.toFixed(1));
+
+/**
+ * What a stake returns, short enough for its button: two decimals, three
+ * only below 0.01, rounded down so the button never promises more than the
+ * contract pays. Practice chips are whole numbers already.
+ */
+export function fmtReturn(n, chain) {
+  if (!chain) return Math.round(n).toLocaleString('en-US');
+  const places = n < 0.01 ? 3 : 2;
+  const k = 10 ** places;
+  return (Math.floor(n * k) / k).toFixed(places).replace(/\.?0+$/, '') || '0';
+}
 
 /** An implied win chance as a whole percentage. */
 export const fmtPct = (p) => `${Math.round(p * 100)}%`;
@@ -89,8 +102,16 @@ export function TxLink({ hash, children }) {
  * screen reader hears the report when it arrives.
  */
 export function Notice({ notice, onDismiss }) {
+  // A report lands at the foot of a panel that may be scrolled; bring it
+  // into view, so a bettor sees what became of the bet without hunting.
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!notice || !ref.current) return;
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    ref.current.scrollIntoView({ block: 'nearest', behavior: still ? 'auto' : 'smooth' });
+  }, [notice]);
   return (
-    <div className="qf-mkt-live" aria-live="polite">
+    <div className="qf-mkt-live" aria-live="polite" ref={ref}>
       {notice && (
         <p className={`qf-mkt-notice qf-mkt-notice--${notice.tone}`} role={notice.tone === 'bad' ? 'alert' : undefined}>
           <span className="qf-mkt-notice__text">{notice.text}</span>

@@ -156,7 +156,7 @@ export default function YourBets({ onFollow }) {
         <p className="qf-mkt-msg">You have not backed anyone this season.</p>
       ) : (
         <table className="qf-mkt-bets">
-          <caption className="qf-mkt-sr">Your bets this season</caption>
+          <caption className="qf-sr">Your bets this season</caption>
           <thead>
             <tr>
               <th scope="col">Agent</th>

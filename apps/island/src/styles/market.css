@@ -7,7 +7,11 @@
      body      the selected tab, scrolling when it must
 
    Built from the qf- pieces in tokens.css. Amber is money, ice is the
-   viewer, an agent's colour is that agent; nothing else is coloured. */
+   viewer, an agent's colour is that agent; nothing else is coloured.
+
+   A rule here that changes one of those pieces names the piece too
+   (.qf-btn.qf-mkt-stake, not .qf-mkt-stake), so it wins whichever of the
+   two stylesheets the page happens to load last. */
 
 /* ---------- the panel ---------- */
 .qf-mkt {
@@ -20,16 +24,6 @@
   container: qf-mkt / size;
 }
 
-/* text only a screen reader needs */
-.qf-mkt-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* ---------- header ---------- */
 .qf-mkt-head {
   flex: none;
@@ -40,14 +34,14 @@
   row-gap: 2px;
   padding: 12px 16px 0;
 }
-.qf-mkt-head__title { margin: 0; }
+.qf-head.qf-mkt-head__title { margin: 0; }
 .qf-mkt-head__tools {
   display: flex;
   align-items: center;
   gap: 6px;
 }
-.qf-mkt-head__btn { padding: 6px; }
-.qf-mkt-head__btn svg { width: 15px; height: 15px; }
+.qf-btn.qf-mkt-head__btn { padding: 6px; }
+.qf-btn.qf-mkt-head__btn svg { width: 15px; height: 15px; }
 /* where the money is, and when betting locks, across the whole header */
 .qf-mkt-head__sub {
   grid-column: 1 / -1;
@@ -84,22 +78,23 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 }
 
 /* the market's state */
-.qf-mkt-state,
-.qf-mkt-pill { gap: 6px; padding: 4px 9px; font-size: 10.5px; }
-.qf-mkt-state--open,
-.qf-mkt-pill { color: var(--qf-green); text-shadow: var(--qf-text-glow); }
+.qf-pill.qf-mkt-state,
+.qf-pill.qf-mkt-pill { gap: 6px; padding: 4px 9px; font-size: 10.5px; }
+.qf-pill.qf-mkt-state--open,
+.qf-pill.qf-mkt-pill { color: var(--qf-green); text-shadow: var(--qf-text-glow); }
 .qf-mkt-state--open .qf-dot,
 .qf-mkt-pill .qf-dot { width: 7px; height: 7px; }
-.qf-mkt-state--locked { color: var(--qf-dim); border-color: var(--qf-line-soft); }
-.qf-mkt-state--wait { color: var(--qf-dim); border-color: var(--qf-line-soft); animation: qf-pulse 1.6s ease-in-out infinite; }
-.qf-mkt-pill.qf-pill--amber { color: var(--qf-amber); text-shadow: none; }
-.qf-mkt-pill.qf-pill--red { color: var(--qf-red); text-shadow: none; }
+.qf-pill.qf-mkt-state--locked { color: var(--qf-dim); border-color: var(--qf-line-soft); }
+.qf-pill.qf-mkt-state--wait { color: var(--qf-dim); border-color: var(--qf-line-soft); animation: qf-pulse 1.6s ease-in-out infinite; }
+.qf-pill.qf-mkt-pill.qf-pill--amber { color: var(--qf-amber); text-shadow: none; }
+.qf-pill.qf-mkt-pill.qf-pill--red { color: var(--qf-red); text-shadow: none; }
 
 /* ---------- the pool ---------- */
+/* both labels on one line, both values on the line under them */
 .qf-mkt-pool {
   flex: none;
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   justify-content: space-between;
   gap: 16px;
   padding: 12px 16px 14px;
@@ -107,9 +102,15 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 .qf-mkt-pool__main { min-width: 0; }
 .qf-mkt-pool__main > .qf-label { margin-bottom: 6px; }
 .qf-mkt-pool__num { display: block; }
-.qf-mkt-pool__side { flex: none; text-align: right; }
-.qf-mkt-pool__side > .qf-label { margin-bottom: 7px; }
-.qf-mkt-pool__you { color: rgba(var(--qf-ice-rgb), 0.72); }
+.qf-mkt-pool__side {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 2px;
+}
+.qf-label.qf-mkt-pool__you { color: rgba(var(--qf-ice-rgb), 0.72); }
 
 /* ---------- tabs and the selected tab ---------- */
 .qf-mkt-tabs { flex: none; padding: 0 6px; }
@@ -126,14 +127,14 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 .qf-mkt-body:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: -2px; }
 
 /* ---------- an agent ---------- */
-.qf-mkt-hex {
+.qf-hex.qf-mkt-hex {
   --hex-edge: var(--agent);
   --hex-fill: color-mix(in srgb, var(--agent) 16%, #010603);
   color: color-mix(in oklab, var(--agent) 72%, white);
   filter: drop-shadow(0 0 4px color-mix(in srgb, var(--agent) 45%, transparent));
 }
-.qf-mkt-hex.qf-hex--solid { color: transparent; }
-.qf-mkt-hex.is-dead {
+.qf-hex.qf-mkt-hex.qf-hex--solid { color: transparent; }
+.qf-hex.qf-mkt-hex.is-dead {
   --hex-edge: rgba(159, 255, 200, 0.28);
   --hex-fill: #020a05;
   color: var(--qf-faint);
@@ -233,14 +234,14 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 }
 
 /* ---------- ODDS: the bet slip ---------- */
-.qf-mkt-slip { flex: none; padding: 14px 14px 13px; animation: qf-rise 0.22s var(--qf-ease); }
-.qf-mkt-slip > * + * { margin-top: 12px; }
+.qf-panel.qf-mkt-slip { flex: none; padding: 13px 14px 12px; animation: qf-rise 0.22s var(--qf-ease); }
+.qf-mkt-slip > * + * { margin-top: 10px; }
 .qf-mkt-slip > .qf-mkt-live:empty { margin-top: 0; }
 
 .qf-mkt-slip__head { display: flex; align-items: center; gap: 10px; min-height: 28px; }
 .qf-mkt-slip__head > .qf-label--strong { color: var(--qf-ink-soft); }
 .qf-mkt-slip__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
-.qf-mkt-slip__odds { flex: none; margin-left: auto; color: var(--qf-ink-hi); text-shadow: var(--qf-num-glow); }
+.qf-num.qf-mkt-slip__odds { flex: none; margin-left: auto; color: var(--qf-ink-hi); text-shadow: var(--qf-num-glow); }
 
 .qf-mkt-figures > .qf-row { gap: 10px; }
 .qf-mkt-figures > .qf-row > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -248,11 +249,17 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 .qf-mkt-stakes__label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; }
 .qf-mkt-stakes__label .qf-mkt-name { font-size: inherit; letter-spacing: inherit; }
 .qf-mkt-slip > .qf-mkt-stakes { margin-top: 8px; }
-.qf-mkt-stakes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.qf-mkt-stakes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  /* the row's own width decides whether RETURNS and its sum share a line */
+  container: qf-mkt-stakes / inline-size;
+}
 /* a stake you can read from across the room */
-.qf-mkt-stake {
+.qf-btn.qf-mkt-stake {
   min-height: 64px;
-  padding: 9px 4px 8px;
+  padding: 9px 2px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -271,23 +278,30 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 }
 .qf-mkt-stake__amt .qf-unit { font-size: 10px; letter-spacing: 0.12em; margin-left: 0.3em; color: rgba(var(--qf-amber-rgb), 0.72); text-shadow: none; }
 .qf-mkt-stake__amt--busy { font-size: 22px; letter-spacing: 0.08em; text-transform: uppercase; }
-/* the stake being sent stays lit and pulses; only the others dim */
-.qf-mkt-stake.is-busy:disabled { opacity: 1; cursor: progress; }
 .qf-mkt-stake__ret {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0 0.4em;
+  max-width: 100%;
   font-family: var(--qf-font);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   line-height: 1;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   white-space: nowrap;
   color: rgba(var(--qf-amber-rgb), 0.72);
   text-shadow: none;
 }
-.qf-mkt-stake__ret b { font-family: var(--qf-font-num); font-size: 15px; font-weight: 400; letter-spacing: 0.02em; color: var(--qf-amber); }
+.qf-mkt-stake__ret b { font-family: var(--qf-font-num); font-size: 14px; font-weight: 400; letter-spacing: 0.02em; color: var(--qf-amber); }
+/* a narrow row (the compact dock): the sum goes under the word */
+@container qf-mkt-stakes (max-width: 300px) {
+  .qf-mkt-stake__ret { flex-direction: column; align-items: center; gap: 3px; }
+}
 
 /* quick picks, when the slip is for nobody yet */
-.qf-mkt-picks__label { margin-bottom: 8px; font-size: 10px; }
+.qf-label.qf-mkt-picks__label { margin-bottom: 8px; font-size: 10px; }
 .qf-mkt-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 6px; }
 .qf-mkt-pick {
   appearance: none;
@@ -325,7 +339,7 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 
 /* without a test account */
 .qf-mkt-join { display: flex; flex-direction: column; gap: 8px; }
-.qf-mkt-join__btn { min-height: 56px; font-size: 12.5px; letter-spacing: 0.18em; }
+.qf-btn.qf-mkt-join__btn { min-height: 56px; padding: 10px; font-size: 11.5px; letter-spacing: 0.12em; text-wrap: balance; }
 
 /* ---------- words ---------- */
 .qf-mkt-msg { font-size: 12.5px; line-height: 1.5; color: var(--qf-dim); }
@@ -343,9 +357,9 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 7px 7px 7px 10px;
+  padding: 5px 6px 5px 10px;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.35;
   color: var(--qf-ink-soft);
   background: var(--qf-wash);
   border: 1px solid var(--qf-line-soft);
@@ -443,13 +457,11 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 
 .qf-mkt-result { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; animation: qf-rise 0.22s var(--qf-ease); }
 .qf-mkt-result.qf-panel { align-items: stretch; }
-.qf-mkt-result__claim { margin-top: 4px; color: var(--qf-amber); }
+.qf-label.qf-mkt-result__claim { margin-top: 4px; color: var(--qf-amber); }
 .qf-mkt-result__line { display: flex; align-items: baseline; gap: 10px; }
 .qf-mkt-result__paid { font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--qf-dim); }
 .qf-mkt-result .qf-mkt-tx { align-self: flex-start; }
 .qf-mkt-claim { margin-top: 6px; min-height: 60px; }
-.qf-mkt-claim.is-busy:disabled,
-.qf-mkt-join__btn.is-busy:disabled { opacity: 1; cursor: progress; }
 
 /* ---------- ON CHAIN ---------- */
 .qf-mkt-chain { display: flex; flex-direction: column; gap: 14px; }
@@ -478,7 +490,7 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 .qf-mkt-feed__row:hover .qf-mkt-feed__hash { color: var(--qf-ink-hi); }
 
 /* ---------- folded: the edge tab ---------- */
-.qf-mkt-edge { gap: 12px; padding: 14px 7px; }
+.qf-edge.qf-mkt-edge { gap: 12px; padding: 14px 7px; }
 .qf-mkt-edge__pool {
   display: inline-flex;
   align-items: center;
@@ -508,6 +520,9 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
    geometry, drawn smaller, and on a full-width dock the leaders' prices
    stand beside it instead of above. */
 @container qf-mkt (max-height: 780px) {
+  .qf-mkt-pool { padding: 10px 16px 12px; }
+  .qf-mkt-body { padding-top: 12px; gap: 12px; }
+  .qf-mkt-chart { padding-bottom: 10px; }
   .qf-mkt-chart .qf-mkt-plot { width: auto; height: 92px; }
   /* drawn smaller, so the labels and end dots grow back to a readable size */
   .qf-mkt-chart .qf-mkt-axis { font-size: 20px; }
@@ -529,14 +544,25 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
   .qf-mkt-chart .qf-mkt-plot { margin: 0 auto; }
 }
 
+/* ---------- a very short dock (a phone on its side) ----------
+   Under 480px of dock there is room for the leaders' prices and the slip,
+   not for a chart as well: the prices stay, the plot goes. */
+@container qf-mkt (max-height: 480px) {
+  .qf-mkt-chart .qf-mkt-plot,
+  .qf-mkt-chart .qf-mkt-xlabel { display: none; }
+  .qf-mkt-chart .qf-mkt-legend { margin-bottom: 0; }
+  .qf-mkt-chart { padding-bottom: 10px; }
+  .qf-mkt-chart.is-forming { height: 40px; }
+}
+
 /* ---------- small windows ---------- */
 .qf-shell[data-compact] .qf-mkt-head { padding: 10px 12px 0; }
 .qf-shell[data-compact] .qf-mkt-pool { padding: 8px 12px 10px; }
 .qf-shell[data-compact] .qf-mkt-pool .qf-num--hero { font-size: 28px; }
 .qf-shell[data-compact] .qf-mkt-body { padding: 12px 12px 14px; gap: 12px; }
-.qf-shell[data-compact] .qf-mkt-slip { padding: 12px 10px 11px; }
+.qf-shell[data-compact] .qf-panel.qf-mkt-slip { padding: 12px 10px 11px; }
 .qf-shell[data-compact] .qf-mkt-stakes { gap: 6px; }
-.qf-shell[data-compact] .qf-mkt-stake { min-height: 56px; }
+.qf-shell[data-compact] .qf-btn.qf-mkt-stake { min-height: 56px; }
 .qf-shell[data-compact] .qf-mkt-stake__amt { font-size: 24px; }
 
 @media (prefers-reduced-motion: reduce) {
