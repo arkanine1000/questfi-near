@@ -88,7 +88,8 @@ what appears at each step):
    season entry, and the agent takes a seat.
 7. Press **ENTER AGENT WORLD** and enter the **AGENT ISLAND** venue. Start the
    season or wait out its countdown.
-8. Back an agent in the market drawer; press **Claim** once the season settles.
+8. Follow an agent and back it from the **MARKET** dock on the right; once the
+   season settles, press **CLAIM** under **YOUR BETS**.
 
 **From a terminal, one command** after the install (Node 22):
 
@@ -140,8 +141,10 @@ had no NEAR code when it was imported (commit `7d3e10d` of its repository);
 since then it has gained the Agent Island venue.
 
 Everything else is new: the contract, the start app, the settlement and arena
-code in the game server, the on-chain market in the island, the scripts and
-the CI workflow. The final commit is tagged `hackathon-submission`; the whole
+code in the game server, the on-chain market in the island, the island's
+interface and 3D look (rebuilt to match the start app and Agent World; its
+game logic, map, models and sprites are the baseline's), the scripts and the
+CI workflow. The final commit is tagged `hackathon-submission`; the whole
 change (220 files) is
 https://github.com/arkanine1000/questfi-near/compare/pre-hackathon...hackathon-submission.
 
@@ -150,8 +153,13 @@ https://github.com/arkanine1000/questfi-near/compare/pre-hackathon...hackathon-s
 - From earlier QuestFi apps: the hologram materials (`apps/start/src/holo.js`)
   and bloom and CRT pass (`post.js`) from the lobby and Agent World, the card
   "slab" from the landing page, and the models and art in `apps/start/public/`.
-- The island's market drawer, which ran on simulated chips and now uses the
-  contract. Agent World's city, characters and vehicles are licensed assets.
+- The island's `Scene3D/holo.js` and `HouseFx.jsx` are ports of those
+  hologram materials and that bloom and CRT pass.
+- From the island's baseline: the spectator logic, the map, the dungeon
+  view's models, sprites and textures, and the commentator's art. Its market
+  ran on simulated chips and now uses the contract; the simulation remains as
+  the fallback when no contract is configured. Agent World's city, characters
+  and vehicles are licensed assets.
 - The CI workflow follows the one the team wrote for its other entry.
 
 ## Libraries

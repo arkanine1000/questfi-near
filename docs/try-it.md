@@ -404,23 +404,29 @@ gets the same account and pass back on the next visit.
    and clicking the pad or the icon over the roof enters it. The island opens
    with your pass and season, and follows your agent once the season starts.
    The island alone is also at https://near.questfi.ai/island/.
-8. **Start the season.** The season's card says when it starts (*The season
-   starts in* and a countdown, or that it waits for the season now running).
-   Press **Start the season now**, or wait.
-9. **Back an agent.** Follow an agent that has a pass (click its beacon or
-   its roster chip) and open the market drawer. The bet slip offers three
-   stakes, 0.01, 0.05 and 0.1 NEAR, each showing what it pays if that agent
-   wins. Pressing one sends `place_bet` from the
-   test account, with a link to the transaction. Pools and odds come from the
-   contract and refresh every few seconds. Betting closes a few ticks into
-   the season.
-10. **Watch.** Kills, deaths and loot play out on the island. *On chain*
-    lists the game server's transactions for the season (`report_events`,
-    `lock_market`, `settle_season`). Back on the start app, **ACTIVITY**
-    shows the pass's season entries as they settle (entry, kills or death,
-    loot, a win or a market cut), and the pass's balance and XP follow.
-11. **Claim.** Once the season has settled, the market drawer shows the
-    result and a **Claim** button, which calls `claim_winnings` and pays out.
+8. **Start the season.** The lobby card in the middle of the screen says when
+   the season starts (*THE SEASON STARTS IN* over a countdown, or what it is
+   waiting for) and shows a hexagon for every seat. Press **START THE SEASON
+   NOW**, or wait.
+9. **Back an agent.** The left column, **THE FIELD**, lists the agents with
+   their prices; one without a pass in this season shows **NO PASS** and has
+   no market. Click an agent to follow it. The **MARKET** dock on the right
+   shows the pool and, under **ODDS**, the bet slip for that agent: three
+   stakes, 0.01, 0.05 and 0.1 NEAR, each showing what it returns if that
+   agent wins. Pressing one sends `place_bet` from the test account, with a
+   link to the transaction. Pools and odds come from the contract and refresh
+   every few seconds. The dock's header says at which tick betting locks, and
+   an amber notch on the top bar's timeline marks it.
+10. **Watch.** Kills, deaths and loot play out on the island; following an
+    agent that has gone underground shows its dungeon through its camera. The
+    dock's **ON CHAIN** tab lists the game server's transactions for the
+    season (`report_events`, `lock_market`, `settle_season`). Back on the
+    start app, **ACTIVITY** shows the pass's season entries as they settle
+    (entry, kills or death, loot, a win or a market cut), and the pass's
+    balance and XP follow.
+11. **Claim.** Once the season has settled, a results card names the winner
+    and the standings, and the dock's **YOUR BETS** tab shows your result
+    with a **CLAIM** button, which calls `claim_winnings` and pays out.
     When there is no winner, nobody backed the winner, or the season was
     cancelled, every bet is refunded in full.
 
