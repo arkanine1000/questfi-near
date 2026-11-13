@@ -369,7 +369,7 @@
    mirrored, with her caption as a desk in front of her. A 560px card is
    centred at least 230px in from the left edge from about 1020px of stage. */
 @container qf-fin (min-width: 1020px) {
-  .qf-shell:not([data-compact]) .qf-fin-chan {
+  .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan {
     right: auto;
     bottom: 0;
     width: auto;
@@ -377,21 +377,54 @@
     margin: 0;
     align-items: flex-end;
   }
-  .qf-shell:not([data-compact]) .qf-fin-chan__cam {
+  .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan__cam {
     width: 214px;
     height: auto;
     margin-left: 6px;
     overflow: visible;
     background: none;
   }
-  .qf-shell:not([data-compact]) .qf-fin-chan__cam::before { display: none; }
-  .qf-shell:not([data-compact]) .qf-fin-chan__sprite {
+  .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan__cam::before { display: none; }
+  .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan__sprite {
     position: static;
     display: block;
     width: 100%;
     filter: drop-shadow(0 0 6px rgba(53, 255, 125, 0.45));
   }
-  .qf-shell:not([data-compact]) .qf-fin-chan__desk {
+  .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan__desk {
+    flex: 0 1 600px;
+    max-width: 600px;
+    min-height: 104px;
+    margin-left: -6px;
+    margin-bottom: 18px;
+  }
+}
+
+/* the TV's card is 15% larger, so it needs that much more stage */
+@container qf-fin (min-width: 1110px) {
+  .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan {
+    right: auto;
+    bottom: 0;
+    width: auto;
+    max-width: 100%;
+    margin: 0;
+    align-items: flex-end;
+  }
+  .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan__cam {
+    width: 214px;
+    height: auto;
+    margin-left: 6px;
+    overflow: visible;
+    background: none;
+  }
+  .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan__cam::before { display: none; }
+  .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan__sprite {
+    position: static;
+    display: block;
+    width: 100%;
+    filter: drop-shadow(0 0 6px rgba(53, 255, 125, 0.45));
+  }
+  .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan__desk {
     flex: 0 1 600px;
     max-width: 600px;
     min-height: 104px;
