@@ -35,7 +35,7 @@
   /* the followed agent's colour; SandboxCrawler sets it, legible on black */
   --agent: var(--qf-green);
   /* the frame's follow controls: the top-centre strip of the stage */
-  --cam-strip-w: 420px;
+  --cam-strip-w: 470px;     /* measured: about 440-460px with two agent names */
   --cam-strip-h: 56px;
 }
 
@@ -66,8 +66,8 @@
   inset: 0;
 
   --cam-in: 18px;          /* plates' distance from the stage edge, inside the brackets */
-  --cam-col: 240px;        /* width of the bottom-left column (vitals, log) */
-  --cam-side: calc(var(--cam-in) + var(--cam-col) + 18px); /* what a corner column needs */
+  --cam-col: 240px;        /* width of the bottom-left column (vitals, log); with the inset, within 260px */
+  --cam-side: calc(var(--cam-in) + var(--cam-col) * var(--cam-k) + 18px); /* what the bottom-left column needs, scaled */
   --cam-k: 1;              /* overall scale: the TV cut is larger */
   --cam-scope-k: 1;        /* the scope's own scale */
   --cam-num: 44px;         /* the health numeral */
@@ -80,7 +80,7 @@
   --cam-tick: block;
   --cam-wlabel: block;
   --cam-log: flex;
-  --cam-log-more: -webkit-box;
+  --cam-log-rows: 2;        /* each log line wraps to at most this many rows */
   --cam-thought-old: block;
 }
 
@@ -98,7 +98,10 @@
     --cam-thought-lines: 3;
     --cam-site: none;
     --cam-wlabel: none;
-    --cam-log-more: none;
+    --cam-tick: none;
+    --cam-hunted-who: none;
+    --cam-hunted-where: inline-flex;
+    --cam-hunted-row: flex;
   }
 }
 :where(.qf-shell[data-compact]) .qf-cam .qf-cam-layer {
@@ -110,12 +113,17 @@
   --cam-thought-lines: 3;
   --cam-site: none;
   --cam-wlabel: none;
-  --cam-log-more: none;
+  --cam-log-rows: 1;
+  --cam-tick: none;
+  --cam-hunted-who: none;
+  --cam-hunted-where: inline-flex;
+  --cam-hunted-row: flex;
 }
 
 /* The lean-back cut: everything 15% larger. Each plate scales from its own
-   corner, so nothing moves toward the centre of the picture. */
-.qf-shell[data-tv] .qf-cam .qf-cam-layer { --cam-k: 1.15; }
+   corner, so nothing moves toward the centre of the picture; the bottom-left
+   column is narrower before scaling so it still fits its 260px corner. */
+.qf-shell[data-tv] .qf-cam .qf-cam-layer { --cam-k: 1.15; --cam-col: 210px; }
 
 /* ---------- motion: plates fade in once the curtain is gone ---------- */
 .qf-cam .qf-cam-layer > * { transition: opacity 0.5s ease; }
@@ -142,13 +150,21 @@
 }
 .qf-cam .qf-cam-feed__main {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 10px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
   max-width: 100%;
-  padding: 5px 10px;
+  padding: 5px 10px 6px;
   background: rgba(1, 10, 5, 0.62);
   white-space: nowrap;
+}
+/* two rows: who (REC, HUNTED, the name), then where (the site, the room) */
+.qf-cam .qf-cam-feed__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 10px;
+  max-width: 100%;
 }
 .qf-cam .qf-cam-rec {
   display: inline-flex;
@@ -171,20 +187,8 @@
   color: var(--agent);
   text-shadow: 0 0 10px color-mix(in srgb, var(--agent) 55%, transparent);
 }
-.qf-cam .qf-cam-feed__where {
-  display: var(--cam-site);
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  max-width: 100%;
-}
-.qf-cam .qf-cam-feed__sep {
-  flex: none;
-  width: 1px;
-  height: 12px;
-  background: var(--qf-line);
-}
 .qf-cam .qf-cam-feed__site {
+  display: var(--cam-site);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -193,6 +197,13 @@
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--qf-ink);
+}
+/* HUNTED sits beside REC, or on the second row when the stage is narrow;
+   a second row holding only a hidden pill is not drawn */
+.qf-cam .qf-cam-hunted-pill.is-who { display: var(--cam-hunted-who, inline-flex); }
+.qf-cam .qf-cam-hunted-pill.is-where { display: var(--cam-hunted-where, none); }
+.qf-cam .qf-cam-feed__row--where:not(:has(> :not(.qf-cam-hunted-pill.is-where))) {
+  display: var(--cam-hunted-row, none);
 }
 .qf-cam .qf-cam-feed__tick {
   display: var(--cam-tick);
@@ -425,32 +436,49 @@
 }
 
 /* ---------- bottom left: combat log over vitals ---------- */
+/* The column runs from the middle of the stage down to the bottom inset:
+   the vitals sit at its foot and the log has whatever height is left, so
+   the log can never climb past the middle. */
 .qf-cam .qf-cam-left {
   position: absolute;
+  top: 50%;
   left: var(--cam-in);
   bottom: var(--cam-in);
   width: var(--cam-col);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  justify-content: flex-end;
   gap: 8px;
   transform: scale(var(--cam-k));
   transform-origin: bottom left;
 }
 
-/* the last four beats, newest at the bottom, older ones fading out */
+/* The last three beats, newest at the bottom, older ones fading out. Lines
+   stack upward (newest is first in the DOM) and wrap into a second flex
+   column when the height runs out; every line is as wide as the log, so
+   that second column starts past the log's right edge and is clipped. A
+   line that does not fit is hidden whole, never cut in half. */
 .qf-cam .qf-cam-log {
+  flex: 1 1 0;
+  min-height: 0;
   display: var(--cam-log);
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  max-width: 100%;
+  flex-direction: column-reverse;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 2px 8px;
+  overflow: hidden;
 }
 .qf-cam .qf-cam-log__line {
+  flex: none;
+  display: flex;
+  width: 100%;
+  animation: qf-cam-line-in 0.25s ease-out;
+}
+.qf-cam .qf-cam-log__line > span {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: var(--cam-log-rows);
+  line-clamp: var(--cam-log-rows);
   overflow: hidden;
   max-width: 100%;
   padding: 3px 9px;
@@ -460,15 +488,12 @@
   color: var(--qf-ink);
   background: rgba(2, 22, 10, 0.6);
   text-shadow: 0 0 6px rgba(var(--qf-green-rgb), 0.3);
-  animation: qf-cam-line-in 0.25s ease-out;
 }
-.qf-cam .qf-cam-log__line:nth-last-child(2) { opacity: 0.7; }
-.qf-cam .qf-cam-log__line:nth-last-child(3) { opacity: 0.45; }
-.qf-cam .qf-cam-log__line:nth-last-child(4) { opacity: 0.25; }
-.qf-cam .qf-cam-log__line:nth-last-child(n + 3) { display: var(--cam-log-more); }
+.qf-cam .qf-cam-log__line:nth-child(2) { opacity: 0.7; }
+.qf-cam .qf-cam-log__line:nth-child(3) { opacity: 0.4; }
 /* the agent hurt, a trap sprung: red; something picked up: amber */
-.qf-cam .qf-cam-log__line.is-red { color: color-mix(in srgb, var(--qf-red) 75%, var(--qf-ink)); }
-.qf-cam .qf-cam-log__line.is-amber { color: var(--qf-amber); }
+.qf-cam .qf-cam-log__line.is-red > span { color: color-mix(in srgb, var(--qf-red) 75%, var(--qf-ink)); }
+.qf-cam .qf-cam-log__line.is-amber > span { color: var(--qf-amber); }
 
 .qf-cam .qf-cam-vitals {
   --hp: var(--agent);
@@ -549,7 +574,9 @@
   position: absolute;
   right: var(--cam-in);
   bottom: var(--cam-in);
-  max-width: var(--cam-col);
+  /* the bottom corners are 280px each beside the caster's band: a plate and
+     its inset stay within 260px, after the TV scale too */
+  max-width: calc((260px - var(--cam-in)) / var(--cam-k));
   display: flex;
   align-items: center;
   gap: 12px;
@@ -600,8 +627,8 @@
   position: absolute;
   left: 50%;
   bottom: var(--lower-h, 150px);
-  /* centred, and clear of the bottom-left column */
-  width: min(560px, 100% - 2 * var(--cam-side));
+  /* centred, and clear of the bottom-left column (after both are scaled) */
+  width: min(560px, (100% - 2 * var(--cam-side)) / var(--cam-k));
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -684,6 +711,17 @@
     inset 0 0 22px rgba(var(--qf-red-rgb), 0.42),
     inset 0 0 64px rgba(var(--qf-red-rgb), 0.14);
   animation: qf-cam-hunted 1.15s ease-in-out infinite alternate;
+}
+
+/* ---------- a stage too narrow for corner furniture beside the follow controls ---------- */
+/* The feed line and the scope drop below the strip; the feed then has the
+   room beside the centred target plate instead. */
+@container cam (max-width: 820px) {
+  .qf-cam .qf-cam-scope { top: calc(var(--cam-strip-h) + 8px); }
+  .qf-cam .qf-cam-feed {
+    top: calc(var(--cam-strip-h) + 8px);
+    max-width: calc(50% - var(--cam-target-w) / 2 - var(--cam-in) - 10px);
+  }
 }
 
 /* ---------- narrowest stage: the top strip leaves no room beside it ---------- */

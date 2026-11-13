@@ -130,47 +130,51 @@ export default function CrawlerMinimap({ model, facing, onSelectAgent }) {
               ))}
               {rooms.map((room) => {
                 const look = ROOM_STYLES[room.type] || ROOM_STYLES.corridor;
-                const dim = room.visited === false;
                 const here = room.id === model.playerRoomId;
+                // the agent is standing in its own room: that one never dims
+                const dim = room.visited === false && !here;
                 const x0 = cx(room) - CELLPX / 2;
                 const y0 = cy(room) - CELLPX / 2;
                 return (
-                  <g key={room.id} opacity={dim ? 0.38 : 1}>
-                    <rect
-                      x={x0}
-                      y={y0}
-                      width={CELLPX}
-                      height={CELLPX}
-                      fill={look.fill}
-                      fillOpacity={here ? look.fillOpacity + 0.22 : dim ? look.fillOpacity * 0.6 : look.fillOpacity}
-                      stroke={room.fogWall ? PALETTE.red : look.stroke}
-                      strokeOpacity="0.9"
-                      strokeWidth={room.fogWall ? 2 : here ? 1.6 : 1.2}
-                      strokeDasharray={room.fogWall ? undefined : look.dash}
-                    />
-                    {room.isEntrance && (
-                      /* sandbox site maps mark the way out: a circled up-arrow */
-                      <g stroke={PALETTE.greenBright} strokeWidth="1.6">
-                        <circle cx={cx(room)} cy={cy(room)} r="7" fill="none" opacity="0.9" />
-                        <path
-                          d={`M ${cx(room)} ${cy(room) - 3.6} L ${cx(room) - 3.2} ${cy(room) + 2.8} L ${cx(room) + 3.2} ${cy(room) + 2.8} Z`}
-                          fill={PALETTE.greenBright}
-                          stroke="none"
-                        />
-                      </g>
-                    )}
-                    {room.hasItems && (
-                      <rect x={x0 + 2.5} y={y0 + CELLPX - 7.5} width="5" height="5" fill={PALETTE.amber} />
-                    )}
-                    {room.entities?.some((e) => e.type === 'hostile') && (
-                      <circle cx={x0 + CELLPX - 5} cy={y0 + 5} r="3.4" fill={PALETTE.red} />
-                    )}
-                    {room.entities?.some((e) => e.type === 'invader') && (
-                      <circle cx={x0 + CELLPX - 5} cy={y0 + 5} r="3.4" fill={PALETTE.ice} />
-                    )}
-                    {room.entities?.some((e) => e.type === 'npc') && (
-                      <circle cx={x0 + 5} cy={y0 + 5} r="3" fill={PALETTE.ice} />
-                    )}
+                  <g key={room.id}>
+                    <g opacity={dim ? 0.38 : 1}>
+                      <rect
+                        x={x0}
+                        y={y0}
+                        width={CELLPX}
+                        height={CELLPX}
+                        fill={look.fill}
+                        fillOpacity={here ? look.fillOpacity + 0.22 : dim ? look.fillOpacity * 0.6 : look.fillOpacity}
+                        stroke={room.fogWall ? PALETTE.red : look.stroke}
+                        strokeOpacity="0.9"
+                        strokeWidth={room.fogWall ? 2 : here ? 1.6 : 1.2}
+                        strokeDasharray={room.fogWall ? undefined : look.dash}
+                      />
+                      {room.isEntrance && (
+                        /* sandbox site maps mark the way out: a circled up-arrow */
+                        <g stroke={PALETTE.greenBright} strokeWidth="1.6">
+                          <circle cx={cx(room)} cy={cy(room)} r="7" fill="none" opacity="0.9" />
+                          <path
+                            d={`M ${cx(room)} ${cy(room) - 3.6} L ${cx(room) - 3.2} ${cy(room) + 2.8} L ${cx(room) + 3.2} ${cy(room) + 2.8} Z`}
+                            fill={PALETTE.greenBright}
+                            stroke="none"
+                          />
+                        </g>
+                      )}
+                      {room.hasItems && (
+                        <rect x={x0 + 2.5} y={y0 + CELLPX - 7.5} width="5" height="5" fill={PALETTE.amber} />
+                      )}
+                      {room.entities?.some((e) => e.type === 'hostile') && (
+                        <circle cx={x0 + CELLPX - 5} cy={y0 + 5} r="3.4" fill={PALETTE.red} />
+                      )}
+                      {room.entities?.some((e) => e.type === 'invader') && (
+                        <circle cx={x0 + CELLPX - 5} cy={y0 + 5} r="3.4" fill={PALETTE.ice} />
+                      )}
+                      {room.entities?.some((e) => e.type === 'npc') && (
+                        <circle cx={x0 + 5} cy={y0 + 5} r="3" fill={PALETTE.ice} />
+                      )}
+                    </g>
+                    {/* other agents are live: their pips never dim with the room */}
                     {room.agents?.slice(0, 3).map((agent, i) => {
                       const ax = x0 + CELLPX - 5 - i * 6;
                       const ay = y0 + CELLPX - 5;
