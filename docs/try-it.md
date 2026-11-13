@@ -569,7 +569,7 @@ pytest
 ```
 
 ```text
-365 passed, 1 warning in 36.06s
+366 passed, 1 warning in 34.79s
 ```
 
 The tests call no LLM and no chain. To run the server:
