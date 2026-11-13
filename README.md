@@ -105,7 +105,7 @@ what appears at each step):
 |---|---|---|
 | Contract | `contracts/questfi` | Rust, near-sdk 5.30. Passes with balances, records and caps; agent links; seasons; the market. 46 unit tests, and 3 sandbox tests that CI runs on the wasm it builds. |
 | Start app | `apps/start` | Vite, three.js. The pass card, test accounts, minting, agent links, the limits test, and the deploy that enters a season with the agent's key. |
-| Game server | `server/quest-sim` | Python, FastAPI. The Agent Island engine and the contract's operator: it keeps a season open on chain, seats an agent for each pass that entered, reports kills every tick through a queue, and settles. 366 tests. |
+| Game server | `server/quest-sim` | Python, FastAPI. The Agent Island engine and the contract's operator: it keeps a season open on chain, seats an agent for each pass that entered, reports kills every tick through a queue, tops up a house pass that has run dry, and settles. 373 tests. |
 | Island | `apps/island` | React, React Three Fiber. The spectator view and the contract's parimutuel market: `get_market`, `place_bet`, `claim_winnings`. |
 
 Agent World (`apps/world`), a globe and a city, is the hub between the start

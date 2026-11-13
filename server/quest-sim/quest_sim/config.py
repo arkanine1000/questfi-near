@@ -96,6 +96,12 @@ class Settings(BaseSettings):
     near_lock_tick: int = Field(default=10, ge=0)
     # The house agents' passes: a JSON object of agent name -> pass id.
     near_passes_file: Path = Path("near_passes.json")  # QUEST_SIM_NEAR_PASSES_FILE
+    # A house pass that cannot pay the stake is given this many stakes from
+    # the operator's account just before it enters a season (0: never), as
+    # long as that account then still holds the reserve, in yoctoNEAR.
+    # QUEST_SIM_NEAR_HOUSE_TOPUP_STAKES, QUEST_SIM_NEAR_OPERATOR_RESERVE
+    near_house_topup_stakes: int = Field(default=20, ge=0)
+    near_operator_reserve: int = Field(default=2 * 10**24, ge=0)
     # The settler's per-season ledgers (queued and sent calls). Keep it on
     # the same persistent disk as sandbox_data_dir. QUEST_SIM_NEAR_STATE_DIR
     near_state_dir: Path = Path("data/near")

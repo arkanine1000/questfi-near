@@ -84,7 +84,7 @@ quest_sim/
 └── persistence/     # quest_store (prefab quests) + sandbox_store (worlds)
 
 scripts/             # run_sandbox_season.py (headless), sandbox_byo_client.py (reference BYO client)
-tests/               # 366 unit + integration tests
+tests/               # 373 unit + integration tests
 ```
 
 ## API

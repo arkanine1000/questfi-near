@@ -131,6 +131,7 @@ class ScriptedRpc:
         self.nonce = 41
         self.send_results: list = []  # popped per send_tx; dict = result, str = error name
         self.tx_results: list = []
+        self.account_amount: int | None = 7 * 10**24  # None: the account does not exist
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content)
@@ -149,6 +150,11 @@ class ScriptedRpc:
 
         if method == "query" and params["request_type"] == "view_access_key":
             return ok({"nonce": self.nonce, "permission": "FullAccess",
+                       "block_height": 1, "block_hash": BLOCK_HASH})
+        if method == "query" and params["request_type"] == "view_account":
+            if self.account_amount is None:
+                return err("UNKNOWN_ACCOUNT")
+            return ok({"amount": str(self.account_amount), "locked": "0", "storage_usage": 500,
                        "block_height": 1, "block_hash": BLOCK_HASH})
         if method == "query" and params["request_type"] == "call_function":
             if params["method_name"] == "missing":
@@ -260,6 +266,18 @@ async def test_view_decodes_json_and_reports_a_panicking_view():
     assert json.loads(base64.b64decode(got["echo"])) == {"season_id": "w-1"}
     with pytest.raises(ContractError):
         await client.view("missing", {})
+
+
+async def test_account_balance_reads_the_operator_account():
+    rpc = ScriptedRpc()
+    assert await _client(rpc).account_balance() == 7 * 10**24
+    query = rpc.requests[-1]["params"]
+    assert query["request_type"] == "view_account"
+    assert query["account_id"] == "operator.testnet"
+
+    rpc.account_amount = None
+    with pytest.raises(TransportError):  # retried, like a missing access key
+        await _client(rpc).account_balance()
 
 
 async def test_unreachable_rpc_is_a_transport_error():

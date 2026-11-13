@@ -32,6 +32,15 @@ Ordering and exactly-once:
   attempt already landed (a timeout can hide a success) and records it
   as done if so.
 
+House passes: the operator's own passes pay the stake like any other, so
+they run dry. With ``house_topup_yocto`` set, each house entry is preceded
+by a ``deposit`` into that pass from the operator's account. It is decided
+when its turn comes, from the chain: sent only if the pass cannot pay the
+season's stake and the operator account would still hold
+``operator_reserve_yocto`` afterwards, and otherwise skipped. The check is
+repeated before every attempt, so a deposit that landed without an answer
+is not sent twice.
+
 Failures: a ``TransportError`` (chain unreachable, operator cannot pay or
 sign, outcome unknown) is retried until it succeeds, with capped
 exponential backoff. A ``ContractError`` or ``RequestError`` is retried a
@@ -159,6 +168,8 @@ class Settler:
         entry_stake_yocto: int = 0,
         lock_tick: int = 0,
         passes_file: Path | None = None,
+        house_topup_yocto: int = 0,
+        operator_reserve_yocto: int = 0,
         gas: int = DEFAULT_GAS,
         backoff_base_s: float = 1.0,
         backoff_max_s: float = 60.0,
@@ -170,6 +181,10 @@ class Settler:
         self.entry_stake_yocto = int(entry_stake_yocto)
         self.lock_tick = int(lock_tick)
         self.passes_file = passes_file
+        # What a house pass that cannot pay the stake is given from the
+        # operator's account (0: never), and what that account keeps back.
+        self.house_topup_yocto = int(house_topup_yocto)
+        self.operator_reserve_yocto = int(operator_reserve_yocto)
         self.gas = gas
         self.backoff_base_s = backoff_base_s
         self.backoff_max_s = backoff_max_s
@@ -386,6 +401,9 @@ class Settler:
         if ledger is None or pass_id in ledger.entrants or pass_id in ledger.pending_entries:
             return None
         ledger.pending_entries.append(pass_id)
+        if self.house_topup_yocto > 0:
+            # Ahead of the entry in the queue; sent only if the pass needs it.
+            self._add(ledger, "deposit", {"pass_id": pass_id}, self.house_topup_yocto)
         return self._add(ledger, "enter_season", {"pass_id": pass_id, "season_id": season_id})
 
     def start_season(self, season_id: str) -> Op | None:
@@ -519,6 +537,25 @@ class Settler:
     # Execution
     # ------------------------------------------------------------------
 
+    async def _top_up_unneeded(self, ledger: Ledger, op: Op) -> str | None:
+        """Why a house pass's top-up is not sent, or None to send it. Read
+        from the chain before every attempt."""
+        pass_id = op.args["pass_id"]
+        view = await self.client.view("get_pass", {"pass_id": pass_id})
+        if not isinstance(view, dict):
+            return "the pass is not on chain"
+        if int(view.get("balance") or 0) >= int(ledger.entry_stake_yocto):
+            return "the pass can pay the stake"
+        spare = await self.client.account_balance() - self.operator_reserve_yocto
+        if spare < int(op.deposit_yocto):
+            logger.warning(
+                "settler: house pass %s cannot pay the stake of %s and the operator "
+                "account is too low to top it up; it plays without a stake",
+                pass_id, ledger.season_id,
+            )
+            return "the operator account is too low to top the pass up"
+        return None
+
     def _skip_reason(self, ledger: Ledger, op: Op) -> str | None:
         if ledger.create_failed:
             return "season was never created on chain"
@@ -641,6 +678,11 @@ class Settler:
 
             op.attempts += 1
             try:
+                if op.method == "deposit":
+                    unneeded = await self._top_up_unneeded(ledger, op)
+                    if unneeded is not None:
+                        op.state, op.note, op.finished_at = "skipped", unneeded, _now()
+                        break
                 result = await self.client.call(
                     op.method, op.args, deposit_yocto=int(op.deposit_yocto), gas=self.gas
                 )
