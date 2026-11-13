@@ -67,7 +67,7 @@
 
   --cam-in: 18px;          /* plates' distance from the stage edge, inside the brackets */
   --cam-col: 240px;        /* width of the bottom-left column (vitals, log); with the inset, within 260px */
-  --cam-side: calc(var(--cam-in) + var(--cam-col) + 18px); /* what a corner column needs */
+  --cam-side: calc(var(--cam-in) + var(--cam-col) * var(--cam-k) + 18px); /* what the bottom-left column needs, scaled */
   --cam-k: 1;              /* overall scale: the TV cut is larger */
   --cam-scope-k: 1;        /* the scope's own scale */
   --cam-num: 44px;         /* the health numeral */
@@ -627,8 +627,8 @@
   position: absolute;
   left: 50%;
   bottom: var(--lower-h, 150px);
-  /* centred, and clear of the bottom-left column */
-  width: min(560px, 100% - 2 * var(--cam-side));
+  /* centred, and clear of the bottom-left column (after both are scaled) */
+  width: min(560px, (100% - 2 * var(--cam-side)) / var(--cam-k));
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -713,9 +713,15 @@
   animation: qf-cam-hunted 1.15s ease-in-out infinite alternate;
 }
 
-/* ---------- a stage too narrow for the scope beside the follow controls ---------- */
+/* ---------- a stage too narrow for corner furniture beside the follow controls ---------- */
+/* The feed line and the scope drop below the strip; the feed then has the
+   room beside the centred target plate instead. */
 @container cam (max-width: 820px) {
   .qf-cam .qf-cam-scope { top: calc(var(--cam-strip-h) + 8px); }
+  .qf-cam .qf-cam-feed {
+    top: calc(var(--cam-strip-h) + 8px);
+    max-width: calc(50% - var(--cam-target-w) / 2 - var(--cam-in) - 10px);
+  }
 }
 
 /* ---------- narrowest stage: the top strip leaves no room beside it ---------- */
