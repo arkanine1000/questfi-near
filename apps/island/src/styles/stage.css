@@ -12,18 +12,17 @@
               when the stage is wide enough.
      compact  a bracketed camera square, head and shoulders, with the
               caption beside it, centred in the band. While the dungeon
-              feed is up (its vitals plate owns the bottom-left corner), on
-              small windows, and on a narrow stage. On a very narrow stage
-              only the caption is left.
+              feed is up (its vitals plate owns the bottom-left corner),
+              after the season (the results card keeps clear of the band,
+              not of a standing figure), on small windows, and on a narrow
+              stage. On a very narrow stage only the caption is left.
    The followed agent's thoughts and the crowded-hex picker stack above
    whichever form she is in. */
 
 /* Fixed elements always form a stacking context, so the stage itself
-   carries the furniture's layer: above the dungeon feed, below the
-   columns. During the finale it rises over the finale card's dimming, so
-   the caster can deliver the sign-off (as she always has). */
+   carries the furniture's layer: above the dungeon feed, below the finale
+   card and the columns. */
 .qf-shell > .qf-stage { z-index: calc(var(--qf-z-hud) + 10); }
-.qf-shell[data-phase='finished'] > .qf-stage { z-index: calc(var(--qf-z-card) + 10); }
 
 /* the backdrop when the 3D scene cannot run: the frame still broadcasts */
 .qf-stage-fallback {
@@ -376,10 +375,10 @@
 }
 
 /* ---- the full form: the presenter at her desk ----
-   On the overworld (no dungeon feed), in a regular window, on a stage wide
-   enough for the figure and a caption beside it. */
+   On the overworld (no dungeon feed) while the season is on, in a regular
+   window, on a stage wide enough for the figure and a caption beside it. */
 @container stage (min-width: 721px) {
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-stage > .qf-caster {
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage > .qf-caster {
     left: 0;
     right: 0;
     translate: none;
@@ -388,7 +387,7 @@
     align-items: flex-end;
     gap: 0;
   }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-cam {
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-caster-cam {
     width: 214px;
     height: auto;
     aspect-ratio: 794 / 1168; /* the sprite art, uncropped */
@@ -397,11 +396,11 @@
     background: none;
     opacity: 0.7;
   }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-shell .qf-caster.is-live .qf-caster-cam { opacity: 1; }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-cam::before { display: none; }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-cam img { width: 100%; left: 0; top: 0; }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-live { left: auto; right: 18px; bottom: 22px; }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-caption {
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-shell .qf-caster.is-live .qf-caster-cam { opacity: 1; }
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-caster-cam::before { display: none; }
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-caster-cam img { width: 100%; left: 0; top: 0; }
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-caster-live { left: auto; right: 18px; bottom: 22px; }
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-caster-caption {
     flex: 1 1 auto;
     max-width: 600px;
     min-height: 104px;
@@ -409,13 +408,13 @@
   }
 
   /* thoughts and the hex picker sit over her desk, aligned to the caption */
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-stage:has(> .qf-caster) > .qf-thoughts {
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage:has(> .qf-caster) > .qf-thoughts {
     left: 214px;
     translate: none;
     bottom: 136px;
     width: min(540px, calc(100% - 222px));
   }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-stage:has(> .qf-caster) > .qf-hexpick {
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage:has(> .qf-caster) > .qf-hexpick {
     left: 214px;
     translate: none;
     bottom: 136px;
@@ -426,12 +425,12 @@
 /* the TV: the caster a size up, read from the sofa */
 .qf-shell[data-tv] .qf-stage > .qf-caster { scale: 1.15; transform-origin: 50% 100%; }
 @container stage (min-width: 721px) {
-  .qf-shell[data-tv]:not([data-cam]):not([data-compact]) .qf-stage > .qf-caster {
+  .qf-shell[data-tv]:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage > .qf-caster {
     right: auto;
     width: calc(100% / 1.15);
     transform-origin: 0 100%;
   }
-  .qf-shell[data-tv]:not([data-cam]):not([data-compact]) .qf-stage:has(> .qf-caster) > .qf-thoughts {
+  .qf-shell[data-tv]:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage:has(> .qf-caster) > .qf-thoughts {
     left: calc(214px * 1.15);
     bottom: calc(136px * 1.15);
   }
