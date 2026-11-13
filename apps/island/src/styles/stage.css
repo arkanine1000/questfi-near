@@ -456,8 +456,10 @@
 /* ======================================================================
    The dossier window
    ====================================================================== */
-/* short enough to open under the top bar and still end on screen */
-.qf-dossier { max-height: min(640px, calc(100vh - 80px)); }
+/* short enough that the third of a cascade, opening under the top bar,
+   still ends on screen; and
+   solid, so a dossier stacked on another does not show it through */
+.qf-window.qf-dossier { max-height: min(640px, calc(100vh - 124px)); background: rgb(1, 14, 7); }
 .qf-dossier-body {
   --agent: var(--qf-green);
   display: flex;
@@ -550,7 +552,7 @@
   margin-top: auto;
   padding: 12px 16px 14px;
   border-top: 1px solid var(--qf-line-faint);
-  background: var(--qf-panel-solid);
+  background: rgb(1, 14, 7); /* the rows scrolling under it must not show */
 }
 .qf-dossier-foot .qf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 

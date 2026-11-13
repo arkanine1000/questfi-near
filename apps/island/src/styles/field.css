@@ -198,7 +198,10 @@ button.qf-field-main:hover { background: rgba(var(--qf-green-rgb), 0.06); }
 }
 .qf-field-where span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .qf-field-combat {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -276,6 +279,16 @@ button.qf-field-main:hover { background: rgba(var(--qf-green-rgb), 0.06); }
   line-height: 1.35;
   letter-spacing: 0.04em;
 }
+
+/* ---------- small windows: a narrower column, tighter rows ---------- */
+.qf-shell[data-compact] .qf-field-main { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 9px; padding-left: 10px; }
+.qf-shell[data-compact] .qf-field-row { grid-template-columns: minmax(0, 1fr) 24px; }
+.qf-shell[data-compact] .qf-field-hex { --hex: 26px !important; }
+.qf-shell[data-compact] .qf-field-hpbar { flex-basis: 40px; width: 40px; }
+.qf-shell[data-compact] .qf-field-status { gap: 7px; }
+.qf-shell[data-compact] .qf-field-hp { gap: 5px; }
+.qf-shell[data-compact] .qf-field-combat { letter-spacing: 0.08em; }
+.qf-shell[data-compact] .qf-field-where { letter-spacing: 0.04em; }
 
 /* ---------- the TV: no pointer, read from the sofa ---------- */
 .qf-shell[data-tv] .qf-field-main { grid-template-columns: 34px minmax(0, 1fr) auto; padding-right: 14px; }

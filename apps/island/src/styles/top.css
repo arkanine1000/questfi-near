@@ -260,6 +260,12 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
 .qf-booth .qf-booth-switch.is-on { color: var(--qf-green-bright); border-color: var(--qf-green); }
 .qf-booth .qf-booth-build { margin-top: 20px; border-bottom: 0; color: var(--qf-faint); }
 .qf-booth .qf-booth-build .qf-num { color: var(--qf-dim); }
+/* a short window: the booth fits without scrolling */
+@media (max-height: 640px) {
+  .qf-booth .qf-row { min-height: 34px; }
+  .qf-booth-section + .qf-booth-section,
+  .qf-booth .qf-booth-build { margin-top: 10px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .qf-top, .qf-top-toasts { animation: none; }
