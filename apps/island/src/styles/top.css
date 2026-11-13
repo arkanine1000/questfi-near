@@ -189,18 +189,25 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
 .qf-shell .qf-top-icon:hover:not(:disabled) { color: var(--qf-green); }
 .qf-shell .qf-top-icon.is-idle { opacity: 0.45; }
 
-/* what just happened to the account, hanging under the bar's right end */
+/* what just happened to the account: at the stage's top-right, never over
+   a column; while someone is followed, below the follow controls */
 .qf-top-toasts {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: var(--gutter);
+  position: fixed;
+  top: calc(var(--top-h) + 10px);
+  left: var(--stage-l);
+  right: var(--stage-r);
+  z-index: calc(var(--qf-z-hud) + 20);
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-  max-width: min(440px, calc(100vw - 2 * var(--gutter)));
+  pointer-events: none;
   animation: qf-rise 0.25s var(--qf-ease) both;
+  transition: left 0.5s var(--qf-ease), right 0.5s var(--qf-ease), top 0.3s var(--qf-ease);
 }
+.qf-top-toasts > * { max-width: min(420px, 100%); pointer-events: auto; }
+.qf-shell[data-follow] .qf-top-toasts { top: calc(var(--top-h) + 14px + 34px + 8px); }
+.qf-shell[data-follow][data-compact] .qf-top-toasts { top: calc(var(--top-h) + 10px + 30px + 8px); }
 .qf-shell .qf-top-toast {
   display: flex;
   align-items: center;
@@ -225,6 +232,7 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
 }
 .qf-top-toast--ice a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .qf-top-toast--ice a:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
+.qf-top-toast-tx { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .qf-top-toast-label { margin-right: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
 .qf-shell .qf-top-toast--bad { color: #ffdede; border-color: var(--qf-red-line); background: rgba(26, 4, 6, 0.9); }
 
