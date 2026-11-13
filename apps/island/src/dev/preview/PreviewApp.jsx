@@ -20,6 +20,7 @@
 import { Component, useEffect, useState } from 'react';
 import { SandboxProvider } from '../../context/SandboxContext';
 import { NearProvider } from '../../context/NearContext';
+import { LayoutProvider } from '../../context/LayoutContext';
 import SandboxView from '../../components/Sandbox/SandboxView';
 import { SCENARIOS } from './catalog';
 import {
@@ -177,7 +178,9 @@ function ScenarioApp() {
     <PreviewBoundary>
       <SandboxProvider>
         <NearProvider contractId={spec.contractId}>
-          <SandboxView />
+          <LayoutProvider>
+            <SandboxView />
+          </LayoutProvider>
         </NearProvider>
       </SandboxProvider>
     </PreviewBoundary>
