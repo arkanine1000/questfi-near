@@ -218,6 +218,7 @@ tags). Sub-states are extra parameters on top of a scenario:
 | Parameter | Effect |
 |-----------|--------|
 | `step=<name>` | An interaction performed once the data is in. Season list: `open-lobby`, `play`, `operator`, `delete`. Lobby: `start-now`, `bring-agent`, `copy-invite`. Top bar: `booth`, `sound`, `create-account`. Market: `bet`, `claim`, `help`, `fold`, `tab-bets`, `tab-chain`. Field: `fold-field`, `fold-both`, `dossier`, `dossier-dead` (with `fallen=1`), `dossiers` (two windows) |
+| `lock=none\|end` | The server's `near` block says betting locks at tick 30 (`lock_tick`); `none` leaves the field out, `end` sends `null` (only the season's end locks it) |
 | `tab=bets\|chain`, `fold=dock\|field\|both` | Shorthands for the market tab and the folded columns |
 | `tx=pending\|fail\|ok` | What the chain does with a bet or claim |
 | `guest=pending\|fail\|ok` | What the test-account service does |

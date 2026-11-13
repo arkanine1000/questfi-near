@@ -29,6 +29,8 @@
  *   operator=refused|accepted  a saved operator key and the server's verdict
  *   reason=boss|last_alive|timeout   how the winner won
  *   bet=lost             (finale-sim) the practice stake was on a loser
+ *   lock=none|end        the near block without lock_tick | with it null
+ *                        (by default it says betting locks at tick 30)
  *   tab=bets|chain       the market dock's tab
  *   fold=dock|field|both the side columns folded away
  *   fallen=1             (running) Bren cuts Vex down in the last live tick
@@ -87,6 +89,8 @@ export const SCENARIOS = [
   { name: 'running-no-pass', query: 'preview=running-open&follow=slip&entrants=recorded' },
   { name: 'running-bet', core: true, query: 'preview=running-bet' },
   { name: 'running-bet-slip', query: 'preview=running-bet&follow=slip' },
+  { name: 'running-lock-none', query: 'preview=running-open&lock=none' },
+  { name: 'running-lock-end', query: 'preview=running-open&lock=end' },
   { name: 'running-tab-bets', query: 'preview=running-bet&tab=bets' },
   { name: 'running-tab-chain', query: 'preview=running-bet&tab=chain' },
   { name: 'running-feed', query: 'preview=running-bet&feed=1&tab=chain' },

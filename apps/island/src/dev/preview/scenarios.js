@@ -738,6 +738,16 @@ function applyParams(spec, p) {
     out.ready.push('whoami');
   }
   if (p.get('account') === 'gone') out.guestGone = true;
+  // The server's near block names the tick betting locks at (lock_tick).
+  // lock=end: null, only the season's end locks it; lock=none: a server
+  // that does not send the field at all.
+  const lock = p.get('lock');
+  for (const world of Object.values(out.game?.worlds ?? {})) {
+    const near = world.state?.near;
+    if (!near?.enabled) continue;
+    if (lock === 'none') delete near.lock_tick;
+    else near.lock_tick = lock === 'end' ? null : 30;
+  }
   out.tx = p.get('tx') || 'pending';
   out.guestApi = p.get('guest') || 'pending';
   out.rpcDown = p.get('rpc') === 'down';
