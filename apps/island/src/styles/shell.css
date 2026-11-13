@@ -44,12 +44,17 @@
   /* The bottom band of the stage belongs to the caster. Whatever stacks
      above it (an agent's thoughts) starts at --lower-h from the bottom. */
   --lower-h: 150px;
+
+  /* width of the tab a folded column leaves on the screen edge */
+  --edge-w: 28px;
 }
 .qf-shell[data-compact] { --lower-h: 104px; }
-.qf-shell[data-field='closed'],
+/* a column that is absent gives its space to the stage; a folded one still
+   has its tab on the screen edge, and the stage starts clear of it */
 .qf-shell[data-field='none'] { --stage-l: var(--gutter); }
-.qf-shell[data-dock='closed'],
 .qf-shell[data-dock='none'] { --stage-r: var(--gutter); }
+.qf-shell[data-field='closed'] { --stage-l: calc(var(--edge-w) + var(--gutter)); }
+.qf-shell[data-dock='closed'] { --stage-r: calc(var(--edge-w) + var(--gutter)); }
 
 /* small windows and landscape phones */
 .qf-shell[data-compact] {
@@ -103,7 +108,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 6px;
+  width: var(--edge-w);
+  padding: 12px 0;
+  justify-content: center;
   writing-mode: vertical-rl;
   font-family: var(--qf-font);
   font-size: 11px;

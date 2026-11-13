@@ -12,6 +12,7 @@ import {
   useCallback, useEffect, useLayoutEffect, useRef, useState,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { IconClose, IconMinus, IconPlus } from './icons';
 
 const MARGIN = 8;
 let topZ = 0; // windows share one stacking counter; the last touched wins
@@ -121,11 +122,11 @@ export default function FloatingWindow({
               aria-label={min ? 'Open the window' : 'Fold the window to its title bar'}
               aria-expanded={!min}
             >
-              {min ? '+' : '−'}
+              {min ? <IconPlus size={14} /> : <IconMinus size={14} />}
             </button>
           )}
           {onClose && (
-            <button type="button" className="qf-x" onClick={onClose} aria-label="Close the window">×</button>
+            <button type="button" className="qf-x" onClick={onClose} aria-label="Close the window"><IconClose size={14} /></button>
           )}
         </span>
       </header>

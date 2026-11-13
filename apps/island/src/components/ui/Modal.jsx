@@ -8,6 +8,7 @@
 
 import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { IconClose } from './icons';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -64,7 +65,7 @@ export default function Modal({
       >
         <div className="qf-modal__head">
           <span id={titleId}>{title}</span>
-          <button type="button" className="qf-x" onClick={onClose} aria-label="Close">×</button>
+          <button type="button" className="qf-x" onClick={onClose} aria-label="Close"><IconClose size={14} /></button>
         </div>
         <div className="qf-modal__body">{children}</div>
         {footer && <div className="qf-modal__foot">{footer}</div>}
