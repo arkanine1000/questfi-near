@@ -24,6 +24,7 @@ import {
   BEACON, makeMarkerGeometry, makeBeamGeometry, makeHexOutlineGeometry,
 } from '../Scene3D/beaconStyle';
 import { look } from '../Scene3D/look';
+import { IconDescend } from '../ui/icons';
 
 const MAX_AGENTS = 24;
 const FAN_RADIUS = HEX_WORLD_RADIUS * 0.42;
@@ -358,7 +359,7 @@ export default function SandboxAgentMarkers({
               style={{ '--tag-color': agent.color }}
             >
               {agent.name}
-              {underground && <span className="sbx-tag__depth">▾</span>}
+              {underground && <span className="sbx-tag__depth"><IconDescend size={10} /></span>}
             </div>
           </Html>
         );

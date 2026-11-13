@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { axialToWorld, COLORS } from '../Scene3D/worldUtils';
+import { IconCrown } from '../ui/icons';
 
 const RING_COLOR = COLORS.green;
 const BOSS_COLOR = COLORS.amber;
@@ -121,7 +122,7 @@ export default function SandboxSiteMarkers({ islandMap, reducedMotion }) {
           style={{ pointerEvents: 'none' }}
         >
           <div className="sbx-boss-tag">
-            <span className="sbx-boss-tag__crown">♛</span> {boss.name}
+            <span className="sbx-boss-tag__crown"><IconCrown size={11} /></span> {boss.name}
           </div>
         </Html>
       )}
