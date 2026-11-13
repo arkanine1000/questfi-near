@@ -68,9 +68,13 @@ code hash and the deployed wasm's SHA-256 over NEAR's public RPC, and the
 build image. The CI run's summary lists the same SHA-256 and code hash.
 
 Amounts are small to fit the testnet faucet (in NEAR: stake 0.05, rentals
-0.04 and 0.06, caps 0.2 per call and 1 per day, card burn 0.2, mint fee 0.05,
-minimum bet 0.01); `get_config` reads them back. The contract account keeps
-its full-access key, so a fix can be deployed during the event.
+0.04 and 0.06, caps 0.2 per call and 1 per day, card burn 0.05, mint fee
+0.05, minimum bet 0.01). Levelling is quick, so that one visit shows the
+whole flow: entering a season is worth four levels (`xp_enter` 400 at
+`xp_per_level` 100), a kill one and a win two, so a pass reaches the claim
+level, 5, in the first season it enters. `get_config` reads all of it back.
+The contract account keeps its full-access key, so a fix can be deployed
+during the event.
 
 ## Try it
 
@@ -90,14 +94,74 @@ what appears at each step):
    season or wait out its countdown.
 8. Follow an agent and back it from the **MARKET** dock on the right; once the
    season settles, press **CLAIM** under **YOUR BETS**.
+9. Back on the start app the pass shows its level and the season under
+   **ACTIVITY**, and the card reads **UNLOCKED**. Press
+   **CLAIM · BURN 0.05 NEAR** for the claim ticket of the physical card.
 
-**From a terminal, one command** after the install (Node 22):
+**From a terminal, nothing to install** (`curl` and `jq`; read-only; a few
+seconds). One run of the flow in the next block was left on chain as it
+ended, and these commands read it back. Paste this first:
+
+```bash
+RPC=https://test.rpc.fastnear.com
+ARCHIVE=https://archival-rpc.testnet.fastnear.com   # keeps past transactions
+RUN=g-mcshnxh2.play.questfi.testnet                 # the run's test account; its pass is #19
+ask() {   # ask <rpc address> <method> '<params as JSON>'
+  curl -s "$1" -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$2\",\"params\":$3}" | jq .result
+}
+view() {  # view <contract method> ['<arguments as JSON>']
+  ask $RPC query "$(jq -nc --arg m "$1" --arg a "${2:-}" '{request_type: "call_function", finality: "final",
+    account_id: "pass.questfi.testnet", method_name: $m, args_base64: (if $a == "" then "{}" else $a end | @base64)}')" |
+    jq '.result | implode | fromjson'
+}
+```
+
+1. **The agent's key can call two methods of the contract and nothing else.** Run:
+
+   ```bash
+   ask $RPC query '{"request_type":"view_access_key_list","finality":"final","account_id":"'$RUN'"}' |
+     jq -c '.keys[] | {key: .public_key, may: (.access_key.permission | if type == "string" then . else .FunctionCall | {receiver_id, method_names} end)}'
+   ```
+
+   See the account's two keys: the owner's, `"FullAccess"`, and the agent's,
+   `{"receiver_id":"pass.questfi.testnet","method_names":["enter_season","pay_agent"]}`.
+2. **The pass is an NFT that holds NEAR, a record and that key.** Run
+   `view get_pass '{"pass_id":"19"}' | jq '{owner_id, balance, level, seasons, claim_ticket, agent}'`.
+   See the run's account as owner, 0.2 NEAR, level 5 after one season, the
+   card's claim ticket `QF-TCG-19-277569915`, and under `agent` the public
+   key of the limited key from step 1.
+3. **That key signed the season entry, and the contract refused its overspend.** Run:
+
+   ```bash
+   for tx in 7m87VcaX2Ef5s1xFMPrRnRTYHcYUrXoX7gNFvE53zRbt 8vAajnUmbDViKJXjhdeumjh2D2r24F6RabBsx5XuQ9yj; do
+     ask $ARCHIVE tx '{"tx_hash":"'$tx'","sender_account_id":"'$RUN'","wait_until":"FINAL"}' |
+       jq -c '{key: .transaction.public_key, call: .transaction.actions[0].FunctionCall.method_name, result: (.status | tostring)}'
+   done
+   ```
+
+   See the agent's key on both transactions: `enter_season` with
+   `SuccessValue`, and `pay_agent` (0.21 NEAR against the 0.2 NEAR cap) with
+   `Smart contract panicked: POLICY: over per-call cap`.
+4. **The season and its market settled on the contract.** Run
+   `view get_season '{"season_id":"w-e4f1b03f"}' | jq -c '{status, winner, entrants: [.entrants[].pass_id]}'`
+   and `view get_market '{"season_id":"w-e4f1b03f"}' | jq -c '{settled, pool, winner, refund}'`.
+   See `Settled`, six passes and the winner; and a settled market whose 0.02
+   NEAR of bets were refunded, because nobody had backed the winner.
+
+In a clone, `bash scripts/check-public.sh` checks this run the same way and
+runs the rest of the read-only checks (the code hash, the wasm's SHA-256,
+the game server, the site): 22 `ok` lines and exit status 0.
+
+**From a terminal, the whole flow in one command** (Node 22; about six
+minutes; real testnet transactions from a fresh test account):
 
 1. `git clone https://github.com/arkanine1000/questfi-near && cd questfi-near/apps/start && npm ci`
 2. `node scripts/walkthrough.mjs --contract pass.questfi.testnet --app https://near.questfi.ai --game https://quest-sim-near-production.up.railway.app`
-3. A fresh test account runs the whole flow: twelve numbered `ok` lines and
-   `all steps passed` once a season has played and settled, a few minutes;
-   exit code 0, or 1 if a step fails.
+3. See sixteen numbered `ok` lines, with links to their transactions, and
+   `all steps passed`: the account mints a pass and links an agent, the
+   agent's key is refused twice and then enters a season, the account bets in
+   the season's market, the season plays and settles, the market pays out,
+   and the owner claims the card. Exit code 0, or 1 if a step fails.
 
 ## How it works
 
@@ -123,9 +187,10 @@ app and the island. One Vercel project builds the three apps into one site
   (near-connect) and **MOVE PASS TO MY WALLET**. Linking your own agent over
   MCP is implemented on the game server but not run end to end from the start
   app.
-- The card claim at level 5 is covered by contract tests; no pass on the site
-  has reached level 5. `pay_agent` is what the limits test calls; agents do
-  not pay each other during play.
+- `pay_agent` is what the limits test calls; agents do not pay each other
+  during play.
+- The card claim issues a ticket on the contract; printing and shipping a
+  card against it is not built.
 - The city's other venues (the Colosseum, the Green Room, Speed Traders) open
   the existing hosted QuestFi lobby and do not use NEAR.
 
