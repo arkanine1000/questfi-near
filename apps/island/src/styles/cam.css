@@ -861,6 +861,8 @@
 .qf-shell[data-compact] .qf-cam .qf-cam-steps { margin-top: 14px; }
 .qf-shell[data-compact] .qf-cam .qf-cam-curtain__stage { margin-top: 7px; font-size: 18px; }
 .qf-shell[data-compact] .qf-cam .qf-cam-curtain__stall { margin-top: 10px; }
+/* stalled, the "not answering" line already says which step is stuck */
+.qf-shell[data-compact] .qf-cam .qf-cam-curtain.is-stalled .qf-cam-curtain__stage { display: none; }
 .qf-shell[data-compact] .qf-cam .qf-cam-curtain__cause { margin-top: 8px; font-size: 13.5px; }
 .qf-shell[data-compact] .qf-cam .qf-cam-curtain__hint { margin-top: 12px; }
 

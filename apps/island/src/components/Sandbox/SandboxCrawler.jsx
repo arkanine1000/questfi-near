@@ -534,7 +534,7 @@ export default function SandboxCrawler({ agent, worldId, siteId }) {
       )}
       {curtainUp && (
         <div
-          className={`qf-cam-curtain${revealed ? ' is-lifting' : ''}`}
+          className={`qf-cam-curtain${revealed ? ' is-lifting' : ''}${stalled ? ' is-stalled' : ''}`}
           role="status"
           aria-live="polite"
         >
