@@ -76,7 +76,7 @@ const chan = (tick, text) => ({ kind: 'commentary', world_id: SEASON_ID, tick, s
  * recorded rooms, with the players put where the roster says they are and
  * the monsters the recorded events show them fighting.
  */
-function sitesFor(roster, { pvp = false } = {}) {
+function sitesFor(roster, { pvp = false, keepDead = false } = {}) {
   const sites = clone(season.sites);
   for (const site of Object.values(sites)) {
     for (const room of Object.values(site.rooms)) {
@@ -86,7 +86,7 @@ function sitesFor(roster, { pvp = false } = {}) {
   }
   for (const a of roster) {
     const p = a.position;
-    if (!a.alive || p.kind !== 'dungeon' || !sites[p.site_id]?.rooms[p.room]) continue;
+    if ((!a.alive && !keepDead) || p.kind !== 'dungeon' || !sites[p.site_id]?.rooms[p.room]) continue;
     sites[p.site_id].rooms[p.room].players.push({ agent_id: a.agent_id, name: a.name, color: a.color });
   }
   // tick 14: Kell steps west into the Roost Harpy (combat_start in frame 14)
@@ -171,7 +171,9 @@ function runningWorld({
   const world = {
     state,
     map: clone(season.map),
-    sites: sitesFor(last.roster, { pvp: Boolean(pvp) }),
+    // the killing blow: the map still has Vex in the room, as the server's
+    // does until its next read, so the HUD shows the moment before the cut
+    sites: sitesFor(last.roster, { pvp: Boolean(pvp), keepDead: pvp === 'kill' }),
     frames: backfill,
     live: [
       ...live.map((f) => ({ event: 'frame', data: f })),
