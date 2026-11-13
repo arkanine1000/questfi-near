@@ -117,6 +117,7 @@ block:
   "season_id": "w-1a2b3c4d",
   "tracked": true,
   "season_status": "Running",
+  "lock_tick": 10,
   "queue_depth": 0,
   "queue_depth_total": 0,
   "last_error": null,
@@ -128,7 +129,9 @@ block:
 ```
 
 `season_status` is the last status the server saw (`Open`, `Running`,
-`Settled`, `Cancelled`). `chain_error` is set while the chain is
+`Settled`, `Cancelled`). `lock_tick` is the tick at which the server locks
+the market (`null` when only the season's end locks it), so a spectator can
+be told when betting closes. `chain_error` is set while the chain is
 unreachable and clears on the next success. `recent_txs` lists up to ten,
 newest first, including rejected ones (`ok: false`); `url` is the
 transaction on nearblocks (testnet when the contract is a `.testnet`

@@ -785,6 +785,9 @@ class Settler:
             return block
         block.update({
             "season_status": ledger.status,
+            # the tick at which betting locks; None when only the season's
+            # end locks it
+            "lock_tick": self.lock_tick_for(season_id) or None,
             "queue_depth": len(ledger.pending()),
             "queue_depth_total": self.queue_depth(),
             "last_error": ledger.last_error,
