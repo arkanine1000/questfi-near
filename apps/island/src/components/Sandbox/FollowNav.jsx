@@ -67,14 +67,14 @@ export default function FollowNav({
       <Step agent={prevAgent} dir="prev" onFollow={onFollow} />
       <div className="qf-panel qf-follow-plate" style={{ '--agent': agent.color }}>
         {onCam ? (
-          <span className="qf-follow-mode is-cam">
+          <span className="qf-follow-mode is-cam" title="On the dungeon feed">
             <i className="qf-dot qf-dot--live" aria-hidden />
-            On cam
+            <span className="qf-follow-mode-text">On cam</span>
           </span>
         ) : (
-          <span className="qf-follow-mode">
+          <span className="qf-follow-mode" title="Following">
             <IconFollow size={14} />
-            Following
+            <span className="qf-follow-mode-text">Following</span>
           </span>
         )}
         <button
