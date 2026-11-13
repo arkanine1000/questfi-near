@@ -66,7 +66,7 @@
   inset: 0;
 
   --cam-in: 18px;          /* plates' distance from the stage edge, inside the brackets */
-  --cam-col: 240px;        /* width of the bottom-left column (vitals, log) */
+  --cam-col: 240px;        /* width of the bottom-left column (vitals, log); with the inset, within 260px */
   --cam-side: calc(var(--cam-in) + var(--cam-col) + 18px); /* what a corner column needs */
   --cam-k: 1;              /* overall scale: the TV cut is larger */
   --cam-scope-k: 1;        /* the scope's own scale */
@@ -115,8 +115,9 @@
 }
 
 /* The lean-back cut: everything 15% larger. Each plate scales from its own
-   corner, so nothing moves toward the centre of the picture. */
-.qf-shell[data-tv] .qf-cam .qf-cam-layer { --cam-k: 1.15; }
+   corner, so nothing moves toward the centre of the picture; the bottom-left
+   column is narrower before scaling so it still fits its 260px corner. */
+.qf-shell[data-tv] .qf-cam .qf-cam-layer { --cam-k: 1.15; --cam-col: 210px; }
 
 /* ---------- motion: plates fade in once the curtain is gone ---------- */
 .qf-cam .qf-cam-layer > * { transition: opacity 0.5s ease; }
@@ -564,7 +565,9 @@
   position: absolute;
   right: var(--cam-in);
   bottom: var(--cam-in);
-  max-width: var(--cam-col);
+  /* the bottom corners are 280px each beside the caster's band: a plate and
+     its inset stay within 260px, after the TV scale too */
+  max-width: calc((260px - var(--cam-in)) / var(--cam-k));
   display: flex;
   align-items: center;
   gap: 12px;
