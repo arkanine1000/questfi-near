@@ -1,0 +1,110 @@
+/* The frame every island screen sits in.
+
+     +---------------------------------------------------------+
+     | top bar                                                  |
+     +----------+--------------------------------+-------------+
+     | field    |             stage              | market dock |
+     | (who)    |   the 3D scene shows through   | (money)     |
+     +----------+--------------------------------+-------------+
+
+   The 3D canvas fills the whole viewport behind everything. The two columns
+   float over it and can fold away. The stage is the part of the viewport
+   left clear between them, and anything that must stay clear of the columns
+   (the follow controls, the caster, thoughts, the dungeon HUD, a centred
+   card) is placed from the four --stage-* insets, never from a pixel guess
+   about how wide a column is. */
+
+.qf-shell {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+
+  --top-h: var(--qf-top-h);
+  --field-w: var(--qf-rail-w);
+  --dock-w: var(--qf-dock-w);
+  --gutter: var(--qf-gutter);
+
+  /* distance from each viewport edge to the clear stage */
+  --stage-t: var(--top-h);
+  --stage-b: 0px;
+  --stage-l: calc(var(--gutter) * 2 + var(--field-w));
+  --stage-r: calc(var(--gutter) * 2 + var(--dock-w));
+}
+.qf-shell[data-field='closed'],
+.qf-shell[data-field='none'] { --stage-l: var(--gutter); }
+.qf-shell[data-dock='closed'],
+.qf-shell[data-dock='none'] { --stage-r: var(--gutter); }
+
+/* small windows and landscape phones */
+.qf-shell[data-compact] {
+  --top-h: 44px;
+  --field-w: 272px;
+  --dock-w: 312px;
+  --gutter: 10px;
+}
+/* inside Agent World's frame, which already carries a title bar */
+.qf-shell[data-embedded]:not([data-compact]) { --top-h: 48px; }
+
+/* The clear area between the columns. It takes no pointer events itself;
+   children that need them turn them back on. */
+.qf-stage {
+  position: fixed;
+  top: var(--stage-t);
+  bottom: var(--stage-b);
+  left: var(--stage-l);
+  right: var(--stage-r);
+  pointer-events: none;
+  transition: left 0.5s var(--qf-ease), right 0.5s var(--qf-ease);
+}
+.qf-stage > * { pointer-events: auto; }
+
+/* A column: a stack of panels down one side, scrolling when it must. */
+.qf-col {
+  position: fixed;
+  top: calc(var(--top-h) + 14px);
+  bottom: 14px;
+  z-index: var(--qf-z-rail);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  transition: transform 0.5s var(--qf-ease), opacity 0.3s ease;
+}
+.qf-col--field { left: var(--gutter); width: var(--field-w); animation: qf-slide-left 0.6s var(--qf-ease) 0.1s both; }
+.qf-col--dock { right: var(--gutter); width: var(--dock-w); animation: qf-slide-right 0.6s var(--qf-ease) 0.1s both; }
+.qf-shell[data-field='closed'] .qf-col--field { transform: translateX(calc(-100% - var(--gutter) - 4px)); opacity: 0; pointer-events: none; }
+.qf-shell[data-dock='closed'] .qf-col--dock { transform: translateX(calc(100% + var(--gutter) + 4px)); opacity: 0; pointer-events: none; }
+
+/* The tab on the screen edge that brings a folded column back. */
+.qf-edge {
+  appearance: none;
+  position: fixed;
+  top: calc(var(--top-h) + 14px);
+  z-index: var(--qf-z-rail);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 6px;
+  writing-mode: vertical-rl;
+  font-family: var(--qf-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--qf-green);
+  text-shadow: var(--qf-text-glow);
+  background: var(--qf-panel);
+  border: 1px solid var(--qf-line);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.qf-edge:hover { background: var(--qf-wash-hi); box-shadow: 0 0 18px rgba(var(--qf-green-rgb), 0.3); }
+.qf-edge:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
+.qf-edge--field { left: 0; border-left: 0; }
+.qf-edge--dock { right: 0; border-right: 0; }
+.qf-edge svg { width: 14px; height: 14px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .qf-col, .qf-stage { transition: none; }
+  .qf-col--field, .qf-col--dock { animation: none; }
+}
