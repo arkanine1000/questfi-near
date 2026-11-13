@@ -282,6 +282,60 @@
   animation: qf-rise 0.5s var(--qf-ease) 0.3s both;
 }
 
+/* ---------- folding the results away ---------- */
+.qf-fin-fold {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  padding: 5px 6px;
+}
+.qf-fin-fold svg { width: 14px; height: 14px; }
+
+/* folded: a pill at the top of the stage, and nothing else in it */
+.qf-fin-pill {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  width: max-content;
+  max-width: calc(100% - 20px);
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: var(--qf-font);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--qf-ink-soft);
+  background: var(--qf-panel-dense);
+  border: 1px solid var(--qf-amber-line);
+  box-shadow: 0 0 18px rgba(var(--qf-amber-rgb), 0.14);
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+  animation: qf-slide-down 0.35s var(--qf-ease) both;
+}
+.qf-fin-pill svg { flex: none; color: var(--qf-amber); }
+.qf-fin-pill:hover { background: rgba(var(--qf-amber-rgb), 0.12); box-shadow: 0 0 22px rgba(var(--qf-amber-rgb), 0.28); }
+.qf-fin-pill:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
+.qf-fin-pill__what { color: var(--qf-amber); }
+.qf-fin-pill__sep { color: var(--qf-faint); }
+.qf-fin-pill__name { font-weight: 700; color: color-mix(in srgb, var(--agent, var(--qf-amber)) 72%, white); }
+.qf-fin-pill.is-none { border-color: var(--qf-red-line); box-shadow: 0 0 18px rgba(var(--qf-red-rgb), 0.14); }
+.qf-fin-pill.is-none svg,
+.qf-fin-pill.is-none .qf-fin-pill__what { color: var(--qf-red); }
+.qf-fin-pill.is-none:hover { background: var(--qf-red-wash); }
+/* clear of the follow controls' strip while an agent is followed */
+.qf-shell[data-follow] .qf-fin-pill { top: 64px; }
+
+.qf-fin.is-folded .qf-fin-chan { display: none; }
+
 /* ---------- the caster's cameo ---------- */
 /* By default the camera square: her head and shoulders in a bracketed
    square with the caption beside it, the pair centred in the bottom band. */
@@ -480,6 +534,6 @@
 .qf-shell[data-tv] .qf-fin-card { zoom: 1.15; }
 
 @media (prefers-reduced-motion: reduce) {
-  .qf-fin-card, .qf-fin-hero, .qf-fin-standings, .qf-fin-you, .qf-fin-foot, .qf-fin-chan,
+  .qf-fin-card, .qf-fin-hero, .qf-fin-standings, .qf-fin-you, .qf-fin-foot, .qf-fin-chan, .qf-fin-pill,
   .qf-fin-you.is-waiting .qf-fin-you__what { animation: none; }
 }
