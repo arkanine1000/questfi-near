@@ -1,8 +1,9 @@
 /**
- * Victory-screen dressing: a procedural holographic trophy (no asset —
- * a lathe cup spun from the same phosphor-gold the card wears) and a
- * full-screen confetti rain in the roster's colors. Both sit out the
- * extinction ending and prefers-reduced-motion.
+ * The finale's dressing: a procedural holographic trophy (no asset, a lathe
+ * cup in the house amber), a confetti rain over the stage in the house
+ * colours and the winner's own, and the caster's victory cameo. The trophy
+ * and confetti sit out the ending where nobody survived, and the confetti
+ * sits out prefers-reduced-motion.
  */
 
 import { useEffect, useMemo, useRef } from 'react';
@@ -11,8 +12,12 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { speakLine } from './promptChanVoice';
 import { useSandbox } from '../../context/SandboxContext';
 import { publicUrl } from '../../services/publicUrl';
+import { PALETTE } from '../../styles/palette';
 
 // --- the trophy -------------------------------------------------------
+
+// the cup's body: a darker amber than the house amber its glow and wireframe wear
+const TROPHY_BODY = '#8a6122';
 
 // Cup silhouette, base to lip: [radius, height] pairs for LatheGeometry.
 const PROFILE = [
@@ -23,7 +28,7 @@ const PROFILE = [
 
 // Outer-wall radius at a given height, sampled off the ascending half of
 // PROFILE (base to rim, before it turns back down the inside of the bowl).
-// Handles attach here instead of a fixed x-offset — a fixed offset floats
+// Handles attach here instead of a fixed x-offset: a fixed offset floats
 // at a constant radius while the cup's own radius tapers, leaving a gap
 // wherever the wall is narrower than the offset (worst at the neck).
 const OUTER_WALL = PROFILE.slice(0, 12);
@@ -78,9 +83,9 @@ function TrophyMesh() {
 
   const gold = (
     <meshStandardMaterial
-      color="#b5780f"
-      emissive="#ff9900"
-      emissiveIntensity={0.42}
+      color={TROPHY_BODY}
+      emissive={PALETTE.amber}
+      emissiveIntensity={0.32}
       metalness={0.85}
       roughness={0.35}
     />
@@ -89,13 +94,13 @@ function TrophyMesh() {
   return (
     <group ref={group} position={[0, -0.48, 0]}>
       <mesh geometry={geo}>{gold}</mesh>
-      {/* the holo wireframe pass — same silhouette, additive scanline green */}
+      {/* the hologram's wireframe pass: same silhouette, additive amber */}
       <mesh geometry={geo} scale={1.012}>
         <meshBasicMaterial
-          color="#ffcf6a"
+          color={PALETTE.amber}
           wireframe
           transparent
-          opacity={0.12}
+          opacity={0.14}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
         />
@@ -113,7 +118,7 @@ export function WinnerTrophy() {
   // Preview mode (dev only, src/dev/preview) puts a DOM placeholder here: no canvas.
   if (import.meta.env.DEV && window.__questfiPreview) return window.__questfiPreview.standIn('trophy');
   return (
-    <div className="sbx-winner__trophy" aria-hidden>
+    <div className="qf-fin-trophy" aria-hidden>
       <Canvas
         // far enough back that the lip and both handles clear the frame
         camera={{ position: [0, 0.18, 2.45], fov: 38 }}
@@ -121,25 +126,30 @@ export function WinnerTrophy() {
         gl={{ alpha: true, antialias: true }}
       >
         <ambientLight intensity={0.5} />
-        <pointLight position={[1.4, 1.6, 1.8]} intensity={26} color="#ffd9a0" />
-        <pointLight position={[-1.6, 0.4, 1.2]} intensity={9} color="#69ff8f" />
+        <pointLight position={[1.4, 1.6, 1.8]} intensity={26} color="#ffe6b0" />
+        <pointLight position={[-1.6, 0.4, 1.2]} intensity={9} color={PALETTE.green} />
         <TrophyMesh />
       </Canvas>
     </div>
   );
 }
 
-// Placeholder cheer shown the instant the crown lands — her real sign-off
+// --- the caster's cameo -------------------------------------------------
+
+// Placeholder cheer shown the instant the crown lands: her real sign-off
 // call takes a few seconds (the backend LLM call), so this fills the gap
 // rather than leaving the cameo silent.
 const placeholderLine = (name) => `Winner winner!! All hail ${name}-sama — the island `
   + 'remembers its champion! ☆*:.｡.o(≧▽≦)o.｡.:*☆';
 
-/** The caster at her usual desk, cheering the crown — same classes as the
- * live booth so position, size and bubble all match her normal presence.
+/** The caster cheering the crown, in the stage's bottom band, in the same
+ * two forms the live caster takes: standing at the stage's bottom-left with
+ * her caption as a desk in front of her when the stage is wide, or a
+ * bracketed camera square with the caption beside it, centred under the
+ * results card, when it is not (finale.css picks the form).
  * Once her real generated sign-off lands (commentary stamped with the
- * world's final tick), it replaces the placeholder cheer — she's never
- * just a hardcoded line trapped behind the trophy screen. */
+ * world's final tick), it replaces the placeholder cheer, so she is never
+ * just a hardcoded line. */
 export function WinnerChan({ name }) {
   const { world, commentary } = useSandbox();
   const signedOff = commentary != null && commentary.tick === world?.tick;
@@ -150,16 +160,21 @@ export function WinnerChan({ name }) {
   }, [text]);
 
   return (
-    <div className="sbx-promptchan sbx-promptchan--victory is-live" aria-live="polite">
-      <img
-        className="sbx-promptchan__sprite"
-        src={publicUrl('/prompt-chan/happy-3.webp')}
-        alt=""
-        draggable="false"
-      />
-      <div className="sbx-promptchan__bubble">
-        <span className="sbx-promptchan__name">PROMPT-CHAN</span>
-        <p className="sbx-promptchan__text">{text}</p>
+    <div className="qf-fin-chan">
+      <div className="qf-frame qf-fin-chan__cam" aria-hidden>
+        <img
+          className="qf-fin-chan__sprite"
+          src={publicUrl('/prompt-chan/happy-3.webp')}
+          alt=""
+          draggable="false"
+        />
+      </div>
+      <div className="qf-panel qf-panel--dense qf-fin-chan__desk" aria-live="polite">
+        <p className="qf-fin-chan__who">
+          <span className="qf-fin-chan__name">Prompt-chan</span>
+          <span className="qf-fin-chan__role">Caster</span>
+        </p>
+        <p className="qf-fin-chan__text">{text}</p>
       </div>
     </div>
   );
@@ -167,13 +182,10 @@ export function WinnerChan({ name }) {
 
 // --- the confetti -----------------------------------------------------
 
-const CONFETTI_COLORS = [
-  '#69ff8f', '#00bfff', '#ffaa00', '#ff5d5d', '#a04dff',
-  '#ff67d1', '#4d9fff', '#ffe14d', '#ff9e58', '#8fffe0', '#ffd27a',
-];
-const COUNT = 150;
+const COUNT = 90;
 
-export function WinnerConfetti() {
+/** Confetti over the stage, in the house colours and the winner's own. */
+export function WinnerConfetti({ color }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -181,31 +193,42 @@ export function WinnerConfetti() {
     const canvas = canvasRef.current;
     if (!canvas) return undefined; // preview mode renders no canvas
     const ctx = canvas.getContext('2d');
-    let w = (canvas.width = canvas.offsetWidth);
-    let h = (canvas.height = canvas.offsetHeight);
+    // the winner's colour twice, so it reads as theirs among the house colours
+    const colors = [PALETTE.green, PALETTE.greenBright, PALETTE.amber, PALETTE.ice];
+    if (color) colors.push(color, color);
+    let w = 0;
+    let h = 0;
+
+    // The stage changes size when a side column folds, without the window
+    // resizing, so the canvas follows its own box.
+    const fit = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = canvas.offsetWidth;
+      h = canvas.offsetHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(canvas);
 
     const spawn = (burst) => ({
       x: Math.random() * w,
       // the opening burst starts mid-air; the standing rain re-enters above
       y: burst ? Math.random() * h * 0.4 : -12,
-      vy: 1 + Math.random() * 1.6,
-      drift: (Math.random() - 0.5) * 0.7,
+      vy: 0.9 + Math.random() * 1.4,
+      drift: (Math.random() - 0.5) * 0.6,
       sway: Math.random() * Math.PI * 2,
       swaySpeed: 0.02 + Math.random() * 0.04,
       rot: Math.random() * Math.PI,
       vr: (Math.random() - 0.5) * 0.12,
-      size: 4 + Math.random() * 5,
-      color: CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0],
+      size: 4 + Math.random() * 4,
+      color: colors[(Math.random() * colors.length) | 0],
     });
     const flakes = Array.from({ length: COUNT }, () => spawn(true));
 
     let raf;
-    const onResize = () => {
-      w = canvas.width = canvas.offsetWidth;
-      h = canvas.height = canvas.offsetHeight;
-    };
-    window.addEventListener('resize', onResize);
-
     const step = () => {
       ctx.clearRect(0, 0, w, h);
       for (let i = 0; i < flakes.length; i++) {
@@ -219,7 +242,7 @@ export function WinnerConfetti() {
         ctx.translate(f.x, f.y);
         ctx.rotate(f.rot);
         ctx.fillStyle = f.color;
-        ctx.globalAlpha = 0.85;
+        ctx.globalAlpha = 0.8;
         // scale-x on the sine gives the paper-flip shimmer for free
         ctx.fillRect((-f.size / 2) * Math.cos(f.sway * 1.7), -f.size / 3.4,
           f.size * Math.cos(f.sway * 1.7), f.size / 1.7);
@@ -230,10 +253,10 @@ export function WinnerConfetti() {
     raf = requestAnimationFrame(step);
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener('resize', onResize);
+      ro.disconnect();
     };
-  }, []);
+  }, [color]);
 
   if (import.meta.env.DEV && window.__questfiPreview) return window.__questfiPreview.standIn('confetti');
-  return <canvas ref={canvasRef} className="sbx-winner__confetti" aria-hidden />;
+  return <canvas ref={canvasRef} className="qf-fin-confetti" aria-hidden />;
 }

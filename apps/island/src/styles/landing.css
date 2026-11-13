@@ -1,0 +1,477 @@
+/* The season list (Landing.jsx): a full-viewport curtain over the island.
+
+     +----------------------------------------------+
+     |               [logo] QUESTFI                 |
+     |               AGENT ISLAND                   |   the title, set like
+     |      LOOT · DUEL · SLAY THE BOSS · …         |   Agent World's
+     |              (2 SEASONS ON AIR)              |   AGENT EARTH
+     |                                              |
+     |           ... the island shows here ...      |
+     |                                              |
+     |   +--------------------------------------+   |
+     |   | SEASONS                 [OPEN LOBBY] |   |   the board: one
+     |   | LOBBY  w-…   4 / 6 SEATS   WATCH PLAY|   |   table, a row per
+     |   | LIVE   w-…   TICK 071 …    WATCH     |   |   season
+     |   +--------------------------------------+   |
+     |               OPERATOR SIGN-IN               |
+     +----------------------------------------------+
+
+   A small window (data-compact) sets the title beside the board instead.
+   The dialogs this page opens (open a lobby, operator key, delete) render
+   into <body> through ui/Modal, so their form styles are not scoped here. */
+
+.qf-land {
+  position: fixed;
+  inset: 0;
+  z-index: var(--qf-z-curtain);
+  color: var(--qf-ink);
+}
+
+/* nearly clear over the island at the centre, dark at the edges */
+.qf-land-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 48%,
+    rgba(1, 6, 3, 0.06) 0%,
+    rgba(1, 6, 3, 0.3) 48%,
+    rgba(1, 6, 3, 0.82) 100%);
+  animation: qf-fade 0.6s ease both;
+}
+
+.qf-land-frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: clamp(18px, 5vh, 48px) 18px 12px;
+}
+
+/* ---------- the title ---------- */
+.qf-land-title {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+  animation: qf-rise 0.6s var(--qf-ease) both;
+}
+
+/* the logo file has an opaque black background; screen blending drops it */
+.qf-land-title__logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  mix-blend-mode: screen;
+}
+
+.qf-land-title__kicker {
+  margin-top: 8px;
+  margin-right: -0.3em; /* keep the tracked word centred */
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--qf-dim);
+}
+
+/* AGENT EARTH's title from Agent World, letter for letter */
+.qf-land-title__name {
+  margin-top: 6px;
+  margin-right: -0.14em;
+  font-family: var(--qf-font-num);
+  font-size: clamp(56px, 8vw, 104px);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #c8ffd9;
+  text-shadow:
+    0 0 6px rgba(53, 255, 125, 0.9),
+    0 0 22px rgba(53, 255, 125, 0.55),
+    0 0 60px rgba(53, 255, 125, 0.3);
+  animation: qf-land-flicker 6s infinite steps(1);
+}
+
+.qf-land-title__tag {
+  margin-top: 12px;
+  margin-right: -0.3em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--qf-dim);
+}
+
+.qf-land-onair {
+  margin-top: 16px;
+  color: var(--qf-ink-soft);
+}
+.qf-land-onair .qf-dot { color: var(--qf-red); width: 7px; height: 7px; }
+
+@keyframes qf-land-flicker {
+  0%, 100% { opacity: 1; }
+  41% { opacity: 0.82; }
+  42% { opacity: 1; }
+  77% { opacity: 0.9; }
+  78% { opacity: 1; }
+}
+
+/* ---------- the board ---------- */
+.qf-land-board {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  width: min(760px, calc(100vw - 36px));
+  max-height: 46vh;
+  min-height: 0;
+  padding: 14px 18px 8px;
+  animation: qf-rise 0.6s var(--qf-ease) 0.1s both;
+}
+
+.qf-land-board__head {
+  flex: none;
+  align-items: center;
+  margin-bottom: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--qf-line-soft);
+}
+
+.qf-land-board__title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--qf-dim);
+}
+
+.qf-land-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 -18px;
+  padding: 0 18px;
+}
+
+.qf-land-empty {
+  padding: 30px 12px 32px;
+  text-align: center;
+  font-size: 12.5px;
+  line-height: 1.6;
+  letter-spacing: 0.06em;
+  color: var(--qf-dim);
+}
+
+.qf-land-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.qf-land-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.qf-land-row:hover { background: var(--qf-wash); }
+
+.qf-land-cell {
+  padding: 10px 10px;
+  border-bottom: 1px solid var(--qf-line-faint);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.qf-land-cell:first-child { padding-left: 8px; }
+.qf-land-cell:last-child { padding-right: 4px; }
+
+.qf-land-cell--status { width: 88px; }
+.qf-land-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.qf-land-status .qf-dot { width: 7px; height: 7px; }
+.qf-land-status.is-lobby { color: var(--qf-amber); }
+.qf-land-status.is-live { color: var(--qf-ink); }
+.qf-land-status.is-live .qf-dot { color: var(--qf-red); }
+.qf-land-status.is-ended { color: var(--qf-faint); padding-left: 15px; }
+
+.qf-land-cell--id {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--qf-ink-soft);
+}
+
+.qf-land-cell--fig { width: 100%; }
+.qf-land-fig {
+  font-family: var(--qf-font-num);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--qf-ink-hi);
+}
+.qf-land-fig.is-winner { color: var(--qf-amber); }
+.qf-land-fig.is-none { color: var(--qf-dim); }
+.qf-land-fig__unit {
+  margin-left: 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--qf-dim);
+}
+
+.qf-land-cell--act { width: 1%; text-align: right; }
+/* fixed slots, so each kind of button lines up down the board whether or
+   not its neighbours are there */
+.qf-land-acts {
+  display: inline-grid;
+  grid-template-columns: 78px 64px 34px;
+  gap: 6px;
+  align-items: center;
+}
+.qf-land-acts > .qf-btn { justify-self: stretch; }
+.qf-land-act--del { width: 34px; height: 30px; }
+.qf-land-act--del.qf-btn { padding: 0; display: grid; place-items: center; }
+
+.qf-land-row.is-ended .qf-land-cell--id { color: var(--qf-dim); }
+.qf-land-row.is-ended .qf-land-fig.is-winner { color: rgba(var(--qf-amber-rgb), 0.8); }
+
+/* why we bounced back here, or why the board is stale */
+.qf-land-notice {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0 4px;
+  padding: 7px 8px 7px 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--qf-ink-soft);
+  background: var(--qf-wash);
+  border-left: 2px solid var(--qf-line);
+}
+.qf-land-notice > span { flex: 1; }
+.qf-land-notice__icon { flex: none; color: var(--qf-green); }
+.qf-land-notice.is-bad { color: #ffc4c4; background: var(--qf-red-wash); border-left-color: var(--qf-red); }
+.qf-land-notice.is-bad .qf-land-notice__icon { color: var(--qf-red); }
+.qf-land-notice__x {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  color: var(--qf-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.qf-land-notice__x:hover { color: var(--qf-ink); border-color: var(--qf-line-soft); }
+.qf-land-notice__x:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
+
+/* table headings for screen readers only: the columns explain themselves */
+.qf-land-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- the operator's way in ---------- */
+.qf-land-foot {
+  flex: none;
+  animation: qf-rise 0.6s var(--qf-ease) 0.2s both;
+}
+
+.qf-land-op {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  font-family: var(--qf-font);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--qf-faint);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.qf-land-op:hover { color: var(--qf-ink); }
+.qf-land-op:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
+.qf-land-op.is-held { color: var(--qf-green); }
+.qf-land-op.is-refused { color: var(--qf-red); }
+
+/* ---------- dialog forms (open a lobby, operator key) ---------- */
+.qf-land-form { display: flex; flex-direction: column; }
+
+.qf-land-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--qf-line-faint);
+}
+
+.qf-land-field__label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--qf-dim);
+}
+
+.qf-land-field__control { flex: 0 1 320px; min-width: 0; }
+
+.qf-land-input {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 34px;
+  padding: 2px 10px 0;
+  font-family: var(--qf-font-num);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  color: var(--qf-ink);
+  background: var(--qf-bg-deep);
+  border: 1px solid var(--qf-line-soft);
+  border-radius: 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.qf-land-input::placeholder { color: var(--qf-faint); }
+.qf-land-input:hover { border-color: var(--qf-line); }
+.qf-land-input:focus { outline: none; border-color: var(--qf-green); box-shadow: 0 0 14px rgba(var(--qf-green-rgb), 0.25); }
+.qf-land-input:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
+/* the arrow keys still step a number; the browser's spinners do not match */
+.qf-land-input--num { -moz-appearance: textfield; }
+.qf-land-input--num::-webkit-inner-spin-button,
+.qf-land-input--num::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+.qf-land-select { position: relative; display: block; }
+.qf-land-select .qf-land-input { padding-right: 32px; cursor: pointer; }
+.qf-land-select option { font-family: var(--qf-font); font-size: 13px; color: var(--qf-ink); background: #010e07; }
+.qf-land-select__caret {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--qf-green);
+  pointer-events: none;
+}
+
+.qf-land-check {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 0 2px;
+  cursor: pointer;
+}
+.qf-land-check__input {
+  position: absolute;
+  opacity: 0;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+}
+.qf-land-check__box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: var(--qf-green);
+  background: var(--qf-bg-deep);
+  border: 1px solid var(--qf-line);
+  transition: background 0.15s, border-color 0.15s;
+}
+.qf-land-check__input:checked + .qf-land-check__box { border-color: var(--qf-green); background: var(--qf-wash-hi); box-shadow: 0 0 10px rgba(var(--qf-green-rgb), 0.3); }
+.qf-land-check__input:focus-visible + .qf-land-check__box { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
+.qf-land-check__text { font-size: 13px; line-height: 1.5; color: var(--qf-ink-soft); }
+
+.qf-land-refused {
+  margin-top: 14px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #ffc4c4;
+  background: var(--qf-red-wash);
+  border-left: 2px solid var(--qf-red);
+}
+
+.qf-land-hint { margin-top: 14px; }
+.qf-land-hint code { font-family: var(--qf-font-num); font-size: 17px; color: var(--qf-ink); }
+
+/* the delete dialog: a refusal-red edge on an irreversible act */
+.qf-modal__box.qf-land-danger { border-color: var(--qf-red-line); box-shadow: 0 0 50px rgba(var(--qf-red-rgb), 0.18); }
+.qf-land-danger .qf-modal__head { color: var(--qf-red); text-shadow: 0 0 8px rgba(var(--qf-red-rgb), 0.5); }
+
+/* ---------- small windows: the title beside the board ---------- */
+.qf-shell[data-compact] .qf-land-frame {
+  display: grid;
+  grid-template-columns: auto minmax(0, 560px);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'title board'
+    'foot board';
+  justify-content: center;
+  align-content: center;
+  align-items: center;
+  column-gap: clamp(20px, 4vw, 44px);
+  row-gap: 6px;
+  padding: 14px 18px;
+}
+.qf-shell[data-compact] .qf-land-title { grid-area: title; align-self: end; }
+.qf-shell[data-compact] .qf-land-foot { grid-area: foot; align-self: start; justify-self: center; }
+.qf-shell[data-compact] .qf-land-board {
+  grid-area: board;
+  width: 100%;
+  max-height: calc(100vh - 28px);
+}
+.qf-shell[data-compact] .qf-land-title__logo { width: 36px; height: 36px; }
+.qf-shell[data-compact] .qf-land-title__kicker { margin-top: 6px; font-size: 10.5px; }
+.qf-shell[data-compact] .qf-land-title__name { font-size: clamp(40px, 6vw, 64px); white-space: normal; }
+.qf-shell[data-compact] .qf-land-title__name > span { display: block; }
+.qf-shell[data-compact] .qf-land-title__tag { max-width: 22em; margin-top: 10px; font-size: 9.5px; line-height: 1.7; white-space: normal; }
+.qf-shell[data-compact] .qf-land-onair { margin-top: 10px; }
+.qf-shell[data-compact] .qf-land-cell { padding-top: 8px; padding-bottom: 8px; }
+.qf-shell[data-compact] .qf-land-cell--id { max-width: 120px; }
+
+/* the narrowest landscape phones: the title above the board, on one line */
+@media (max-width: 720px) {
+  .qf-shell[data-compact] .qf-land-frame {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'title' 'board' 'foot';
+  }
+  .qf-shell[data-compact] .qf-land-title { align-self: center; }
+  .qf-shell[data-compact] .qf-land-title__logo,
+  .qf-shell[data-compact] .qf-land-title__kicker,
+  .qf-shell[data-compact] .qf-land-title__tag { display: none; }
+  .qf-shell[data-compact] .qf-land-title__name { font-size: 34px; white-space: nowrap; }
+  .qf-shell[data-compact] .qf-land-title__name > span { display: inline; }
+  .qf-shell[data-compact] .qf-land-board { max-height: none; }
+  .qf-shell[data-compact] .qf-land-cell--id { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qf-land-veil, .qf-land-title, .qf-land-board, .qf-land-foot, .qf-land-title__name { animation: none; }
+}
