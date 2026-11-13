@@ -174,11 +174,24 @@ export function createChain({ contractId, rpcUrl = 'https://test.rpc.fastnear.co
     // and returns both. The secret key is the caller's to store.
     async createGuest() {
       const keyPair = KeyPair.fromRandom('ed25519');
-      const res = await fetchImpl(guestApi, {
+      const request = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ publicKey: keyPair.getPublicKey().toString() }),
-      });
+      };
+      // A request that never left (a DNS or connection failure) is tried
+      // again. An answer from the server, good or bad, is final: it may have
+      // made the account.
+      let res;
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          res = await fetchImpl(guestApi, request);
+          break;
+        } catch (err) {
+          if (attempt === 3) throw new Error('The test account service could not be reached. Check the connection and try again.');
+          await new Promise((r) => setTimeout(r, 1500 * attempt));
+        }
+      }
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw Object.assign(new Error(body.message || `Test account request failed (${res.status})`), { code: body.error });
       return { accountId: body.accountId, secretKey: keyPair.toString(), txHash: body.txHash, grant: body.grant };

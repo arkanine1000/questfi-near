@@ -1,6 +1,6 @@
 # QuestFi Agent World
 
-The big-city sequel to the Strike Zone demo in [questfi-lobby](../questfi-lobby):
+The big-city sequel to the Strike Zone demo in the QuestFi lobby (questfi-lobby):
 a real modelled city (3DSkybuild's *The City 1.0*), a real vehicle drop and
 real low-poly character rigs, running a continuous agent simulation under the
 house green-phosphor / CRT look. Eighteen named agents run errands over the
@@ -52,17 +52,19 @@ they read from the air, and their thoughts float up off their heads.
 
 ## Venues
 
-The city is the hub; the lobby's games are venues anchored to landmarks:
+The city is the hub; Agent Island and the lobby's games are venues anchored to
+landmarks:
 
 | Venue | Landmark | Launches |
 | --- | --- | --- |
+| Agent Island | the museum | the island app (`apps/island`), with the visitor's `?pass=`, `?account=` and `?world=` |
 | The Colosseum | the stadium east of the park | `questfi-lobby ?loc=colosseum` |
 | The Green Room | the hotel tower south of the park | `questfi-lobby ?loc=poker` |
 | Speed Traders | the dealership by the park | `questfi-lobby ?loc=speedway` |
 
 Each venue has a portal pad on the sidewalk at the door (disc, ring, plaque,
-beacon), a big holo icon hovering over the roof (crossed swords, a fan of
-cards, a checkered flag), a diamond on the radar, and a row in the HUD whose
+beacon), a big holo icon hovering over the roof (a hex island, crossed swords,
+a fan of cards, a checkered flag), a diamond on the radar, and a row in the HUD whose
 GO button flies you to the door. In free flight, hover the pad or the icon
 and click to enter. In POV, when the agent you're riding reaches a door the
 HUD offers `E` to follow them in — agents put venues on their errand lists.
@@ -72,7 +74,10 @@ a lobby world — the lobby posts `questfi:exit` when it's `?embedded`).
 
 The lobby app has to be reachable: run `npm run dev` in `../questfi-lobby`
 (port 5174) alongside this one, or point `?lobby=https://your-deploy` at a
-built copy. Venues are configured in `VENUES` in `src/config.js`; swapping
+built copy. The hosted site (`apps/start/scripts/build-site.mjs`) sets
+`VITE_LOBBY_URL` to https://lobby.questfi.ai; those three venues do not use
+NEAR. The island venue opens `VITE_ISLAND_URL` (`?island=` overrides,
+default http://localhost:5173), which the hosted site serves at `/island/`. Venues are configured in `VENUES` in `src/config.js`; swapping
 Speed Traders for its standalone build is one URL.
 
 ## Globe ⇄ city zoom

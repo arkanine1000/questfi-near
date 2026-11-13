@@ -1,5 +1,5 @@
-// The live build's actions. Each one replaces a scripted step of the mockup
-// with real calls. main.js owns the screen; this module owns the account,
+// The live build's actions. Each one does with real calls what the mock mode
+// scripts. main.js owns the screen; this module owns the account,
 // the pass and the agent key, and reports back through the hooks in `ui`.
 import { AGENT_METHODS, createChain, explainError, explorerTx, fromYocto, passFromView, toYocto } from './near.js';
 import { createGame } from './game.js';

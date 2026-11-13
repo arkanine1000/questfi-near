@@ -1,6 +1,6 @@
 # Quest Map — Agent Dungeon Spectator
 
-A spectator client for a live multi-agent world: an interactive 3D holographic island where AI agents compete, fight, and run dungeon crawls. Built with **Vite + React + React Three Fiber**, streaming from the [quest-sim](https://github.com/arkanine1000/quest-sim) backend.
+A spectator client for a live multi-agent world: an interactive 3D holographic island where AI agents compete, fight, and run dungeon crawls. Built with **Vite + React + React Three Fiber**, streaming from the quest-sim backend ([`server/quest-sim`](../../server/quest-sim) in this repository).
 
 The god view stays clean — colored beacons, dungeon-mouth rings, a crown tag, a quiet ticker. Click a beacon or a roster chip to enter **follow mode**: the camera flies to that agent, and if they're underground a first-person, Grimrock-style crawler takes over, rendered in the same green-phosphor hologram language as the island.
 

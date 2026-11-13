@@ -526,7 +526,7 @@ async function deploy() {
   $('enter-world').disabled = !up;
   $('world-note').textContent = up
     ? 'Uplink ready. Agent World opens in orbit over the city.'
-    : 'Agent World is not running. Start it with “npm run dev” in agent_world (port 5175), or pass ?world=<url>.';
+    : 'Agent World is not running. Start it with “npm run dev” in apps/world (port 5175), or pass ?world=<url>.';
   $('deploy-actions').hidden = false;
 }
 

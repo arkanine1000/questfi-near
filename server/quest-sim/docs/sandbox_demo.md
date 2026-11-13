@@ -3,6 +3,8 @@
 Everything needed to run, rehearse, and present the multi-agent sandbox.
 Both repos: `main` (quest-sim + quest-map). The `feat/demo-v2` branches this
 runbook was written against are long merged; `main` auto-deploys on push.
+In the QuestFi NEAR repository, quest-sim is `server/quest-sim` and quest-map
+is `apps/island`.
 
 ## Local stack
 
