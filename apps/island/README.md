@@ -109,7 +109,7 @@ The TV cut (`src/services/cast.js`, `src/hooks/useTvDirector.js`) has no cursor 
 - **The stage**: the clear area between the columns, where the 3D shows through. The follow controls, the followed agent's thoughts, Prompt-chan, the lobby card and the results card sit here.
 - **The market dock** (`MarketPanel.jsx`, `market/`), the right column: the pool and the viewer's stake, then the tabs **ODDS**, **YOUR BETS** and, on chain, **ON CHAIN**. See [The market on NEAR](#the-market-on-near).
 
-Both columns fold to a tab on the screen edge (**FIELD**, and **MARKET** with the pool on it). A small window (at most 1100 px wide or 640 px tall) starts with both folded. The field folds itself while the dungeon feed has the stage and comes back after. `src/context/LayoutContext.jsx` holds this state and tells the frame whether it is compact, embedded in another page, or the TV cut.
+Both columns fold to a tab on the screen edge (**FIELD**, and **MARKET** with the pool on it). A small window (at most 1100 px wide or 640 px tall) starts with both folded. The field folds itself while the dungeon feed has the stage, and comes back afterwards if it was open. `src/context/LayoutContext.jsx` holds this state and tells the frame whether it is compact, embedded in another page, or the TV cut.
 
 The **BOOTH** is open to every viewer: Prompt-chan's voice, sound effects, the auto-director and the build stamp, plus the season clock for the host ([Host controls](#host-controls)).
 
@@ -138,7 +138,7 @@ Arriving at the site lists what is on; the app never opens a season on its own. 
 
 ### Prompt-chan
 
-The commentator (`PromptChan.jsx`) appears with the game server's first commentary line. Over the island she stands as a full figure at the bottom left of the stage with her caption beside her. Over the dungeon feed, after the season and on small windows, she is a small camera square beside the caption; `src/styles/stage.css` chooses the form. Agent names in her lines are links that follow the agent. Her voice (`promptChanVoice.js`) is off until the Booth turns it on; it uses the game server's `/tts` when that is configured, otherwise the browser's speech synthesis. During a finale with a winner, the winner's cameo takes her place.
+The commentator (`PromptChan.jsx`) appears with the game server's first commentary line. Over the island, on a wide enough stage, she stands as a full figure at the bottom left with her caption beside her. Over the dungeon feed, after the season, on small windows and on a narrow stage, she is a small camera square beside the caption. `src/styles/stage.css` chooses the form. Agent names in her lines are links that follow the agent. Her voice (`promptChanVoice.js`) is off until the Booth turns it on; it uses the game server's `/tts` when that is configured, otherwise the browser's speech synthesis. During a finale with a winner, the winner's cameo takes her place.
 
 ### The island
 
@@ -160,13 +160,13 @@ When the followed agent is underground, `Sandbox/SandboxCrawler.jsx` gives the s
 - **Descent and death**: a curtain names the agent and the dungeon while the scene loads (at most 12 s), and a death screen says how the agent fell.
 - **Scene** (`Scene3D/Crawler/`): the explored rooms only, with phosphor-grid floors and brick walls (`CrawlerMaze.jsx`); torches and cobwebs placed the same way every time per room (`CrawlerAmbience.jsx`); chests, trap rings and motes (`CrawlerProps.jsx`); monsters as billboard sprites (`CrawlerEnemy.jsx`); other agents as animated figures in their colours (`Sandbox/CrawlerAgents.jsx`); a ring over every entrance room (`Sandbox/ExitPortals.jsx`); the agent's weapon in its colour (`CrawlerWeapon.jsx`). A fixed pool of point lights (`CrawlerLightPool.jsx`) is reassigned to whatever is visible, so the light count, and with it the shader program count, never changes.
 - **Beats**: the stream's events for the followed agent (`Sandbox/sandboxEvents.js`) become timed beats (move, attack, damage, trap, loot, death, victory) in one queue (`crawlerEvents.js`) that drives the camera, the scene and the overlay.
-- **Overlay** (`CrawlerHud.jsx`, `src/styles/cam.css`): the feed line (**REC**, **HUNTED** while agents fight in the agent's room, the agent, the dungeon, the kind of room, the tick), a **TARGET** plate during a fight, **VITALS**, the **WEAPON**, a three-line combat log, and the agent's thoughts typed out.
+- **Overlay** (`CrawlerHud.jsx`, `src/styles/cam.css`): the feed line (**REC**, **HUNTED** while agents fight each other in its room, the agent, the dungeon, the kind of room, the tick), a **TARGET** plate during a fight, **VITALS**, the **WEAPON**, a three-line combat log, and the agent's thoughts typed out.
 - **Scope** (`CrawlerMinimap.jsx`): a north-up radar of the dungeon's rooms with a needle for the way the agent faces. Rooms it has not visited are dimmed; other agents are pips, and clicking one follows it.
 - **Sound effects** (`sfx.js`): synthesized with WebAudio and on by default. The top bar's speaker button and the Booth turn them off, and the choice is remembered.
 
 ### The finale
 
-`Finale.jsx` puts a results card in the stage when the season ends: the winner, with a trophy and confetti in its colour (`WinnerCelebration.jsx`) and how it won, or **NO ONE SURVIVED**; the final standings; what the viewer's bets came to, pointing to the market dock for the claim; and **BACK TO SEASONS**. The card folds to a **RESULTS** pill at the top of the stage, by its own button or when the viewer starts following an agent.
+`Finale.jsx` puts a results card in the stage when the season ends: the winner and how it won, with a trophy and confetti (`WinnerCelebration.jsx`), or **NO ONE SURVIVED**; the final standings; what the viewer's bets came to, pointing to the market dock for the claim; and **BACK TO SEASONS**. The card folds to a **RESULTS** pill at the top of the stage, by its own button or when the viewer starts following an agent.
 
 ### System screens
 
@@ -190,7 +190,7 @@ apps/island/
     │                             #   dev only: ?bench=weapon, ?preview
     ├── context/
     │   ├── SandboxContext.jsx    # The season: world, roster, headline log, follow target, host
-    │   │                         #   actions; the season list when no world is attached
+    │   │                         #   actions; status 'landing' when no season is attached
     │   ├── NearContext.jsx       # The visitor's NEAR test account (off without VITE_CONTRACT_ID)
     │   └── LayoutContext.jsx     # Which columns are open; compact, embedded, TV
     ├── components/
@@ -198,7 +198,7 @@ apps/island/
     │   │   ├── SandboxView.jsx   # The frame: scene, top bar, field, dock, stage, dossiers
     │   │   ├── TopBar.jsx        # Top bar; SettingsPanel.jsx is the Booth
     │   │   ├── Field.jsx         # The field; Dossier.jsx for the dossier windows
-    │   │   ├── MarketPanel.jsx   # The market dock; market/ holds its tabs, slip and help dialog
+    │   │   ├── MarketPanel.jsx   # The market dock; market/ holds its chart, slip, tabs and help
     │   │   ├── BettingContext.jsx  # Practice chips or the contract's market (useChainMarket.js)
     │   │   ├── PromptChan.jsx    # The commentator; promptChanVoice.js for her voice
     │   │   ├── FollowNav.jsx     # Follow controls and the crowded-hex picker; FollowThoughts.jsx
@@ -354,7 +354,7 @@ up.
 
 ## Backend Integration
 
-`SandboxContext` opens one SSE frame stream per world and slices it for every consumer — nothing else talks to the backend directly.
+`SandboxContext` opens one SSE frame stream per world and slices it for every consumer. The other calls are reads and actions of their own: the season list (`listWorlds`, `whoami`), the lobby card (`getArena`, `startArena`), the dungeon feed (`getSiteMap`), the market's **ON CHAIN** tab (`getWorldState`) and Prompt-chan's voice (`/tts`).
 
 ### API client (`src/services/sandboxApi.js`)
 
@@ -390,15 +390,36 @@ SSE frame stream (/world/{id}/stream?since_tick=)
 
 ## Hex Grid & Island Mask
 
-Pointy-top hexagons with axial coordinates `(q, r)`; `ISLAND_MASK` (a `Set` of `"q,r"` keys, ~145 land hexes) is generated from the island image by brightness sampling — see `scripts/generateMask.js` (tunables: `BRIGHTNESS_THRESHOLD`, `SAMPLE_RADIUS`, `SAMPLE_POINTS`).
+Pointy-top hexagons with axial coordinates `(q, r)`; `ISLAND_MASK` (a `Set` of `"q,r"` keys, 120 land hexes) is generated from the island image by brightness sampling — see `scripts/generateMask.js` (tunables: `BRIGHTNESS_THRESHOLD`, `SAMPLE_RADIUS`, `SAMPLE_POINTS`).
 
 ---
 
 ## Styling
 
-Green-phosphor holo-terminal throughout: CRT scanlines, bloom/vignette post-processing in the 3D scenes, monospace UI. Color coding — green (primary/agent), amber (system/warnings), red (errors/traps/invasion), cyan (invader).
+The QuestFi house look, as the start app and Agent World draw it: phosphor green on near-black, thin square panels, Chakra Petch for labels and VT323 for values (both loaded from Google Fonts in `index.html`). Colour carries meaning: green is the interface, amber is money (stakes, pools, payouts), red is danger (combat, death, a refused action), ice blue is the viewer (their account, pass and bets), and an agent's own colour marks that agent wherever it appears.
 
-`Sandbox.css` owns the HUD (`sbx-*`); `Landing.css` owns the landing view (`qf-*`). They are kept apart on purpose: the HUD is glanceable chrome over a live scene and its type runs small, while the landing view is the one surface a first-time visitor reads at length, so it starts at 12px with 15px body copy.
+The stylesheets are in `src/styles/`, one per area:
+
+| File | Covers |
+|------|--------|
+| `tokens.css` | The colour, type, layout and layer tokens, and the shared `qf-` pieces: labels, numbers, panels, buttons, tabs, hexagons, corner brackets, modal, floating window, toast |
+| `shell.css` | The frame: the columns, the edge tabs, the stage's insets |
+| `index.css` | Imports the two above; page basics |
+| `top.css` | The top bar and the Booth |
+| `field.css` | The field |
+| `market.css` | The market dock |
+| `stage.css` | Follow controls, thoughts, the crowded-hex picker, Prompt-chan, dossiers, the 3D name tags |
+| `cam.css` | The dungeon feed and its overlay |
+| `landing.css` | The season list and the open-a-lobby dialog |
+| `lobby.css`, `finale.css` | The lobby card, the results card |
+| `onboarding.css` | The bring-your-agent dialog |
+| `system.css` | Connecting, offline and rotate screens |
+| `Scene3D.css` | The island canvas behind everything |
+| `palette.js` | The same colours for canvases and SVG drawn in JavaScript |
+
+`main.jsx` loads `index.css` (tokens and frame) first; each component imports its own sheet, which comes later in the cascade. The frame's state is a set of data attributes on the `.qf-shell` element (`data-field`, `data-dock`, `data-compact`, `data-embedded`, `data-tv`, `data-phase`, `data-follow`, `data-cam`), and the stylesheets key off those. Anything that must stay clear of the columns is placed from the `--stage-*` insets that `shell.css` derives from them. The shared components in `src/components/ui/` (`Tabs`, `Modal`, `FloatingWindow`, and the line icons in `icons.jsx`) have no stylesheets of their own: their `qf-` classes are in `tokens.css`.
+
+The 3D scenes use the same palette. `Scene3D/holo.js` holds the hologram materials, and `Scene3D/HouseFx.jsx` the one post pass both scenes share: a modest bloom, then a CRT pass (chromatic aberration, a rolling band, a green grade, faint scanlines, a vignette, a little noise). The pass is skipped under reduced motion or on fewer than four CPU cores, and `?fx=0` turns it off in any build. The tunable strengths of the island, the dungeon and the pass live in the look store, `Scene3D/look.js`, which the scenes read every frame. On the development server `?look=1` opens `LookPanel.jsx`, sliders over the store whose values can be copied back into `LOOK_DEFAULTS`; a production build renders the defaults.
 
 ---
 
@@ -407,14 +428,19 @@ Green-phosphor holo-terminal throughout: CRT scanlines, bloom/vignette post-proc
 | Package | Purpose |
 |---------|---------|
 | `react` / `react-dom` ^19 | UI framework |
-| `three` + `@react-three/fiber` / `drei` / `postprocessing` | 3D island, minimap hologram, first-person crawler |
-| `@microsoft/fetch-event-source` | SSE client for `/game/{id}/auto` |
-| `react-markdown`, `react-icons` | Feed rendering, map icons |
+| `three` + `@react-three/fiber` / `@react-three/drei` | The island and the dungeon scenes; drei's `<Html>` draws the name tags |
+| `@react-three/postprocessing` | The bloom and CRT pass (`HouseFx.jsx`, which also imports its `postprocessing`) |
+| `@microsoft/fetch-event-source` | SSE client for `/world/{id}/stream` |
+| `near-api-js` | Contract views and signed transactions from the test account; loaded on demand, only when `VITE_CONTRACT_ID` is set |
+| `qrcode` | The invite QR code (`InviteQr.jsx`) |
+| `react-icons` | The line icons (`components/ui/icons.jsx`) and the weapon catalog's icons |
 | `vite` + `@vitejs/plugin-react` | Build tool |
-| `canvas` (dev) | Node-side mask/heightmap generation |
+| `vite-plugin-pwa` (dev) | Web app manifest and service worker |
+| `canvas` (dev) | Image work in the generator scripts (mask, heightmap, prop map, sprite sheets, icons) |
+| `playwright` (dev) | `scripts/preview-shots.mjs` and the `pw-*.mjs` checks |
 
 ---
 
 ## License
 
-MIT
+MIT, see the repository's [`LICENSE`](../../LICENSE). Art assets under `public/` are not covered by it and keep their own licences.
