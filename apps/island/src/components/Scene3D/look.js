@@ -1,5 +1,7 @@
 /**
- * Live look values for the island scene.
+ * Live look values for the 3D views.
+ *
+ * Covers the island and the dungeon view (keys prefixed `dungeon`).
  *
  * A tiny mutable store: the scene reads `look` every frame, so changing a
  * value needs no React render. Production builds never change it and simply
@@ -30,6 +32,25 @@ export const LOOK_DEFAULTS = Object.freeze({
   projector: 1, // gain on the projector rings around the island
   motes: 0.55, // opacity of the drifting motes
   agentBeam: 1, // gain on the light beams under the agents
+
+  // dungeon (first-person view): the house lens at point-of-view values
+  dungeonBloomIntensity: 0.6,
+  dungeonBloomThreshold: 0.4,
+  dungeonBloomRadius: 0.5,
+  dungeonGrade: 0.55,
+  dungeonAberration: 1,
+  dungeonScan: 0.06,
+  dungeonVignette: 0.55,
+  dungeonNoise: 0.05,
+  // dungeon scene
+  dungeonWallTint: 1, // gain on the stone's base colour (what the lights catch)
+  dungeonWallEmissive: 0.02, // the stone's own glow, away from any light
+  dungeonEdgeLines: 1, // lines where the walls meet the floor and the ceiling
+  dungeonFloorLines: 1, // the floor's phosphor grid
+  dungeonTorch: 1, // gain on the wall torches' light
+  dungeonAgentLight: 1, // gain on the light the followed agent carries
+  dungeonWeaponFill: 0.12, // the held weapon's emissive fill
+  dungeonWeaponWire: 0.5, // the held weapon's wireframe opacity
 });
 
 export const look = { ...LOOK_DEFAULTS };
