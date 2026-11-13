@@ -562,6 +562,11 @@
 .qf-shell[data-compact] .qf-fin-chan__role { font-size: 9px; }
 .qf-shell[data-compact] .qf-fin-chan__text { max-height: calc(1.4em * 3); margin-top: 4px; font-size: 12.5px; line-height: 1.4; }
 
+/* Over the dungeon feed (a followed agent underground, as the TV's
+   director does on its own) the card goes opaque, so the feed's titles do
+   not show through its text. */
+.qf-shell[data-cam] .qf-fin-card { background: rgb(1, 14, 7); }
+
 /* the TV reads from the sofa */
 .qf-shell[data-tv] .qf-fin-card { zoom: 1.15; }
 
