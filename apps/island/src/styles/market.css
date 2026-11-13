@@ -42,18 +42,22 @@
 }
 .qf-mkt-head__title { margin: 0; }
 .qf-mkt-head__tools {
-  grid-row: 1 / span 2;
-  grid-column: 2;
   display: flex;
   align-items: center;
   gap: 6px;
 }
 .qf-mkt-head__btn { padding: 6px; }
 .qf-mkt-head__btn svg { width: 15px; height: 15px; }
+/* where the money is, and when betting locks, across the whole header */
+.qf-mkt-head__sub {
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
 .qf-mkt-head__where {
-  grid-column: 1;
-  justify-self: start;
-  max-width: 100%;
   min-width: 0;
   display: inline-flex;
   align-items: center;
@@ -71,7 +75,7 @@
 a.qf-mkt-head__where:hover { color: var(--qf-ink); }
 a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
 .qf-mkt-head__lock {
-  grid-column: 1 / -1;
+  flex: none;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -196,6 +200,9 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
   display: block;
   width: 100%;
   height: auto;
+  /* the viewBox's own ratio, so a fixed height gives the matching width
+     and the scrub cursor measures exactly the drawn area */
+  aspect-ratio: 320 / 150;
   overflow: visible;
   cursor: crosshair;
   /* a sideways drag scrubs, an upright one still scrolls the dock */
@@ -490,6 +497,33 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 }
 .qf-mkt-help__example > .qf-label { margin-bottom: 6px; color: var(--qf-amber); }
 .qf-mkt-help__example p + p { margin-top: 4px; }
+
+/* ---------- a short dock ----------
+   Under about 780px of dock (a 720p window, a small laptop) the full-width
+   chart would push the stake buttons out of sight. The plot keeps its
+   geometry, drawn smaller, and on a full-width dock the leaders' prices
+   stand beside it instead of above. */
+@container qf-mkt (max-height: 780px) {
+  .qf-mkt-chart .qf-mkt-plot { width: auto; height: 92px; }
+  /* drawn smaller, so the labels and end dots grow back to a readable size */
+  .qf-mkt-chart .qf-mkt-axis { font-size: 20px; }
+  .qf-mkt-chart .qf-mkt-enddot { r: 4px; }
+}
+@container qf-mkt (max-height: 780px) and (min-width: 341px) {
+  .qf-mkt-chart:not(.is-forming) {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'plot legend' 'x x';
+    align-items: center;
+    column-gap: 16px;
+  }
+  .qf-mkt-chart .qf-mkt-plot { grid-area: plot; }
+  .qf-mkt-chart .qf-mkt-legend { grid-area: legend; grid-template-columns: minmax(0, 1fr); gap: 2px; margin: 0 -5px 0 0; }
+  .qf-mkt-chart .qf-mkt-xlabel { grid-area: x; }
+}
+@container qf-mkt (max-height: 780px) and (max-width: 340px) {
+  .qf-mkt-chart .qf-mkt-plot { margin: 0 auto; }
+}
 
 /* ---------- small windows ---------- */
 .qf-shell[data-compact] .qf-mkt-head { padding: 10px 12px 0; }

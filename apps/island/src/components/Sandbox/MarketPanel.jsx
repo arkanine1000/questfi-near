@@ -187,25 +187,27 @@ export default function MarketPanel({ onFollow }) {
                 </>
               )}
             </div>
-            {chain ? (
-              m.contractId ? (
-                <a
-                  className="qf-mkt-head__where"
-                  href={explorerAccount(m.contractId)}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`NEAR testnet, contract ${m.contractId} on the explorer`}
-                >
-                  <span>NEAR testnet · {shortAccount(m.contractId, 24)}</span>
-                  <IconExternal size={11} />
-                </a>
-              ) : <span className="qf-mkt-head__where">NEAR testnet</span>
-            ) : (
-              <span className="qf-mkt-head__where">Practice chips · not NEAR</span>
-            )}
-            {state === 'open' && chain && m.lockTick != null && (
-              <span className="qf-mkt-head__lock">Locks at tick {m.lockTick}</span>
-            )}
+            <div className="qf-mkt-head__sub">
+              {chain ? (
+                m.contractId ? (
+                  <a
+                    className="qf-mkt-head__where"
+                    href={explorerAccount(m.contractId)}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label={`NEAR testnet, contract ${m.contractId} on the explorer`}
+                  >
+                    <span>NEAR testnet · {shortAccount(m.contractId, 24)}</span>
+                    <IconExternal size={11} />
+                  </a>
+                ) : <span className="qf-mkt-head__where">NEAR testnet</span>
+              ) : (
+                <span className="qf-mkt-head__where">Practice chips · not NEAR</span>
+              )}
+              {state === 'open' && chain && m.lockTick != null && (
+                <span className="qf-mkt-head__lock">Locks at tick {m.lockTick}</span>
+              )}
+            </div>
           </header>
 
           <div className="qf-mkt-pool">
