@@ -148,9 +148,10 @@ button.qf-field-main:hover { background: rgba(var(--qf-green-rgb), 0.06); }
   letter-spacing: 0.08em;
   color: var(--qf-dim);
 }
-/* the health bar takes whatever the line has left, as the mock-up draws it */
-.qf-field-hp { flex: 1 1 64px; min-width: 64px; display: inline-flex; align-items: center; gap: 7px; }
-.qf-field-hpbar { flex: 1; min-width: 20px; height: 3px; background: rgba(var(--qf-green-rgb), 0.16); }
+/* a health bar of fixed width, its numerals, then the location (or the
+   fight) taking whatever the line has left */
+.qf-field-hp { flex: none; display: inline-flex; align-items: center; gap: 7px; }
+.qf-field-hpbar { flex: 0 0 64px; width: 64px; height: 3px; background: rgba(var(--qf-green-rgb), 0.16); }
 .qf-field-hpbar > i {
   display: block;
   height: 100%;
@@ -179,7 +180,7 @@ button.qf-field-main:hover { background: rgba(var(--qf-green-rgb), 0.06); }
 }
 .qf-field-kills svg, .qf-field-where svg { flex: none; color: var(--qf-dim); }
 .qf-field-where {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   display: inline-flex;
   align-items: center;

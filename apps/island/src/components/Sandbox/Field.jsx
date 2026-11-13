@@ -137,13 +137,15 @@ function FieldRow({
                 <IconKills size={12} />{agent.kills}
               </span>
             )}
-            {where && (
+            {/* a fight is the news: it takes the location's place */}
+            {fighting && <span className="qf-field-combat">In combat</span>}
+            {!fighting && where && (
               <span className="qf-field-where" title={`Underground: ${where}`}>
                 <IconDescend size={12} />
-                <span>{where}</span>
+                {/* a leading "The" spends width the name needs */}
+                <span>{where.replace(/^the\s+/i, '')}</span>
               </span>
             )}
-            {fighting && <span className="qf-field-combat">In combat</span>}
           </span>
         ) : (
           <span className="qf-field-status qf-field-fate" title={deathSentence(agent)}>{deathSentence(agent)}</span>
