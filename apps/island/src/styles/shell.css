@@ -12,7 +12,18 @@
    left clear between them, and anything that must stay clear of the columns
    (the follow controls, the caster, thoughts, the dungeon HUD, a centred
    card) is placed from the four --stage-* insets, never from a pixel guess
-   about how wide a column is. */
+   about how wide a column is.
+
+   The shell element also carries, as data attributes:
+     data-field / data-dock   open | closed | none   (LayoutContext)
+     data-compact             small window or landscape phone
+     data-embedded            running inside Agent World's frame
+     data-tv                  the lean-back cut (?view=tv)
+     data-phase               lobby | running | finished
+     data-follow              an agent is being followed
+     data-cam                 the followed agent is underground: the
+                              first-person feed has the stage
+   Style from these; do not add state classes of your own to the shell. */
 
 .qf-shell {
   position: fixed;
@@ -29,7 +40,12 @@
   --stage-b: 0px;
   --stage-l: calc(var(--gutter) * 2 + var(--field-w));
   --stage-r: calc(var(--gutter) * 2 + var(--dock-w));
+
+  /* The bottom band of the stage belongs to the caster. Whatever stacks
+     above it (an agent's thoughts) starts at --lower-h from the bottom. */
+  --lower-h: 150px;
 }
+.qf-shell[data-compact] { --lower-h: 104px; }
 .qf-shell[data-field='closed'],
 .qf-shell[data-field='none'] { --stage-l: var(--gutter); }
 .qf-shell[data-dock='closed'],
@@ -55,6 +71,9 @@
   right: var(--stage-r);
   pointer-events: none;
   transition: left 0.5s var(--qf-ease), right 0.5s var(--qf-ease);
+  /* children are placed against the stage and can ask how wide it is:
+     @container stage (max-width: 720px) { … } */
+  container: stage / inline-size;
 }
 .qf-stage > * { pointer-events: auto; }
 
