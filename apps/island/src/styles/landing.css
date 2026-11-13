@@ -143,6 +143,17 @@
   margin: 0 -18px;
   padding: 0 18px;
 }
+/* where the list goes on past what the board shows, its edge fades out, so
+   a row cut by the board's edge reads as "more this way" */
+.qf-land-list[data-more-below] {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+.qf-land-list[data-more-above] {
+  mask-image: linear-gradient(to bottom, transparent, #000 28px);
+}
+.qf-land-list[data-more-above][data-more-below] {
+  mask-image: linear-gradient(to bottom, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+}
 
 .qf-land-empty {
   padding: 30px 12px 32px;

@@ -12,7 +12,7 @@
  * key each open a dialog, so the board itself stays one table.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSandbox } from '../../context/SandboxContext';
 import { listWorlds, whoami } from '../../services/sandboxApi';
 import { getAdminKey, getHostKey, setAdminKey } from '../../services/hostKeys';
@@ -28,6 +28,33 @@ import '../../styles/landing.css';
 const POLL_MS = 5000;
 
 const pad3 = (n) => String(Math.max(0, n ?? 0)).padStart(3, '0');
+
+/**
+ * Whether a scrolling box has more above or below what it shows, so the
+ * board can fade the edge where its list goes on.
+ */
+function useScrollEdges(ref, watch) {
+  const [edges, setEdges] = useState({ above: false, below: false });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const update = () => {
+      const above = el.scrollTop > 1;
+      const below = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+      setEdges((e) => (e.above === above && e.below === below ? e : { above, below }));
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener('scroll', update);
+      ro.disconnect();
+    };
+  }, [ref, watch]);
+  return edges;
+}
 
 /** The status cell: what kind of season this row is. */
 function Status({ phase }) {
@@ -322,6 +349,9 @@ export default function Landing() {
   // buttons that are there sit against the board's right edge.
   const slots = { play: rows.some((w) => w.phase === 'lobby'), del: rows.some(canDelete) };
 
+  const listRef = useRef(null);
+  const edges = useScrollEdges(listRef, `${noSignal}:${rows.length}`);
+
   let empty = null;
   if (noSignal) empty = null;
   else if (worlds === null) empty = 'Scanning for seasons…';
@@ -402,7 +432,12 @@ export default function Landing() {
           )}
 
           {!noSignal && (
-            <div className="qf-land-list qf-scroll">
+            <div
+              ref={listRef}
+              className="qf-land-list qf-scroll"
+              data-more-above={edges.above ? '' : undefined}
+              data-more-below={edges.below ? '' : undefined}
+            >
               {empty ? (
                 <p className="qf-land-empty">{empty}</p>
               ) : (
