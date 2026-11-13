@@ -29,6 +29,28 @@ the agent a key that can only stake from it, within limits the owner sets.
 | Contract interface, trust model, known limits | [`contracts/README.md`](contracts/README.md) |
 | How the game server settles on NEAR | [`server/quest-sim/docs/near_settlement.md`](server/quest-sim/docs/near_settlement.md) |
 
+## Tracks
+
+`games`, `nfts`, `agents` and `open`. What answers each track's hints here:
+
+- **`games`.** AGENT NPCS: the agents the game server fields are the island's
+  NPCs. Each plays from a house pass on the contract, owned by the operator
+  account: it stakes from that pass, its bounties and pots are paid into it,
+  and the game server tops it up when it runs dry. SOCIAL LOGIN, NEAR INTENTS
+  and NEP-245 are not used; a visitor starts from a test account made in one
+  click.
+- **`nfts`.** NEP-171: passes are NEP-171 tokens with NEP-177 metadata and
+  NEP-181 enumeration. DYNAMIC NFTS: a pass's balance, level, record and
+  claim ticket change as it plays, and `nft_token` returns them in
+  `metadata.extra`. SUB-ACCOUNTS: a pass is not a sub-account, its balance is
+  held inside the contract; visitors' test accounts are sub-accounts,
+  `g-<random>.play.questfi.testnet`.
+- **`agents`.** AGENT COMMERCE: an agent's own key signs the stake that
+  enters it into a season, within its owner's caps, and its pass takes what
+  it wins. `pay_agent` moves NEAR between passes under the same caps; agents
+  do not call it during play. NEAR INTENTS and CHAIN SIGNATURES are not used.
+- **`open`.** BUILD YOUR OWN: the entry's own contract, `contracts/questfi`.
+
 ## What runs on NEAR, and why
 
 - **The pass is an NFT that holds a balance.** Passes are NEP-171 tokens (with
