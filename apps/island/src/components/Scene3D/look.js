@@ -34,23 +34,23 @@ export const LOOK_DEFAULTS = Object.freeze({
   agentBeam: 1.36, // gain on the light beams under the agents
 
   // dungeon (first-person view): the house lens at point-of-view values
-  dungeonBloomIntensity: 1.16,
-  dungeonBloomThreshold: 0.4,
-  dungeonBloomRadius: 0.5,
-  dungeonGrade: 0.19,
-  dungeonAberration: 1.28,
+  dungeonBloomIntensity: 1.22,
+  dungeonBloomThreshold: 0.33,
+  dungeonBloomRadius: 0.75,
+  dungeonGrade: 0.57,
+  dungeonAberration: 0.78,
   dungeonScan: 0.3,
-  dungeonVignette: 0.55,
+  dungeonVignette: 0.8,
   dungeonNoise: 0.006,
   // dungeon scene
-  dungeonWallTint: 1.27, // gain on the stone's base colour (what the lights catch)
-  dungeonWallEmissive: 0.114, // the stone's own glow, away from any light
-  dungeonEdgeLines: 0.39, // lines where the walls meet the floor and the ceiling
-  dungeonFloorLines: 1.69, // the floor's phosphor grid
-  dungeonTorch: 0.61, // gain on the wall torches' light
-  dungeonAgentLight: 0.92, // gain on the light the followed agent carries
-  dungeonWeaponFill: 0.275, // the held weapon's emissive fill
-  dungeonWeaponWire: 0.12, // the held weapon's wireframe opacity
+  dungeonWallTint: 1.47, // gain on the stone's base colour (what the lights catch)
+  dungeonWallEmissive: 0.15, // the stone's own glow, away from any light
+  dungeonEdgeLines: 0.77, // lines where the walls meet the floor and the ceiling
+  dungeonFloorLines: 2.51, // the floor's phosphor grid
+  dungeonTorch: 0.91, // gain on the wall torches' light
+  dungeonAgentLight: 0.29, // gain on the light the followed agent carries
+  dungeonWeaponFill: 0.525, // the held weapon's emissive fill
+  dungeonWeaponWire: 0.2, // the held weapon's wireframe opacity
 });
 
 export const look = { ...LOOK_DEFAULTS };
