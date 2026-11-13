@@ -29,6 +29,11 @@
  *   operator=refused|accepted  a saved operator key and the server's verdict
  *   reason=boss|last_alive|timeout   how the winner won
  *   bet=lost             (finale-sim) the practice stake was on a loser
+ *   tab=bets|chain       the market dock's tab
+ *   fold=dock|field|both the side columns folded away
+ *   fallen=1             (running) Bren cuts Vex down in the last live tick
+ *   low=1                (follow-dungeon-pvp) Vex left at 6 of 25 HP
+ *   embed=1              the scenario inside a frame, as Agent World opens it
  *   view=tv, director=1  the app's own parameters, read at load
  *
  * `core` scenarios are shot at every default viewport; the rest, sub-states
@@ -44,6 +49,7 @@ export const SCENARIOS = [
   { name: 'landing-lobby-form', query: 'preview=landing&host=open&step=open-lobby' },
   { name: 'landing-host', query: 'preview=landing&host=1' },
   { name: 'landing-play', query: 'preview=landing&step=play' },
+  { name: 'landing-delete', query: 'preview=landing&host=1&step=delete' },
   { name: 'landing-operator', query: 'preview=landing&step=operator' },
   { name: 'landing-operator-refused', query: 'preview=landing&operator=refused' },
   { name: 'landing-operator-accepted', query: 'preview=landing&operator=accepted' },
@@ -62,6 +68,7 @@ export const SCENARIOS = [
   { name: 'lobby', core: true, query: 'preview=lobby' },
   { name: 'lobby-slip', query: 'preview=lobby&follow=slip' },
   { name: 'lobby-no-account', query: 'preview=lobby&account=none' },
+  { name: 'lobby-bring-agent', query: 'preview=lobby&step=bring-agent' },
   { name: 'lobby-copied', query: 'preview=lobby&step=copy-invite' },
   { name: 'lobby-starting', query: 'preview=lobby&start=hold&step=start-now' },
   { name: 'lobby-start-refused', query: 'preview=lobby&step=start-now' },
@@ -80,12 +87,23 @@ export const SCENARIOS = [
   { name: 'running-no-pass', query: 'preview=running-open&follow=slip&entrants=recorded' },
   { name: 'running-bet', core: true, query: 'preview=running-bet' },
   { name: 'running-bet-slip', query: 'preview=running-bet&follow=slip' },
-  { name: 'running-feed', query: 'preview=running-bet&feed=1' },
-  { name: 'running-chain-error', query: 'preview=running-bet&chain=error' },
+  { name: 'running-tab-bets', query: 'preview=running-bet&tab=bets' },
+  { name: 'running-tab-chain', query: 'preview=running-bet&tab=chain' },
+  { name: 'running-feed', query: 'preview=running-bet&feed=1&tab=chain' },
+  { name: 'running-chain-error', query: 'preview=running-bet&chain=error&tab=chain' },
   { name: 'running-locked', core: true, query: 'preview=running-locked' },
   { name: 'running-locked-slip', query: 'preview=running-locked&follow=slip' },
-  { name: 'running-folded', query: 'preview=running-open&step=fold' },
-  { name: 'running-settings', query: 'preview=running-open&host=1&step=settings' },
+  { name: 'running-fold-dock', query: 'preview=running-open&fold=dock' },
+  { name: 'running-fold-field', query: 'preview=running-open&fold=field' },
+  { name: 'running-fold-both', query: 'preview=running-open&fold=both' },
+  { name: 'running-help', query: 'preview=running-open&step=help' },
+  { name: 'running-booth', query: 'preview=running-open&step=booth' },
+  { name: 'running-booth-host', query: 'preview=running-open&host=1&step=booth' },
+  { name: 'running-sound', query: 'preview=running-open&step=sound' },
+  { name: 'running-dossier', query: 'preview=running-open&step=dossier' },
+  { name: 'running-dossier-dead', query: 'preview=running-open&fallen=1&step=dossier-dead' },
+  { name: 'running-dossiers', query: 'preview=running-open&step=dossiers' },
+  { name: 'running-embedded', core: true, query: 'preview=running-open&embed=1' },
   { name: 'running-paused', query: 'preview=running-open&host=1&paused=1' },
   { name: 'running-director', query: 'preview=running-open&director=1' },
   { name: 'running-rpc-down', query: 'preview=running-open&follow=slip&rpc=down' },
@@ -105,6 +123,8 @@ export const SCENARIOS = [
   { name: 'hex-picker', core: true, query: 'preview=hex-picker' },
   { name: 'follow-dungeon', core: true, query: 'preview=follow-dungeon' },
   { name: 'follow-dungeon-pvp', core: true, query: 'preview=follow-dungeon-pvp' },
+  { name: 'follow-dungeon-low', query: 'preview=follow-dungeon-pvp&low=1' },
+  { name: 'follow-dungeon-embedded', query: 'preview=follow-dungeon&embed=1' },
   { name: 'follow-dungeon-descent', query: 'preview=follow-dungeon&net=hold' },
   { name: 'follow-dungeon-stalled', query: 'preview=follow-dungeon&net=hold&stall=1' },
   { name: 'follow-dungeon-fallen', query: 'preview=follow-dungeon-death&cut=blow' },
@@ -126,6 +146,7 @@ export const SCENARIOS = [
   // ---- the TV cut ----
   { name: 'tv', core: true, query: 'preview=tv&view=tv' },
   { name: 'tv-lobby', query: 'preview=lobby&view=tv' },
+  { name: 'lobby-embedded', query: 'preview=lobby&embed=1' },
 
   // ---- what lives inside the canvases ----
   { name: 'gallery', core: true, query: 'preview=gallery' },

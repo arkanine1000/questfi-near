@@ -108,8 +108,9 @@ function sitesFor(roster, { pvp = false } = {}) {
 }
 
 /** Frame 14 with Bren striking Vex: the PvP danger frame lights on it. */
-function pvpFrame(base, { kill = false } = {}) {
+function pvpFrame(base, { kill = false, low = false } = {}) {
   const f = clone(base);
+  const hpLeft = kill ? 0 : low ? 6 : 19;
   const loc = 'site_2:4,4';
   let seq = Math.max(...f.events.map((e) => e.seq)) + 1;
   const ev = (event_type, data, description, actor = AGENT('Bren')) => ({
@@ -119,15 +120,15 @@ function pvpFrame(base, { kill = false } = {}) {
     ev('agent_thought', { agent: AGENT('Bren'), thought: 'The Warden is dead. The loot splits better one way.' }, 'Bren thinks.'),
     ev('combat_start', { combatant_ids: [AGENT('Bren'), AGENT('Vex')], names: ['Bren', 'Vex'] }, 'Combat breaks out: Bren vs Vex!', null),
     ev('attack', {
-      attacker_id: AGENT('Bren'), defender_id: AGENT('Vex'), attack_roll: 17, target_ac: 14, hit: true, damage: kill ? 25 : 6, critical: kill,
+      attacker_id: AGENT('Bren'), defender_id: AGENT('Vex'), attack_roll: 17, target_ac: 14, hit: true, damage: 25 - hpLeft, critical: kill,
     }, `Bren attacks Vex with Longsword: ${kill ? 'Critical hit!' : 'Hit!'} (rolled 17 vs AC 14)`),
-    ev('damage', { target_id: AGENT('Vex'), damage: kill ? 25 : 6, hp_remaining: kill ? 0 : 19 }, `Vex takes ${kill ? 25 : 6} damage (${kill ? 0 : 19}/25 HP).`),
+    ev('damage', { target_id: AGENT('Vex'), damage: 25 - hpLeft, hp_remaining: hpLeft }, `Vex takes ${25 - hpLeft} damage (${hpLeft}/25 HP).`),
   );
   const vex = f.roster.find((a) => a.agent_id === AGENT('Vex'));
   const bren = f.roster.find((a) => a.agent_id === AGENT('Bren'));
   vex.in_combat = !kill;
   bren.in_combat = !kill;
-  vex.hp = kill ? 0 : 19;
+  vex.hp = hpLeft;
   if (kill) {
     vex.alive = false;
     vex.cause_of_death = 'slain by Bren';
@@ -150,7 +151,7 @@ function runningWorld({
 } = {}) {
   const backfill = [1, 2, 9, 10, 11, 12].map(frameAt);
   let live = [13, 14].map(frameAt);
-  if (pvp) live = [live[0], pvpFrame(live[1], { kill: pvp === 'kill' })];
+  if (pvp) live = [live[0], pvpFrame(live[1], { kill: pvp === 'kill', low: pvp === 'low' })];
   const last = live[live.length - 1];
   const methods = locked ? [...STARTED_TXS, 'lock_market'] : STARTED_TXS;
   const state = {
@@ -484,6 +485,8 @@ function runningScenario(params, {
     ? earlyWorld({ host, locked })
     : runningWorld({
       host,
+      // fallen=1: Bren cuts Vex down in the last live tick
+      pvp: params.get('fallen') === '1' ? 'kill' : null,
       paused: params.get('paused') === '1',
       locked,
       onChain: params.get('chain') !== 'off',
@@ -625,7 +628,8 @@ const BASES = {
   'follow-dungeon-pvp': (p) => ({
     ...runningScenario(p, { title: 'Following Vex: Bren turns on her' }),
     url: { pass: PASS('Vex') },
-    game: { worlds: { [SEASON_ID]: runningWorld({ pvp: 'strike', line: LINES.pvp }) } },
+    // low=1: the blow leaves Vex at 6 of 25
+    game: { worlds: { [SEASON_ID]: runningWorld({ pvp: p.get('low') === '1' ? 'low' : 'strike', line: LINES.pvp }) } },
     ready: ['site', 'standin:dungeon'],
     settleMs: 2600,
   }),
@@ -698,6 +702,14 @@ function applyParams(spec, p) {
   if (step) {
     if (!STEPS[step]) throw new Error(`Unknown step "${step}". Known: ${Object.keys(STEPS).join(', ')}`);
     out.steps.push(...STEPS[step]);
+  }
+  const tab = p.get('tab');
+  if (tab === 'bets' || tab === 'chain') out.steps.push(...STEPS[`tab-${tab}`]);
+  const fold = p.get('fold');
+  if (fold) {
+    const key = { dock: 'fold', field: 'fold-field', both: 'fold-both' }[fold];
+    if (!key) throw new Error(`fold= takes dock, field or both, not "${fold}"`);
+    out.steps.push(...STEPS[key]);
   }
   const hex = p.get('hex');
   if (hex) out.steps.push({ hex });

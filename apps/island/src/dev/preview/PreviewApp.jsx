@@ -57,7 +57,14 @@ let buildError = null;
 let redirecting = false;
 const tracker = createTracker();
 
-if (name && name !== 'gallery' && name !== 'index') {
+// embed=1: this page only hosts the scenario in a frame, the way Agent World
+// opens the island, so the app inside decides it is embedded on its own
+// (LayoutContext's IS_EMBEDDED: window.self !== window.top).
+const embedHost = params.get('embed') === '1' && window.self === window.top;
+
+if (embedHost) {
+  redirecting = true; // nothing of the scenario runs in the host page
+} else if (name && name !== 'gallery' && name !== 'index') {
   try {
     spec = buildScenario(params);
   } catch (err) {
@@ -132,6 +139,30 @@ class PreviewBoundary extends Component {
   }
 }
 
+/** The host page for embed=1: the same URL in a frame, and its readiness. */
+function EmbedHost() {
+  useEffect(() => {
+    const id = setInterval(() => {
+      const inner = document.querySelector('iframe')?.contentDocument?.documentElement;
+      if (!inner?.dataset.previewReady) return;
+      clearInterval(id);
+      for (const k of ['previewError', 'previewBlocked']) {
+        if (inner.dataset[k]) root.dataset[k] = inner.dataset[k];
+      }
+      root.dataset.previewReady = inner.dataset.previewReady;
+    }, 100);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <iframe
+      title="Agent Island, embedded"
+      src={window.location.href}
+      className="pv-embed"
+      data-preview-backdrop="embed"
+    />
+  );
+}
+
 function ScenarioIndex({ problem }) {
   useEffect(() => {
     document.fonts?.ready.then(() => { root.dataset.previewReady = '1'; });
@@ -188,6 +219,7 @@ function ScenarioApp() {
 }
 
 export default function PreviewApp() {
+  if (embedHost) return <EmbedHost />;
   if (redirecting) return null;
   if (name === 'gallery') return <GalleryPage />;
   if (!spec) {

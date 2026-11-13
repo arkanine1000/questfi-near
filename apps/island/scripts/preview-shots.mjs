@@ -132,8 +132,13 @@ try {
         ready: document.documentElement.dataset.previewReady,
         error: document.documentElement.dataset.previewError || null,
         blocked: document.documentElement.dataset.previewBlocked || null,
-        canvases: [...document.querySelectorAll('canvas')].map((c) => c.parentElement?.className || c.parentElement?.tagName),
       }));
+      // every frame: an embedded scenario runs inside one
+      state.canvases = [];
+      for (const frame of page.frames()) {
+        state.canvases.push(...await frame.evaluate(() => [...document.querySelectorAll('canvas')]
+          .map((c) => c.parentElement?.className || c.parentElement?.tagName)).catch(() => []));
+      }
       if (state.ready !== '1') problems.push(`not ready: ${state.error ?? state.ready}`);
       if (state.canvases.length) problems.push(`the page contains ${state.canvases.length} <canvas> (in ${state.canvases.join(', ')})`);
       if (state.blocked) problems.push(`the page tried to reach ${state.blocked}`);
