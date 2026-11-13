@@ -102,6 +102,12 @@
   color: var(--qf-ink-soft);
 }
 .qf-pill.qf-land-onair .qf-dot { color: var(--qf-red); width: 7px; height: 7px; }
+/* the server is not answering: nothing is on air or standing by, as far as
+   anyone here can tell */
+.qf-pill.qf-land-onair.is-nosignal {
+  color: rgba(var(--qf-red-rgb), 0.75);
+  border-color: rgba(var(--qf-red-rgb), 0.4);
+}
 
 
 /* ---------- the board ---------- */
@@ -136,6 +142,17 @@
   min-height: 0;
   margin: 0 -18px;
   padding: 0 18px;
+}
+/* where the list goes on past what the board shows, its edge fades out, so
+   a row cut by the board's edge reads as "more this way" */
+.qf-land-list[data-more-below] {
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+.qf-land-list[data-more-above] {
+  mask-image: linear-gradient(to bottom, transparent, #000 28px);
+}
+.qf-land-list[data-more-above][data-more-below] {
+  mask-image: linear-gradient(to bottom, transparent, #000 28px, #000 calc(100% - 28px), transparent);
 }
 
 .qf-land-empty {
@@ -252,6 +269,7 @@
 .qf-land-notice__icon { flex: none; color: var(--qf-green); }
 .qf-land-notice.is-bad { color: #ffc4c4; background: var(--qf-red-wash); border-left-color: var(--qf-red); }
 .qf-land-notice.is-bad .qf-land-notice__icon { color: var(--qf-red); }
+.qf-btn.qf-land-notice__retry { flex: none; padding: 4px 10px; }
 .qf-land-notice__x {
   flex: none;
   display: grid;
