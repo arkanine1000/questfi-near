@@ -24,7 +24,7 @@ export const LOOK_DEFAULTS = Object.freeze({
   contours: 0.28, // brightness of the topographic contour lines
   shoreline: 0.9, // brightness of the sea-level contour
   hexOutline: 0.08, // brightness of a grid cell outline at rest
-  propEdges: 0.5, // gain on the outline around trees, rocks and ruins
+  propEdges: 0.35, // gain on the outline around trees, rocks and ruins
   seaLattice: 0.5, // brightness of the hex lattice drawn on the sea
   sonar: 1, // strength of the sonar pulses crossing the sea
   projector: 1, // gain on the projector rings around the island
