@@ -4,8 +4,12 @@
  * The omniscient site map is
  * polled (players[] per room), tick frames from the spectator stream are
  * sliced to the followed agent's story and fed to the same beat queue, and
- * the untouched Crawler scene stack (rig, maze, enemies, props, HUD,
- * minimap) renders it. Rivals join the scene as color-tinted billboards.
+ * the untouched Crawler scene stack (rig, maze, enemies, props) renders it.
+ * Rivals join the scene as color-tinted billboards.
+ *
+ * Over the scene sits the agent's body-camera overlay (CrawlerHud, with the
+ * scope from CrawlerMinimap), placed in the frame's stage; see
+ * styles/cam.css. The descent curtain and the death screen are drawn here.
  *
  * Remounts whenever the followed agent or their site changes — the descent
  * cut IS the transition.
@@ -13,6 +17,7 @@
 
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSandbox } from '../../context/SandboxContext';
+import { useLayout } from '../../context/LayoutContext';
 import { getSiteMap } from '../../services/sandboxApi';
 import { adaptSiteMapData } from '../Scene3D/dungeonAdapter';
 import { isWebGLAvailable, prefersReducedMotion } from '../Scene3D/worldUtils';
@@ -24,11 +29,12 @@ import CrawlerHud from '../Scene3D/Crawler/CrawlerHud';
 import CrawlerMinimap from '../Scene3D/Crawler/CrawlerMinimap';
 import { playCue } from '../Scene3D/Crawler/sfx';
 import { weaponSpecFor } from '../Scene3D/Crawler/weaponCatalog';
+import { IconDead, IconDescend } from '../ui/icons';
+import { PALETTE } from '../../styles/palette';
 import { normalizeSandboxTick, thoughtBeat } from './sandboxEvents';
 import CrawlerAgents from './CrawlerAgents';
 import ExitPortals from './ExitPortals';
-import CrawlerPromptChanBlip from './CrawlerPromptChanBlip';
-import '../../styles/Crawler.css';
+import '../../styles/cam.css';
 
 const POLL_MS = 1500;
 // Shortest the loading screen ever holds — the descent is a deliberate beat,
@@ -54,6 +60,24 @@ function loadStageLabel({ sceneMountable, assetsSettled, sceneReady }) {
   return 'ready';
 }
 
+/**
+ * An agent's colour, made legible as text on the near-black HUD: a dark
+ * colour (a deep blue or purple) is mixed toward the pale ink; a bright one
+ * is returned unchanged. Anything that is not a hex colour passes through.
+ */
+function legibleColor(color, fallback) {
+  const hex = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color ?? '')?.[1];
+  if (!hex) return color || fallback;
+  const full = hex.length === 3 ? hex.replace(/./g, '$&$&') : hex;
+  const n = parseInt(full, 16);
+  const lin = (c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  const lum = 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+  return lum < 0.2 ? `color-mix(in srgb, ${color} 55%, ${PALETTE.inkHi})` : color;
+}
+
 /** A dead GL context downgrades to minimap + HUD — never a blank overlay. */
 class CrawlerBoundary extends Component {
   constructor(props) {
@@ -77,8 +101,9 @@ class CrawlerBoundary extends Component {
 
 export default function SandboxCrawler({ agent, worldId, siteId }) {
   const {
-    latestFrame, setFollowedAgentId, commentary, roster,
+    world, latestFrame, setFollowedAgentId, roster,
   } = useSandbox();
+  const { tv } = useLayout();
   const reducedMotion = useMemo(prefersReducedMotion, []);
   const [sceneFailed, setSceneFailed] = useState(false);
   const supported = useMemo(isWebGLAvailable, []);
@@ -382,12 +407,15 @@ export default function SandboxCrawler({ agent, worldId, siteId }) {
     const foe = combatFoes.find((e) => e.id === targetId) ?? combatFoes[0] ?? null;
     if (!foe) return null;
     const tracked = enemyHp[foe.id];
+    const rival = foe.type === 'agent';
     return {
       id: foe.id,
       name: foe.name ?? foe.id,
       hp: tracked?.hp ?? foe.hp ?? null,
       maxHp: tracked?.maxHp ?? foe.maxHp ?? null,
-      invader: foe.type === 'agent',
+      invader: rival,
+      // a rival agent's plate wears that agent's own colour
+      color: rival && foe.color ? legibleColor(foe.color) : null,
     };
   }, [combatFoes, targetId, enemyHp]);
 
@@ -426,36 +454,43 @@ export default function SandboxCrawler({ agent, worldId, siteId }) {
   // One segment per gate. drei's useProgress is deliberately NOT used: its
   // store is global and never resets, so it still reads 100 from the
   // island's own load when the crawler mounts — a bar that starts full and
-  // stays full. Three honest steps beat one confident lie, and the fill's
-  // sheen carries the motion while a step is in flight.
-  const stagesDone = [sceneMountable, assetsSettled, sceneReady || !willRenderScene]
-    .filter(Boolean).length;
-  const barPct = revealed ? 100 : Math.round((stagesDone / 3) * 100);
+  // stays full. Three honest steps beat one confident lie, and the step in
+  // flight pulses so a long asset load never reads as a frozen screen.
+  const stagesDone = revealed
+    ? 3
+    : [sceneMountable, assetsSettled, sceneReady || !willRenderScene].filter(Boolean).length;
   const stalled = heldTooLong && !sceneMountable;
+
+  const siteName = model.siteName ?? mapData?.site_name ?? null;
+  // Everything inside reads the agent's colour from here, legible on black.
+  const camStyle = { '--agent': legibleColor(agent.color, PALETTE.green) };
 
   // The fallen never "descend" again: once dead, the only interstitial is
   // the death screen (immediately if the scene can no longer place them).
   if (!agent.alive && (deathScreen || !model.playerRoomId)) {
     return (
-      <div className="crawler-view">
-        <div
-          className="sbx-descent sbx-descent--death"
-          style={{ '--chip-color': agent.color }}
-        >
-          <span className="sbx-descent__glyph sbx-descent__glyph--death">☠</span>
-          <span className="sbx-descent__name">{agent.name}</span>
-          <span className="sbx-descent__site">
-            {agent.cause_of_death || 'has fallen'} —{' '}
-            {mapData?.site_name ?? 'the dark'} keeps them
-          </span>
-          <span className="sbx-descent__hint">Esc — back to the island</span>
+      <div className="qf-cam" style={camStyle}>
+        <div className="qf-cam-curtain qf-cam-curtain--death" role="status">
+          <div className="qf-cam-curtain__body">
+            <IconDead size={48} className="qf-cam-curtain__glyph" />
+            <span className="qf-cam-curtain__name">{agent.name}</span>
+            <span className="qf-cam-curtain__cause">
+              {agent.cause_of_death || 'has fallen'} — {siteName ?? 'the dark'} keeps them
+            </span>
+            <span className="qf-cam-curtain__hint">
+              <kbd className="qf-key">Esc</kbd>
+              Back to the island
+            </span>
+          </div>
         </div>
       </div>
     );
   }
 
+  const playerRoom = model.rooms.find((r) => r.id === model.playerRoomId) ?? null;
+
   return (
-    <div className="crawler-view">
+    <div className="qf-cam" style={camStyle}>
       {sceneMountable && supported && !sceneFailed && (
         <CrawlerBoundary onFail={() => setSceneFailed(true)}>
           <CrawlerScene
@@ -476,58 +511,61 @@ export default function SandboxCrawler({ agent, worldId, siteId }) {
         </CrawlerBoundary>
       )}
       {sceneMountable && (
-        <>
-          {pvpActive && <div className="sbx-pvp-vignette" aria-hidden="true" />}
-          <CrawlerHud
-            queue={queue}
-            thoughts={thoughts}
-            agentName={agent.name}
-            hp={hpOverride ?? agent.hp ?? null}
-            maxHp={agent.max_hp ?? null}
-            weapon={agent.weapon ? { name: agent.weapon, damageBonus: agent.weapon_bonus ?? null } : null}
-            target={target}
-            gameOver={!agent.alive}
-            gameOverMsg={agent.alive ? null : agent.cause_of_death}
-            reducedMotion={reducedMotion}
-          />
-          <CrawlerMinimap model={model} facing={facing} onSelectAgent={setFollowedAgentId} />
-          <CrawlerPromptChanBlip
-            commentary={commentary}
-            roster={roster}
-            onFollow={(a) => setFollowedAgentId(a.agent_id)}
-          />
-        </>
+        <CrawlerHud
+          queue={queue}
+          thoughts={thoughts}
+          agentName={agent.name}
+          siteName={siteName}
+          roomType={playerRoom?.type ?? null}
+          tick={world?.tick ?? latestFrame?.tick ?? null}
+          hunted={pvpActive}
+          live={!curtainUp}
+          hp={hpOverride ?? agent.hp ?? null}
+          maxHp={agent.max_hp ?? null}
+          weapon={agent.weapon ? { name: agent.weapon, damageBonus: agent.weapon_bonus ?? null } : null}
+          target={target}
+          gameOver={!agent.alive}
+          gameOverMsg={agent.alive ? null : agent.cause_of_death}
+          reducedMotion={reducedMotion}
+        >
+          {/* on the TV nobody holds a pointer: the pips are not buttons there */}
+          <CrawlerMinimap model={model} facing={facing} onSelectAgent={tv ? null : setFollowedAgentId} />
+        </CrawlerHud>
       )}
       {curtainUp && (
         <div
-          className={`sbx-descent sbx-descent--boot${revealed ? ' is-lifting' : ''}`}
-          style={{ '--chip-color': agent.color }}
+          className={`qf-cam-curtain${revealed ? ' is-lifting' : ''}`}
           role="status"
           aria-live="polite"
         >
-          <span className="sbx-descent__glyph">▾</span>
-          <span className="sbx-descent__name">{agent.name}</span>
-          <span className="sbx-descent__site">
-            descends into {mapData?.site_name ?? 'the dark'}
-          </span>
-          <div className="sbx-descent__bar" aria-hidden="true">
-            <span
-              className={`sbx-descent__fill${revealed ? '' : ' is-working'}`}
-              style={{ width: `${barPct}%` }}
-            />
-          </div>
-          <span className="sbx-descent__stage">
-            {loadStageLabel({
-              sceneMountable,
-              assetsSettled,
-              sceneReady: sceneReady || !willRenderScene,
-            })}
-          </span>
-          {stalled && (
-            <span className="sbx-descent__hint">
-              the site map is not answering — Esc to surface
+          <div className="qf-cam-curtain__body">
+            <IconDescend size={32} className="qf-cam-curtain__glyph" />
+            <span className="qf-cam-curtain__name">{agent.name}</span>
+            <span className="qf-cam-curtain__into">Descends into</span>
+            <span className="qf-cam-curtain__site">{siteName ?? 'the dark'}</span>
+            <div className="qf-cam-steps" aria-hidden="true">
+              {[0, 1, 2].map((i) => (
+                <i
+                  key={i}
+                  className={`qf-cam-step${i < stagesDone ? ' is-done' : i === stagesDone ? ' is-current' : ''}`}
+                />
+              ))}
+            </div>
+            <span className="qf-cam-curtain__stage">
+              {loadStageLabel({
+                sceneMountable,
+                assetsSettled,
+                sceneReady: sceneReady || !willRenderScene,
+              })}
             </span>
-          )}
+            {stalled && (
+              <span className="qf-cam-curtain__stall">
+                The site map is not answering
+                <kbd className="qf-key">Esc</kbd>
+                to surface
+              </span>
+            )}
+          </div>
         </div>
       )}
     </div>

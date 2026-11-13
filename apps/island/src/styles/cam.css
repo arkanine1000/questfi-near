@@ -1,0 +1,10 @@
+/* The dungeon feed: the followed agent's body camera and its overlay.
+   The full stylesheet follows; this is the root the crawler mounts. */
+
+.qf-cam {
+  position: fixed;
+  inset: 0;
+  z-index: var(--qf-z-hud);
+  overflow: hidden;
+  background: #000;
+}
