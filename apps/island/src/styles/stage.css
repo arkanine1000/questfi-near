@@ -372,6 +372,16 @@
 .qf-shell[data-cam] .qf-stage > .qf-caster { width: max(240px, min(760px, calc(100% - 560px))); }
 @container stage (max-width: 979px) {
   .qf-shell[data-cam] .qf-caster-cam { display: none; }
+  /* a narrow band: a smaller line, so the caption stays inside it */
+  .qf-shell[data-cam] .qf-caster-caption { padding: 8px 12px 9px; }
+  .qf-shell[data-cam] .qf-caster-head { margin-bottom: 4px; }
+  .qf-shell[data-cam] .qf-caster-line { font-size: 13px; line-height: 1.4; }
+}
+/* Narrower still, the two plates leave no band between them at all (a TV
+   keeps the field open over the dungeon feed): she steps aside until the
+   camera surfaces or the stage widens. */
+@container stage (max-width: 699px) {
+  .qf-shell[data-cam] .qf-stage > .qf-caster { display: none; }
 }
 
 /* ---- the full form: the presenter at her desk ----
@@ -422,12 +432,13 @@
   }
 }
 
-/* the TV: the caster a size up, read from the sofa */
-.qf-shell[data-tv] .qf-stage > .qf-caster { scale: 1.15; transform-origin: 50% 100%; }
+/* the TV: the full form a size up, read from the sofa (the compact form
+   stays its size: it has to fit the band) */
 @container stage (min-width: 721px) {
   .qf-shell[data-tv]:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage > .qf-caster {
     right: auto;
     width: calc(100% / 1.15);
+    scale: 1.15;
     transform-origin: 0 100%;
   }
   .qf-shell[data-tv]:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage:has(> .qf-caster) > .qf-thoughts {
@@ -586,6 +597,7 @@
     inset 0 0 8px color-mix(in srgb, var(--tag-color, var(--qf-green)) 22%, transparent);
 }
 .sbx-tag--under { opacity: 0.55; }
+.sbx-tag--focus.sbx-tag--under { opacity: 0.85; }
 .sbx-tag__depth { margin-left: 5px; opacity: 0.8; }
 .sbx-tag svg, .sbx-boss-tag svg { width: 1em; height: 1em; vertical-align: -0.12em; }
 
