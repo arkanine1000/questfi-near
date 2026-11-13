@@ -16,8 +16,8 @@
    and the bottom band (--lower-h) to the caster; the plates stay in the
    corners and the thoughts stack above the caster's band.
 
-   tokens.css is loaded after this file, so every rule here is scoped under
-   .qf-cam to outrank the single-class qf- pieces it builds on. */
+   Every rule here is scoped under .qf-cam, so the feed's pieces outrank the
+   single-class qf- pieces they build on wherever they are declared. */
 
 .qf-cam {
   position: fixed;

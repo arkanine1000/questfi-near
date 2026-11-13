@@ -1,10 +1,11 @@
 /**
- * Prompt-chan, the island's caster, as a broadcast lower third in the
- * stage's bottom band, over the god view and the dungeon feed alike: her
- * camera on the left (head and shoulders, cut from the same sprite frames),
- * her caption beside it. She comes in with a line, holds it long enough to
- * read, then falls quiet: the caption goes and her camera dims until the
- * next line.
+ * Prompt-chan, the island's caster. On the island she stands at the stage's
+ * bottom-left as a full figure with her caption as a desk in front of her;
+ * over the dungeon feed, after the season, and wherever the stage is narrow
+ * she is a small camera square (head and shoulders, cut from the same sprite
+ * frames) beside the caption. One markup serves both forms; the stylesheet
+ * chooses. She comes in with a line, holds it long enough to read, then
+ * falls quiet: the caption goes and she dims until the next line.
  *
  * Names in her lines are live: click one to ride that challenger. The
  * caster is a camera director who doesn't know it.

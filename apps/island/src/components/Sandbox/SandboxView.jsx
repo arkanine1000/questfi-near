@@ -34,7 +34,7 @@ import WinnerBanner from './Finale';
 import FollowNav, { HexPicker } from './FollowNav';
 import { BootCurtain, OfflineOverlay, RotateGate } from './SystemScreens';
 import { BetsProvider } from './BettingContext';
-// after the old sheet, so the restyled 3D name tags win over its rules
+// the stage's furniture, and the 3D name tags the scenes project into the DOM
 import '../../styles/stage.css';
 
 /** Dossier windows open at once; opening one more closes the oldest. */
