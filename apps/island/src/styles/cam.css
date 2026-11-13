@@ -726,7 +726,8 @@
 
 /* ---------- narrowest stage: the top strip leaves no room beside it ---------- */
 /* Corner furniture moves below the follow controls, the target plate under
-   the feed line, the combat log goes, and the thoughts take the width. */
+   the feed line, the combat log goes, and the thoughts take the width left
+   of the scope. */
 @container cam (max-width: 640px) {
   .qf-cam .qf-cam-layer {
     --cam-scope-k: 0.55;
@@ -746,9 +747,13 @@
     transform: scale(var(--cam-k));
     transform-origin: top left;
   }
+  /* the thoughts take the width left of the scope, which hangs lower here */
   .qf-cam .qf-cam-thoughts {
-    width: calc(100% - 2 * var(--cam-in));
+    left: var(--cam-in);
+    width: calc((100% - 2 * var(--cam-in) - 236px * var(--cam-scope-k) * var(--cam-k) - 10px) / var(--cam-k));
     bottom: max(var(--lower-h, 150px), calc(var(--cam-in) + 96px));
+    transform: scale(var(--cam-k));
+    transform-origin: bottom left;
   }
 }
 
