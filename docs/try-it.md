@@ -10,7 +10,7 @@ repository.
 | Site | https://near.questfi.ai (start app at `/`, Agent World at `/world/`, the island at `/island/`, test accounts at `/api/guest`) |
 | Contract | `pass.questfi.testnet` on NEAR testnet, https://testnet.nearblocks.io/address/pass.questfi.testnet |
 | Game server | https://quest-sim-near-production.up.railway.app |
-| NEAR RPC | https://test.rpc.fastnear.com |
+| NEAR RPC | https://test.rpc.fastnear.com; past transactions from https://archival-rpc.testnet.fastnear.com |
 
 Amounts from the contract are yoctoNEAR strings: 1 NEAR is 10^24, so
 `200000000000000000000000` is 0.2 NEAR.
@@ -111,8 +111,8 @@ view get_config
 {
   "mint_storage_fee": "50000000000000000000000",
   "min_bet": "10000000000000000000000",
-  "xp_per_level": 300,
-  "xp_enter": 20,
+  "xp_per_level": 100,
+  "xp_enter": 400,
   "xp_kill": 120,
   "xp_win": 200,
   "xp_loot_max": 200,
@@ -120,7 +120,7 @@ view get_config
   "market_agent_cut_bps": 500,
   "market_house_bps": 200,
   "claim_level": 5,
-  "claim_burn": "200000000000000000000000",
+  "claim_burn": "50000000000000000000000",
   "max_entrants": 16,
   "max_events_per_call": 20,
   "activity_cap": 40,
@@ -131,7 +131,9 @@ view get_config
 
 A new pass may spend 0.2 NEAR per call and 1 NEAR per day; a kill pays the
 killer 50% of the victim's stake; the winning pass gets 5% of the losing bets
-and the treasury 2%; the card claim needs level 5 and burns 0.2 NEAR.
+and the treasury 2%; the card claim needs level 5 and burns 0.05 NEAR.
+A level is 100 XP and entering a season gives 400, so a pass is at the claim
+level in the first season it enters; a kill gives 120 and a win 200.
 [`contracts/README.md`](../contracts/README.md) explains every field.
 
 The game server, the only account allowed to report kills and winners:
@@ -310,7 +312,80 @@ curl -s -X POST https://near.questfi.ai/api/guest -H 'Content-Type: application/
 {"error":"bad_key","message":"publicKey must be an ed25519 public key."}
 ```
 
-### A7. All of the above at once
+### A7. One finished run, read back
+
+One run of the terminal walkthrough (C1) was left on chain as it ended: the
+test account `g-mcshnxh2.play.questfi.testnet`, its pass #19, and its
+transactions. The key that owned the account was discarded when the run
+ended, so nothing about it can change. A second helper asks any RPC method,
+and transactions are read from an archival node, which keeps them:
+
+```bash
+ARCHIVE=https://archival-rpc.testnet.fastnear.com
+RUN=g-mcshnxh2.play.questfi.testnet
+ask() {
+  curl -s "$1" -H 'Content-Type: application/json' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$2\",\"params\":$3}" | jq .result
+}
+```
+
+The keys on the run's account:
+
+```bash
+ask $RPC query '{"request_type":"view_access_key_list","finality":"final","account_id":"'$RUN'"}' |
+  jq -c '.keys[] | {key: .public_key, may: (.access_key.permission | if type == "string" then . else .FunctionCall | {receiver_id, method_names} end)}'
+```
+
+```json
+{"key":"ed25519:A9zPeNq5tNTzpGxrRBijyPc9LafosVmjweq8LJcmyzJh","may":"FullAccess"}
+{"key":"ed25519:FHXoh1ciDUjYBZGgLvmSRWDQVyvkp8xYG1FjzVxnmezV","may":{"receiver_id":"pass.questfi.testnet","method_names":["enter_season","pay_agent"]}}
+```
+
+The second is the agent's key: NEAR itself lets it call those two methods of
+the contract and nothing else, and never with a deposit attached. The pass
+names the same key as its agent's:
+
+```bash
+view get_pass '{"pass_id":"19"}' | jq -c '{owner_id, balance, level, seasons, claim_ticket, agent}'
+```
+
+```json
+{"owner_id":"g-mcshnxh2.play.questfi.testnet","balance":"200000000000000000000000","level":5,"seasons":1,"claim_ticket":"QF-TCG-19-277569915","agent":{"kind":"rented","name":"MIMIR","roster_id":"mimir","public_key":"ed25519:FHXoh1ciDUjYBZGgLvmSRWDQVyvkp8xYG1FjzVxnmezV"}}
+```
+
+It reached level 5 in its one season, and its card is claimed. Two of the
+run's transactions, the season entry and a spend of 0.21 NEAR against the
+0.2 NEAR per-call cap:
+
+```bash
+for tx in 7m87VcaX2Ef5s1xFMPrRnRTYHcYUrXoX7gNFvE53zRbt 8vAajnUmbDViKJXjhdeumjh2D2r24F6RabBsx5XuQ9yj; do
+  ask $ARCHIVE tx '{"tx_hash":"'$tx'","sender_account_id":"'$RUN'","wait_until":"FINAL"}' |
+    jq -c '{key: .transaction.public_key, call: .transaction.actions[0].FunctionCall.method_name, result: (.status | tostring)}'
+done
+```
+
+```json
+{"key":"ed25519:FHXoh1ciDUjYBZGgLvmSRWDQVyvkp8xYG1FjzVxnmezV","call":"enter_season","result":"{\"SuccessValue\":\"\"}"}
+{"key":"ed25519:FHXoh1ciDUjYBZGgLvmSRWDQVyvkp8xYG1FjzVxnmezV","call":"pay_agent","result":"{\"Failure\":{\"ActionError\":{\"index\":0,\"kind\":{\"FunctionCallError\":{\"ExecutionError\":\"Smart contract panicked: POLICY: over per-call cap\"}}}}}"}
+```
+
+Both were signed by the agent's key, not the owner's: the entry went
+through, and the contract refused the overspend. The season the pass
+entered, and its market:
+
+```bash
+view get_season '{"season_id":"w-e4f1b03f"}' | jq -c '{status, winner, entrants: [.entrants[].pass_id]}'
+view get_market '{"season_id":"w-e4f1b03f"}' | jq -c '{settled, pool, winner, refund}'
+```
+
+```json
+{"status":"Settled","winner":"3","entrants":["19","1","2","3","4","5"]}
+{"settled":true,"pool":"20000000000000000000000","winner":"3","refund":true}
+```
+
+The run had bet 0.01 NEAR each on passes #19 and #1; pass #3 won, nobody had
+backed it, and so every bet was refunded.
+
+### A8. All of the above at once
 
 ```bash
 scripts/check-public.sh
@@ -326,17 +401,29 @@ ok    the deployed wasm's SHA-256 is 778bf52679a4c840a757b6d55057767bf2da49332b2
 ok    contract_source_metadata names commit 1b1c088d08ee48ad756f95a07ed0da1f7dbf2ceb
         build image sourcescan/cargo-near:0.23.0-rust-1.99.1
 ok    get_config answers
-        agent caps 0.2 NEAR per call and 1 per day, mint fee 0.05, min bet 0.01, card burn 0.2
+        agent caps 0.2 NEAR per call and 1 per day, mint fee 0.05, min bet 0.01, card burn 0.05
 ok    the operator is operator.questfi.testnet
 ok    the roster has 4 house agents
         MIMIR 0.04, CASSANDRA 0.04, ROKO 0.06, AEGIS 0.06 NEAR
-ok    passes are NEP-171 tokens: QuestFi Agent Pass (QFPASS), 14 minted
+ok    passes are NEP-171 tokens: QuestFi Agent Pass (QFPASS), 19 minted
 ok    get_accounting: solvent
-        owes 3.1 NEAR and holds 10.796749, of which 4.20778 pays for storage
+        owes 20.05 NEAR and holds 27.996749, of which 4.40032 pays for storage
+ok    g-mcshnxh2.play.questfi.testnet holds one limited key: enter_season and pay_agent on pass.questfi.testnet, nothing else
+        ed25519:FHXoh1ciDUjYBZGgLvmSRWDQVyvkp8xYG1FjzVxnmezV
+ok    pass #19 belongs to that account and names that key as its agent's
+        agent MIMIR (rented), balance 0.2 NEAR
+ok    the agent's key, not the owner's, signed the season entry
+        transaction 7m87VcaX2Ef5s1xFMPrRnRTYHcYUrXoX7gNFvE53zRbt
+ok    the contract refused that key's spend over the cap
+        "POLICY: over per-call cap", transaction 8vAajnUmbDViKJXjhdeumjh2D2r24F6RabBsx5XuQ9yj
+ok    the market paid the run's bets
+        0.02 NEAR, transaction EjoJvD76mu9enhwHg9PGAWS3GNWfZ5ftrQysttjohevz
+ok    pass #19 reached level 5 in its first season and its card is claimed
+        ticket QF-TCG-19-277569915
 ok    the contract account holds 1 full-access key(s): its code can be redeployed
-ok    the game server's open season is w-a0f529e7
-        entry stake 0.05 NEAR, 0 of 6 seats taken, waiting for player; last season won by Bren
-ok    season w-a0f529e7 is Open on the contract
+ok    the game server's open season is w-1862d2f5
+        entry stake 0.05 NEAR, 0 of 6 seats taken, waiting for player; last season won by Dain
+ok    season w-1862d2f5 is Open on the contract
         entry stake 0.05 NEAR, 0 entrants, pot 0 NEAR
 ok    https://near.questfi.ai/ serves the start app
 ok    https://near.questfi.ai/world/ serves Agent World
@@ -348,10 +435,12 @@ ok    https://near.questfi.ai/api/guest answers and checks the key it is given
 all checks passed
 ```
 
-The exit code is 0 when every check passed and 1 otherwise. `SITE`, `GAME` and
-`RPC` override the addresses, for example
+The exit code is 0 when every check passed and 1 otherwise. `SITE`, `GAME`,
+`RPC` and `ARCHIVE` override the addresses, for example
 `SITE=https://questfi-near.vercel.app scripts/check-public.sh` for the same
-deployment under its Vercel address.
+deployment under its Vercel address. `RUN_ACCOUNT`, `RUN_PASS`,
+`RUN_ENTRY_TX`, `RUN_REFUSED_TX` and `RUN_PAYOUT_TX` point the run's checks
+at another run of the walkthrough.
 
 ## B. In a browser
 
@@ -430,6 +519,13 @@ gets the same account and pass back on the next visit.
     with a **CLAIM** button, which calls `claim_winnings` and pays out.
     When there is no winner, nobody backed the winner, or the season was
     cancelled, every bet is refunded in full.
+12. **Claim the card.** Back on the start app the pass is at level 5 or
+    above (entering a season is worth four levels here), and the reward line
+    under the card reads **UNLOCKED**. Press **CLAIM · BURN 0.05 NEAR** and
+    confirm: `claim_card` burns 0.05 NEAR from the pass and returns a claim
+    ticket, `QF-TCG-<pass>-<block height>`, shown with a link to the
+    transaction; the button then reads **CLAIMED**. Printing and shipping a
+    card against the ticket is not built.
 
 The start app's **WALLET** panel also offers **DEPOSIT** and **WITHDRAW**,
 which move NEAR between the account and the pass with the owner's key.
@@ -460,49 +556,65 @@ contract pass.questfi.testnet  https://testnet.nearblocks.io/address/pass.questf
 ok     1. the contract answers
         mint fee 0.05 NEAR, default caps 0.2 NEAR per call and 1 NEAR per day, 4 house agents
 ok     2. a test account is created
-        g-zwt4l0ed.play.questfi.testnet holds 0.5 NEAR
-        https://testnet.nearblocks.io/txns/EhrnRd563iB4hD6NxHUKcsu4x61UooTiJ9HUwTdWPRNH
+        g-mcshnxh2.play.questfi.testnet holds 0.5 NEAR
+        https://testnet.nearblocks.io/txns/7eUy2rpiaVrBsatMSugmTmDm6MEEavN6FYkQS9TsDFQ
 ok     3. it mints a pass, with a first deposit inside
-        pass #15, balance 0.3 NEAR, level 1
-        https://testnet.nearblocks.io/txns/HiwABvwhTP342QBSQSZYs1b2LPnAGT4myx6pJGL1xPVT
+        pass #19, balance 0.3 NEAR, level 1
+        https://testnet.nearblocks.io/txns/9mn6LHAvpy9pAkcmZ1Sktfe9NTbL1AuDPZMhkhVkUjUk
 ok     4. the owner deposits and withdraws
         0.02 NEAR in, 0.02 NEAR out
-        https://testnet.nearblocks.io/txns/4EDScndX2n4aXyYEE9ENULZr7xiw4LdkS6MzmafBZnm3
-        https://testnet.nearblocks.io/txns/4g6ii2QSDMonMyjivkPCdNQzMb3azvx7nrZwHfgKipVD
+        https://testnet.nearblocks.io/txns/GTCFBYz5ssKu9tjF65SV6V13PKM7XZ2nrFETQpcN2G8k
+        https://testnet.nearblocks.io/txns/AoNoZfkr5JdtGtKm77EVbRfLCVNmzd7A4VDWsit2Raw5
 ok     5. it links a house agent and issues the agent key
         MIMIR for 0.04 NEAR; the key may call enter_season and pay_agent on pass.questfi.testnet, nothing else
-        https://testnet.nearblocks.io/txns/8dCSzA6hQMhkPfjd5LBVrUvn7tyY9aUWjXQZj5gDcD1z
-        https://testnet.nearblocks.io/txns/7fvJqFcpFAJ1bGTiu3QQaBRzUHJqfe1srcfjVzcLD9uS
+        https://testnet.nearblocks.io/txns/BqQWbV6HecWdhjkpwS4y3iPLuXKvQjV3JyotdeHcv6FA
+        https://testnet.nearblocks.io/txns/8b8pSdGYEmbG1iVEKYRhhMPK8fqhnWM5DtLiJb1HRYVb
 ok     6. the agent key cannot withdraw: the protocol refuses the transaction
         DepositWithFunctionCall: "Deposit is not allowed with function call"
         nothing reached the contract, so there is no transaction to link
 ok     7. the agent key cannot spend over the per-call cap: the contract refuses
         tried 0.21 NEAR; the contract answered "POLICY: over per-call cap"
-        https://testnet.nearblocks.io/txns/3Jkgy3mCLXqYsuihGcziFvZ327ai4UHiPsLSdfJNc5kR
+        https://testnet.nearblocks.io/txns/8vAajnUmbDViKJXjhdeumjh2D2r24F6RabBsx5XuQ9yj
 ok     8. the game server names the open season
-        season w-a0f529e7
+        season w-e4f1b03f
 ok     9. the agent key enters the season: no owner signature, stake from the pass
         stake 0.05 NEAR, pass balance 0.3 NEAR -> 0.25 NEAR, signed_by_agent_key: true
-        https://testnet.nearblocks.io/txns/59D3Q2TyViU1b1hyErHaCZt7mFGUKkTfKGFyGmj9UyAT
-ok    10. the game server seats the agent
-        MIMIR has a seat in w-a0f529e7; the season starts now
-ok    11. the season plays and settles on chain
-        won by pass #nobody; this pass: balance 0.25 NEAR, kills 0, wins 0, level 1
-        death: Killed by pass #1 in w-a0f529e7
-ok    12. the contract holds at least what it owes
-        owed 3.275 NEAR, on the account 11.021749 NEAR, of which storage 4.22852 NEAR
+        https://testnet.nearblocks.io/txns/7m87VcaX2Ef5s1xFMPrRnRTYHcYUrXoX7gNFvE53zRbt
+ok    10. the season has a market on the contract: the test account bets on its own pass
+        0.01 NEAR on pass #19; the pool holds 0.01 NEAR
+        https://testnet.nearblocks.io/txns/5kxUktoUVBZJRqEddH6S5sMVhiHzsoyYy6apRKj44q8k
+ok    11. the game server seats the agent
+        MIMIR has a seat in w-e4f1b03f; the season starts now
+ok    12. once the house agents have entered, the test account bets on one of them too
+        0.01 NEAR on pass #1; 6 passes entered, the pool holds 0.02 NEAR
+        https://testnet.nearblocks.io/txns/CePxoSTc3Q6wykZBaY644Bxmomiojkv5nYZeBR5AK2WU
+ok    13. the season plays and settles on chain
+        won by pass #3; this pass: balance 0.25 NEAR, kills 0, wins 0, level 5
+        death: Killed by a monster in w-e4f1b03f
+ok    14. the market pays the test account what its bets are owed
+        staked 0.02 NEAR on passes #19 and #1, paid 0.02 NEAR (every bet refunded: nobody had backed the winner)
+        https://testnet.nearblocks.io/txns/EjoJvD76mu9enhwHg9PGAWS3GNWfZ5ftrQysttjohevz
+ok    15. the pass is at the claim level and its owner claims the card
+        level 5 (claim level 5), ticket QF-TCG-19-277569915, burned 0.05 NEAR from the pass
+        https://testnet.nearblocks.io/txns/8wyX2TfCB1rbCd5SGHeabCfVAbW9P5DZpvZx5zEfrd9C
+ok    16. the contract holds at least what it owes
+        owed 20.05 NEAR, on the account 27.996749 NEAR, of which storage 4.40032 NEAR
 
 all steps passed
 ```
 
-This run took 2 minutes 40 seconds; step 11 waits for the season to play and
-settle, which takes a few minutes and is given up to ten. In this season the
-walkthrough's agent was killed by house pass #1, whose pass took the bounty,
-and no pass was crowned, so the pot went to the treasury. Each run creates
-one test account with 0.5 testnet NEAR through the site's `/api/guest`, which
-allows a few per address per hour. Exit codes: 0 when every step passed, 1
-when one failed, 2 for bad arguments or setup. The header of the script lists
-its other options: `--season <id>` to enter a given season,
+This run took about six minutes; step 13 waits for the season to play and
+settle, which is given up to ten. The test account is also the run's
+spectator: it bets the minimum on its own pass while the season is open and
+on a house pass once the season is running, and step 14 checks what
+`claim_winnings` pays against the market's own figures (here a refund,
+because pass #3 won and nobody had backed it). Step 15 claims the card: the
+pass is at level 5 because entering a season is worth four levels on this
+deployment. This is the run that A7 reads back. Each run creates one test
+account with 0.5 testnet NEAR through the site's `/api/guest`, which allows
+a few per address per hour. Exit codes: 0 when every step passed, 1 when one
+failed, 2 for bad arguments or setup. The header of the script lists its
+other options: `--season <id>` to enter a given season,
 `QUESTFI_OPERATOR_ID` and `QUESTFI_OPERATOR_KEY` to have a season created and
 cancelled for the run on a contract you operate, and `--keep` to print the
 test account at the end.

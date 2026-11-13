@@ -157,8 +157,11 @@ one.
 | `set_roster` | Adm | 0 | `{"roster_id":"mimir","name":"MIMIR","blurb":"...","price":"400000000000000000000000"}` (adds or edits) |
 
 `Config` with its defaults (`get_config` returns this shape). The deployed
-contract, `pass.questfi.testnet`, runs with a tenth of the default caps and
-card burn, to fit the testnet faucet; `get_config` on it shows its values.
+contract, `pass.questfi.testnet`, runs with other values, set with
+`set_config`: a tenth of the default caps and a card burn of 0.05 NEAR, to
+fit the testnet faucet, and quick levelling (`xp_per_level` 100, `xp_enter`
+400), so that a pass reaches the claim level in the first season it enters.
+`get_config` on it shows its values.
 
 ```json
 {

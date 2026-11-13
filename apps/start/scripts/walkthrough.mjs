@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // A whole run from a terminal, with the same chain module the start app uses
 // (src/near.js): a fresh test account mints a pass, funds it, links an agent
-// with a limited key, lets that key enter a season, and then shows the two
-// things the key cannot do.
+// with a limited key, shows the two things the key cannot do, lets that key
+// enter a season, bets in the season's market, and once the season has
+// settled collects on the bets and claims the card.
 //
 //   node scripts/walkthrough.mjs --contract <id> --app <start app url>
 //   node scripts/walkthrough.mjs --contract <id> --game <game server url> --app <url>
@@ -213,6 +214,28 @@ if (seasonId && !failed) {
   console.log('skip  no season to enter: give --game <url> or --season <id>');
 }
 
+// ---- the season's market ------------------------------------------------------
+// The test account is also a spectator: it bets the minimum, as any account may.
+const backed = [];
+const marketCall = (method, args, deposit = 0n) =>
+  owner.send(contractId, [{ type: 'FunctionCall', method, args, deposit, gas: teraToGas(20) }]);
+const bet = async (pass) => {
+  const placed = await marketCall('place_bet', { season_id: seasonId, pass_id: String(pass) }, BigInt(config.min_bet));
+  backed.push(String(pass));
+  return placed;
+};
+
+if (seasonId && !failed) {
+  await step('the season has a market on the contract: the test account bets on its own pass', async () => {
+    const placed = await bet(passId);
+    const market = await chain.getMarket(seasonId);
+    expect(market.open === true, 'the market is not open');
+    const mine = market.totals.find((t) => t.pass_id === String(passId));
+    expect(mine && BigInt(mine.amount) >= BigInt(config.min_bet), 'the bet is not in the market totals');
+    return `${near(config.min_bet)} on pass #${passId}; the pool holds ${near(market.pool)}\n${explorerTx(placed.txHash)}`;
+  });
+}
+
 if (gameUrl && seasonId && !failed) {
   await step('the game server seats the agent', async () => {
     const seat = await createGame(gameUrl).join(seasonId, { passId, name: pick.name, rosterId: pick.roster_id, accountId: owner.accountId });
@@ -221,6 +244,23 @@ if (gameUrl && seasonId && !failed) {
     const early = await createGame(gameUrl).startNow().then(() => true, () => false);
     const when = early ? 'now' : seat.starts_in_s == null ? 'when the season before it has settled' : `in about ${Math.round(seat.starts_in_s)} s`;
     return `${seat.name} has a seat in ${seat.world_id}; the season starts ${when}`;
+  });
+
+  await step('once the house agents have entered, the test account bets on one of them too', async () => {
+    const until = Date.now() + 10 * 60_000;
+    let season;
+    for (;;) {
+      season = await chain.getSeason(seasonId);
+      if (season.status !== 'Open') break;
+      expect(Date.now() < until, `season ${seasonId} is still Open after 10 minutes`);
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+    expect(season.status === 'Running', `the season is ${season.status}`);
+    const rival = season.entrants.find((e) => e.pass_id !== String(passId));
+    if (!rival) return 'no other pass entered this season, so the one bet stands alone';
+    const placed = await bet(rival.pass_id);
+    const market = await chain.getMarket(seasonId);
+    return `${near(config.min_bet)} on pass #${rival.pass_id}; ${season.entrants.length} passes entered, the pool holds ${near(market.pool)}\n${explorerTx(placed.txHash)}`;
   });
 
   await step('the season plays and settles on chain', async () => {
@@ -252,6 +292,40 @@ if (operator && seasonId && !failed) {
     const pass = await chain.getPass(passId);
     expect(pass.active_season === null, 'the pass is still in the season');
     return `pass balance ${near(pass.balance)}\n${explorerTx(res.transaction.hash)}`;
+  });
+}
+
+if (seasonId && !failed && backed.length) {
+  await step('the market pays the test account what its bets are owed', async () => {
+    const market = await chain.getMarket(seasonId);
+    const staked = BigInt(config.min_bet) * BigInt(backed.length);
+    const onWinner = market.winner != null && backed.includes(String(market.winner));
+    // The contract's rule: with nobody on the winner (or no winner) every bet
+    // is refunded; otherwise a bet on the winner gets its share of the pool
+    // less the cuts, and a bet on a loser gets nothing.
+    const owed = market.refund
+      ? staked
+      : onWinner ? (BigInt(config.min_bet) * BigInt(market.distributable)) / BigInt(market.winner_bets) : 0n;
+    const claimed = await marketCall('claim_winnings', { season_id: seasonId });
+    const paid = BigInt(claimed.value ?? 0);
+    expect(paid === owed, `the contract paid ${near(paid)}, and its own market figures say ${near(owed)}`);
+    const how = market.refund
+      ? 'every bet refunded: nobody had backed the winner'
+      : onWinner ? `pass #${market.winner} won: its backers share the pool less the cuts on the losing bets` : 'neither pass won';
+    return `staked ${near(staked)} on passes #${backed.join(' and #')}, paid ${near(paid)} (${how})\n${explorerTx(claimed.txHash)}`;
+  });
+}
+
+if (seasonId && !failed) {
+  await step('the pass is at the claim level and its owner claims the card', async () => {
+    const before = await chain.getPass(passId);
+    expect(before.level >= config.claim_level, `the pass is level ${before.level}, below the claim level ${config.claim_level}`);
+    expect(BigInt(before.balance) >= BigInt(config.claim_burn), `the pass holds ${near(before.balance)}, less than the ${near(config.claim_burn)} the claim burns`);
+    const claimed = await chain.claimCard(owner, passId);
+    const after = await chain.getPass(passId);
+    expect(after.claim_ticket === claimed.value, 'the pass does not record the ticket the call returned');
+    expect(BigInt(before.balance) - BigInt(after.balance) === BigInt(config.claim_burn), 'the burn did not leave the pass balance');
+    return `level ${before.level} (claim level ${config.claim_level}), ticket ${claimed.value}, burned ${near(config.claim_burn)} from the pass\n${explorerTx(claimed.txHash)}`;
   });
 }
 

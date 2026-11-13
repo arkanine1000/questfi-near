@@ -3,7 +3,10 @@
 # no account, no key, nothing installed but bash, curl, jq and the coreutils
 # base64 and sha256sum (or shasum). It reads the contract over NEAR's public
 # RPC, asks the game server for its open season, and checks that the site's
-# three apps and its test-account endpoint answer. Nothing is signed or sent.
+# three apps and its test-account endpoint answer, and reads back one finished
+# run of the terminal walkthrough: the agent's limited key, the entry it
+# signed, the spend the contract refused, the bets paid and the card claimed.
+# Nothing is signed or sent.
 #
 #   scripts/check-public.sh
 #   SITE=https://questfi-near.vercel.app scripts/check-public.sh
@@ -19,10 +22,20 @@ WASM_SHA256=778bf52679a4c840a757b6d55057767bf2da49332b2588208b39d826ea59a565
 COMMIT=1b1c088d08ee48ad756f95a07ed0da1f7dbf2ceb
 OPERATOR=operator.questfi.testnet
 
+# One finished run of apps/start/scripts/walkthrough.mjs, left on chain as it
+# ended: the test account, its pass, and four of its transactions.
+RUN_ACCOUNT=${RUN_ACCOUNT:-g-mcshnxh2.play.questfi.testnet}
+RUN_PASS=${RUN_PASS:-19}
+RUN_ENTRY_TX=${RUN_ENTRY_TX:-7m87VcaX2Ef5s1xFMPrRnRTYHcYUrXoX7gNFvE53zRbt}
+RUN_REFUSED_TX=${RUN_REFUSED_TX:-8vAajnUmbDViKJXjhdeumjh2D2r24F6RabBsx5XuQ9yj}
+RUN_PAYOUT_TX=${RUN_PAYOUT_TX:-EjoJvD76mu9enhwHg9PGAWS3GNWfZ5ftrQysttjohevz}
+
 # Where it runs. Override any of these from the environment.
 SITE=${SITE:-https://near.questfi.ai}
 GAME=${GAME:-https://quest-sim-near-production.up.railway.app}
 RPC=${RPC:-https://test.rpc.fastnear.com}
+# Past transactions are read from an archival node, which keeps them.
+ARCHIVE=${ARCHIVE:-https://archival-rpc.testnet.fastnear.com}
 SITE=${SITE%/}
 GAME=${GAME%/}
 
@@ -53,6 +66,11 @@ view() {
   args=$(printf '%s' "$2" | base64 | tr -d '\n')
   rpc "{\"request_type\":\"call_function\",\"finality\":\"final\",\"account_id\":\"$CONTRACT\",\"method_name\":\"$1\",\"args_base64\":\"$args\"}" |
     jq -c '.result | implode | fromjson'
+}
+# A past transaction of the run's account. $1 is its hash; prints the result.
+tx() {
+  fetch "$ARCHIVE" -H 'Content-Type: application/json' \
+    -d "{\"jsonrpc\":\"2.0\",\"id\":\"check\",\"method\":\"tx\",\"params\":{\"tx_hash\":\"$1\",\"sender_account_id\":\"$RUN_ACCOUNT\",\"wait_until\":\"FINAL\"}}" | jq -c '.result'
 }
 # jq with `near`: a yoctoNEAR string as NEAR, exact, at most 6 decimals.
 NEAR='def near: tostring | ("0" * ([25 - length, 0] | max)) + . | .[:-24] + "." + .[-24:-18] | sub("0+$"; "") | sub("\\.$"; "");'
@@ -119,6 +137,51 @@ books=$(view get_accounting '{}' 2>/dev/null)
 if jq -e '.solvent == true' <<<"$books" >/dev/null 2>&1; then
   ok "get_accounting: solvent" "$(jqn '"owes \(.owed_total | near) NEAR and holds \(.account_balance | near), of which \(.storage_reserved | near) pays for storage"' <<<"$books")"
 else fail "get_accounting: solvent" "${books:-no answer}"
+fi
+
+# One finished run, read back. The agent's key is on the owner's account as a
+# function-call key for two methods of the contract.
+run_keys=$(rpc "{\"request_type\":\"view_access_key_list\",\"finality\":\"final\",\"account_id\":\"$RUN_ACCOUNT\"}" 2>/dev/null)
+limited=$(jq -c '[.keys[] | select(.access_key.permission | type == "object")]' <<<"$run_keys" 2>/dev/null)
+agent_key=$(jq -r '.[0].public_key // empty' <<<"$limited" 2>/dev/null)
+if jq -e --arg c "$CONTRACT" 'length == 1 and (.[0].access_key.permission.FunctionCall | .receiver_id == $c and .method_names == ["enter_season", "pay_agent"])' <<<"$limited" >/dev/null 2>&1; then
+  ok "$RUN_ACCOUNT holds one limited key: enter_season and pay_agent on $CONTRACT, nothing else" "$agent_key"
+else fail "$RUN_ACCOUNT holds one limited key: enter_season and pay_agent on $CONTRACT" "${limited:-no answer}"
+fi
+
+# The pass names that key as its agent's.
+run_pass=$(view get_pass "{\"pass_id\":\"$RUN_PASS\"}" 2>/dev/null)
+if [ -n "$agent_key" ] && jq -e --arg a "$RUN_ACCOUNT" --arg k "$agent_key" '.owner_id == $a and .agent.public_key == $k' <<<"$run_pass" >/dev/null 2>&1; then
+  ok "pass #$RUN_PASS belongs to that account and names that key as its agent's" "$(jqn '"agent \(.agent.name) (\(.agent.kind)), balance \(.balance | near) NEAR"' <<<"$run_pass")"
+else fail "pass #$RUN_PASS belongs to that account and names that key as its agent's" "${run_pass:-no answer}"
+fi
+
+# That key signed the season entry, with nothing attached.
+entry=$(tx "$RUN_ENTRY_TX" 2>/dev/null)
+if [ -n "$agent_key" ] && jq -e --arg k "$agent_key" '.transaction.public_key == $k and (.transaction.actions[0].FunctionCall | .method_name == "enter_season" and .deposit == "0") and (.status | has("SuccessValue"))' <<<"$entry" >/dev/null 2>&1; then
+  ok "the agent's key, not the owner's, signed the season entry" "transaction $RUN_ENTRY_TX"
+else fail "the agent's key signed the season entry" "transaction $RUN_ENTRY_TX: $(jq -c '{key: .transaction.public_key, status}' <<<"$entry" 2>/dev/null || echo 'no answer')"
+fi
+
+# The contract refused that key's spend over the per-call cap.
+refused=$(tx "$RUN_REFUSED_TX" 2>/dev/null)
+if [ -n "$agent_key" ] && jq -e --arg k "$agent_key" '.transaction.public_key == $k and .transaction.actions[0].FunctionCall.method_name == "pay_agent" and (.status | tostring | contains("POLICY: over per-call cap"))' <<<"$refused" >/dev/null 2>&1; then
+  ok "the contract refused that key's spend over the cap" "\"POLICY: over per-call cap\", transaction $RUN_REFUSED_TX"
+else fail "the contract refused that key's spend over the cap" "transaction $RUN_REFUSED_TX: $(jq -c '.status' <<<"$refused" 2>/dev/null || echo 'no answer')"
+fi
+
+# The market paid the run's bets.
+payout=$(tx "$RUN_PAYOUT_TX" 2>/dev/null)
+paid=$(jq -r '.status.SuccessValue // empty | @base64d | fromjson' <<<"$payout" 2>/dev/null)
+if [ -n "$paid" ] && jq -e '.transaction.actions[0].FunctionCall.method_name == "claim_winnings"' <<<"$payout" >/dev/null 2>&1; then
+  ok "the market paid the run's bets" "$(jqn 'near' <<<"\"$paid\"") NEAR, transaction $RUN_PAYOUT_TX"
+else fail "the market paid the run's bets" "transaction $RUN_PAYOUT_TX: $(jq -c '.status' <<<"$payout" 2>/dev/null || echo 'no answer')"
+fi
+
+# The pass reached the claim level in its first season and its card is claimed.
+if jq -e --argjson need "$(jq '.claim_level // 5' <<<"$config" 2>/dev/null || echo 5)" '.seasons == 1 and .level >= $need and ((.claim_ticket // "") | startswith("QF-TCG-"))' <<<"$run_pass" >/dev/null 2>&1; then
+  ok "pass #$RUN_PASS reached level $(jq .level <<<"$run_pass") in its first season and its card is claimed" "ticket $(jq -r .claim_ticket <<<"$run_pass")"
+else fail "pass #$RUN_PASS reached the claim level in its first season and its card is claimed" "$(jq -c '{level, seasons, claim_ticket}' <<<"$run_pass" 2>/dev/null || echo 'no answer')"
 fi
 
 # The contract account keeps a full-access key, so fixes can be deployed.
