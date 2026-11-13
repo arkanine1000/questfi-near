@@ -38,16 +38,26 @@ const shortSeason = (id) => {
  * The visitor's NEAR test account, when the market runs on chain: its id
  * and spendable balance, or the offer to make one. Absent without a contract.
  * What happened last (the account made, or an error) hangs under the bar's
- * right end as a toast.
+ * right end as a toast. The news of a new account clears itself after a
+ * while, since it hangs over the market dock's head; an error stays until
+ * dismissed.
  */
+const MADE_TOAST_MS = 10000;
+
 function AccountControl({ compact }) {
   const near = useNear();
   const [seenTx, setSeenTx] = useState(null);
-  if (!near.enabled) return null;
   const {
     status, accountId, balance, error, createdTx, createTestAccount, dismissError,
   } = near;
-  const made = createdTx && status === 'ready' && seenTx !== createdTx.txHash ? createdTx : null;
+  const made = near.enabled && createdTx && status === 'ready' && seenTx !== createdTx.txHash ? createdTx : null;
+  const madeHash = made?.txHash ?? null;
+  useEffect(() => {
+    if (!madeHash) return undefined;
+    const t = setTimeout(() => setSeenTx(madeHash), MADE_TOAST_MS);
+    return () => clearTimeout(t);
+  }, [madeHash]);
+  if (!near.enabled) return null;
 
   return (
     <>
