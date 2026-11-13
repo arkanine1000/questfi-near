@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { getActiveMap } from '../../data/maps';
 import { axialToWorld, HEX_WORLD_RADIUS, COLORS } from './worldUtils';
+import { look } from './look';
 
 // Clicks that follow an orbit drag larger than this (px) are ignored
 const DRAG_CLICK_PX = 5;
@@ -18,9 +19,12 @@ const EXTRUDE = {
   selected: 0.16,
 };
 
-// Fills use additive blending, so color brightness doubles as opacity
-const FILL = { empty: 0.04, hover: 0.15, selected: 0.25 };
-const RING = { empty: 0.12, hover: 0.6, selected: 1.0 };
+// Fills use additive blending, so color brightness doubles as opacity.
+// At rest a cell is a dim outline only (look.hexOutline), so the grid sits
+// behind the terrain contours; hover and selection light the outline and
+// add a low fill.
+const FILL = { empty: 0, hover: 0.15, selected: 0.25 };
+const RING = { hover: 0.6, selected: 1.0 };
 
 const _color = new THREE.Color();
 const _base = new THREE.Color();
@@ -78,8 +82,9 @@ export default function HexGrid3D({
     g.translate(0, 0.5, 0);
     return g;
   }, []);
+  // thin outline, about 2px at the home framing
   const ringGeo = useMemo(
-    () => makeHexRingGeometry(HEX_WORLD_RADIUS * 0.98, HEX_WORLD_RADIUS * 0.88),
+    () => makeHexRingGeometry(HEX_WORLD_RADIUS * 0.97, HEX_WORLD_RADIUS * 0.925),
     [],
   );
 
@@ -100,7 +105,7 @@ export default function HexGrid3D({
       _dummy.scale.setScalar(1);
       _dummy.updateMatrix();
       rings.setMatrixAt(i, _dummy.matrix);
-      rings.setColorAt(i, _color.copy(GREEN).multiplyScalar(RING.empty));
+      rings.setColorAt(i, _color.copy(GREEN).multiplyScalar(look.hexOutline));
     }
     fills.instanceMatrix.needsUpdate = true;
     rings.instanceMatrix.needsUpdate = true;
@@ -149,7 +154,7 @@ export default function HexGrid3D({
       } else {
         targetExtr = EXTRUDE.empty;
         fillLevel = FILL.empty;
-        ringLevel = RING.empty;
+        ringLevel = look.hexOutline;
       }
 
       if (isWarBorder && !reducedMotion) {
