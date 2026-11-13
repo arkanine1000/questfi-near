@@ -79,23 +79,12 @@
   color: var(--qf-dim);
 }
 
-/* AGENT EARTH's title from Agent World, letter for letter */
+/* AGENT EARTH's title from Agent World: the shared .qf-title at its size */
 .qf-land-title__name {
   margin-top: 6px;
-  margin-right: -0.14em;
-  font-family: var(--qf-font-num);
   font-size: clamp(56px, 8vw, 104px);
-  font-weight: 400;
-  line-height: 0.9;
-  letter-spacing: 0.14em;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #c8ffd9;
-  text-shadow:
-    0 0 6px rgba(53, 255, 125, 0.9),
-    0 0 22px rgba(53, 255, 125, 0.55),
-    0 0 60px rgba(53, 255, 125, 0.3);
-  animation: qf-land-flicker 6s infinite steps(1);
 }
 
 .qf-land-title__tag {
@@ -114,13 +103,6 @@
 }
 .qf-land-onair .qf-dot { color: var(--qf-red); width: 7px; height: 7px; }
 
-@keyframes qf-land-flicker {
-  0%, 100% { opacity: 1; }
-  41% { opacity: 0.82; }
-  42% { opacity: 1; }
-  77% { opacity: 0.9; }
-  78% { opacity: 1; }
-}
 
 /* ---------- the board ---------- */
 .qf-land-board {
@@ -280,15 +262,6 @@
 .qf-land-notice__x:hover { color: var(--qf-ink); border-color: var(--qf-line-soft); }
 .qf-land-notice__x:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
 
-/* table headings for screen readers only: the columns explain themselves */
-.qf-land-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 
 /* ---------- the operator's way in ---------- */
 .qf-land-foot {
@@ -420,9 +393,6 @@
 .qf-land-hint { margin-top: 14px; }
 .qf-land-hint code { font-family: var(--qf-font-num); font-size: 17px; color: var(--qf-ink); }
 
-/* the delete dialog: a refusal-red edge on an irreversible act */
-.qf-modal__box.qf-land-danger { border-color: var(--qf-red-line); box-shadow: 0 0 50px rgba(var(--qf-red-rgb), 0.18); }
-.qf-land-danger .qf-modal__head { color: var(--qf-red); text-shadow: 0 0 8px rgba(var(--qf-red-rgb), 0.5); }
 
 /* ---------- small windows: the title beside the board ---------- */
 .qf-shell[data-compact] .qf-land-frame {
@@ -473,5 +443,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qf-land-veil, .qf-land-title, .qf-land-board, .qf-land-foot, .qf-land-title__name { animation: none; }
+  .qf-land-veil, .qf-land-title, .qf-land-board, .qf-land-foot { animation: none; }
 }

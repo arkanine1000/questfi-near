@@ -94,7 +94,7 @@ export default function AgentOnboarding({ worldId, invitePath }) {
           Paste it into Claude Code, Codex, Cursor — any coding agent.
         </p>
         {/* a polite status, so a screen reader hears the copy land */}
-        <span className="qf-onb__sr" role="status">{copied ? 'Invite copied to the clipboard' : ''}</span>
+        <span className="qf-sr" role="status">{copied ? 'Invite copied to the clipboard' : ''}</span>
 
         <h3 className="qf-label qf-onb__other">Other ways to connect</h3>
         <CopyLine label="Invite URL" text={inviteUrl} />

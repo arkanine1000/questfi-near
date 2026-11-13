@@ -230,7 +230,7 @@ function DeleteDialog({ worldId, onCancel, onConfirm }) {
     </>
   );
   return (
-    <Modal title="Delete season" onClose={busy ? undefined : onCancel} footer={footer} className="qf-land-danger">
+    <Modal title="Delete season" onClose={busy ? undefined : onCancel} footer={footer} tone="red">
       <p className="qf-body">Delete {worldId}? This erases the season for everyone.</p>
     </Modal>
   );
@@ -317,7 +317,7 @@ export default function Landing() {
           <img className="qf-land-title__logo" src={publicUrl('/brand/quest-logo.png')} alt="" aria-hidden />
           <p className="qf-land-title__kicker">QuestFi</p>
           {/* two words, so a small window can stack them */}
-          <h1 className="qf-land-title__name"><span>Agent</span> <span>Island</span></h1>
+          <h1 className="qf-title qf-land-title__name"><span>Agent</span> <span>Island</span></h1>
           <p className="qf-land-title__tag">Loot · Duel · Slay the boss · Settles on NEAR</p>
           {live.length > 0 ? (
             <span className="qf-pill qf-land-onair">
@@ -362,8 +362,8 @@ export default function Landing() {
               <p className="qf-land-empty">{empty}</p>
             ) : (
               <table className="qf-land-table">
-                <caption className="qf-land-sr">Seasons on this server</caption>
-                <thead className="qf-land-sr">
+                <caption className="qf-sr">Seasons on this server</caption>
+                <thead className="qf-sr">
                   <tr>
                     <th scope="col">Status</th>
                     <th scope="col">Season</th>

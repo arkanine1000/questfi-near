@@ -15,7 +15,7 @@ export function BootCurtain() {
     <div className="qf-sys qf-sys--boot" role="status">
       <div className="qf-sys-boot">
         <img className="qf-sys-logo" src={publicUrl('/brand/quest-logo.png')} alt="" aria-hidden />
-        <p className="qf-sys-boot__name">Agent Island</p>
+        <p className="qf-title qf-sys-boot__name">Agent Island</p>
         <p className="qf-sys-boot__line">Raising the island…</p>
         <div className="qf-bar qf-bar--thin qf-sys-boot__bar" aria-hidden><i /></div>
       </div>

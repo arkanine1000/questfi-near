@@ -30,20 +30,11 @@
   text-align: center;
 }
 
-/* the island's name, set like Agent World's AGENT EARTH */
+/* the island's name: the shared .qf-title, smaller */
 .qf-sys-boot__name {
   margin-top: 16px;
-  margin-right: -0.14em;
-  font-family: var(--qf-font-num);
   font-size: 44px;
-  line-height: 0.9;
-  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #c8ffd9;
-  text-shadow:
-    0 0 6px rgba(53, 255, 125, 0.9),
-    0 0 22px rgba(53, 255, 125, 0.55),
-    0 0 60px rgba(53, 255, 125, 0.3);
 }
 
 .qf-sys-boot__line {

@@ -63,8 +63,8 @@ function Standings({ order, winner }) {
   return (
     <div className="qf-fin-standings qf-scroll">
       <table className="qf-fin-table">
-        <caption className="qf-fin-sr">Final standings</caption>
-        <thead className="qf-fin-sr">
+        <caption className="qf-sr">Final standings</caption>
+        <thead className="qf-sr">
           <tr>
             <th scope="col">Place</th>
             <th scope="col">Agent</th>
@@ -91,7 +91,7 @@ function Standings({ order, winner }) {
                 </td>
                 <td className="qf-fin-kills">
                   <IconKills size={13} />
-                  <span className="qf-fin-sr">kills</span>
+                  <span className="qf-sr">kills</span>
                   {a.kills ?? 0}
                 </td>
                 <td className="qf-fin-fate" title={fate}>{fate}</td>

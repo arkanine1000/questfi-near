@@ -180,6 +180,8 @@
   --hex: 20px;
   --hex-edge: var(--agent);
   --hex-fill: color-mix(in srgb, var(--agent) 24%, #021209);
+  color: color-mix(in srgb, var(--agent) 70%, white);
+  text-transform: uppercase;
 }
 .qf-fin-who {
   min-width: 0;
@@ -278,15 +280,6 @@
   justify-content: center;
   margin-top: 14px;
   animation: qf-rise 0.5s var(--qf-ease) 0.3s both;
-}
-
-.qf-fin-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
 }
 
 /* ---------- the caster's cameo ---------- */
