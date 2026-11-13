@@ -140,7 +140,11 @@ export function WinnerTrophy() {
 const placeholderLine = (name) => `Winner winner!! All hail ${name}-sama — the island `
   + 'remembers its champion! ☆*:.｡.o(≧▽≦)o.｡.:*☆';
 
-/** The caster on camera in the stage's bottom band, cheering the crown.
+/** The caster cheering the crown, in the stage's bottom band, in the same
+ * two forms the live caster takes: standing at the stage's bottom-left with
+ * her caption as a desk in front of her when the stage is wide, or a
+ * bracketed camera square with the caption beside it, centred under the
+ * results card, when it is not (finale.css picks the form).
  * Once her real generated sign-off lands (commentary stamped with the
  * world's final tick), it replaces the placeholder cheer, so she is never
  * just a hardcoded line. */
@@ -154,8 +158,8 @@ export function WinnerChan({ name }) {
   }, [text]);
 
   return (
-    <div className="qf-fin-chan" aria-live="polite">
-      <div className="qf-frame qf-fin-chan__cam">
+    <div className="qf-fin-chan">
+      <div className="qf-frame qf-fin-chan__cam" aria-hidden>
         <img
           className="qf-fin-chan__sprite"
           src={publicUrl('/prompt-chan/happy-3.webp')}
@@ -163,8 +167,11 @@ export function WinnerChan({ name }) {
           draggable="false"
         />
       </div>
-      <div className="qf-panel qf-panel--dense qf-fin-chan__caption">
-        <span className="qf-fin-chan__name">Prompt-chan</span>
+      <div className="qf-panel qf-panel--dense qf-fin-chan__desk" aria-live="polite">
+        <p className="qf-fin-chan__who">
+          <span className="qf-fin-chan__name">Prompt-chan</span>
+          <span className="qf-fin-chan__role">Caster</span>
+        </p>
         <p className="qf-fin-chan__text">{text}</p>
       </div>
     </div>
