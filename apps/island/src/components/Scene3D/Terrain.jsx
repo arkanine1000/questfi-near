@@ -1,10 +1,11 @@
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame, useLoader } from '@react-three/fiber';
 import { getActiveMap } from '../../data/maps';
 import {
   WORLD_WIDTH, WORLD_DEPTH, TERRAIN_HEIGHT_SCALE, COLORS,
 } from './worldUtils';
+import { look } from './look';
 
 // 256x170 segments keeps total vertices under ~44k (budget: 50k)
 const SEG_X = 256;
@@ -17,9 +18,6 @@ const WIRE_SEG_Y = 64;
 
 // Topo contour lines: one band every CONTOUR_STEP world units of elevation
 const CONTOUR_STEP = TERRAIN_HEIGHT_SCALE / 9;
-
-const SCAN_PERIOD = 6; // seconds per ocean scan ring sweep
-const SCAN_MAX_RADIUS = 9;
 
 /** Bilinear sample of grayscale image data, u/v in 0..1. */
 function sampleHeight(data, w, h, u, v) {
@@ -42,36 +40,64 @@ function sampleHeight(data, w, h, u, v) {
 const SEA_LEVEL_CLIP = 0.02;
 
 /**
- * Inject the sea-level clip + emissive topo contour bands into the standard
- * material — the detail that makes the terrain read as a tactical hologram
- * rather than a wireframe demo. Bands are horizontal slices of elevation.
+ * The land as a dark shape described by its lines: an unlit, near-black fill
+ * that lifts very slightly with height, topographic contour bands in the
+ * house green, and the sea-level contour drawn as the island's glowing
+ * outline. Everything is clipped at sea level.
+ *
+ * The fill ignores the scene lights on purpose: lit flat-shaded faces read
+ * as a green mass, so the relief comes from the contours and the ramp.
  */
-function injectContours(material) {
+function injectTerrainShading(material, uniforms) {
   material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying float vElev;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvElev = position.y;');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vElev;')
       .replace(
-        '#include <dithering_fragment>',
-        `#include <dithering_fragment>
-        {
+        '#include <common>',
+        `#include <common>
+        varying float vElev;
+        uniform vec3 uTerrainLow;
+        uniform vec3 uTerrainHigh;
+        uniform float uFillGain;
+        uniform vec3 uContourColor;
+        uniform float uContourGain;
+        uniform vec3 uShoreColor;
+        uniform float uShoreGain;`,
+      )
+      .replace(
+        '#include <opaque_fragment>',
+        `{
           if (vElev < ${SEA_LEVEL_CLIP.toFixed(4)}) discard;
+          float heightNorm = clamp(vElev / ${TERRAIN_HEIGHT_SCALE.toFixed(4)}, 0.0, 1.0);
+          outgoingLight = mix(uTerrainLow, uTerrainHigh, heightNorm) * uFillGain;
+        }
+        #include <opaque_fragment>`,
+      )
+      .replace(
+        '#include <colorspace_fragment>',
+        `{
           float band = vElev / ${CONTOUR_STEP.toFixed(5)};
           float distToLine = min(fract(band), 1.0 - fract(band));
           // fwidth keeps the lines ~1.5px wide in screen space regardless
-          // of slope — fraction-based widths smear out on shallow terrain
+          // of slope; fraction-based widths smear out on shallow terrain
           float w = max(fwidth(band), 1e-4);
           float contour = 1.0 - smoothstep(0.75 * w, 2.0 * w, distToLine);
-          // fade contours out at sea level so the coast stays clean
+          // the band at sea level is the shoreline below, not a contour
           contour *= smoothstep(0.015, 0.06, vElev);
-          gl_FragColor.rgb += vec3(0.0, 1.0, 0.255) * contour * 0.25;
-        }`,
+          // shoreline: the strip just above the clip line, a little wider
+          // than a contour line and brighter
+          float sw = max(fwidth(vElev), 1e-5);
+          float shore = 1.0 - smoothstep(2.5 * sw, 4.5 * sw, vElev - ${SEA_LEVEL_CLIP.toFixed(4)});
+          gl_FragColor.rgb += uContourColor * contour * uContourGain + uShoreColor * shore * uShoreGain;
+        }
+        #include <colorspace_fragment>`,
       );
   };
   // onBeforeCompile changes require a distinct program cache entry
-  material.customProgramCacheKey = () => 'holo-contours';
+  material.customProgramCacheKey = () => 'holo-terrain-lines';
 }
 
 /** Same sea-level clip for the wireframe pass. */
@@ -91,9 +117,8 @@ function injectSeaLevelClip(material) {
   material.customProgramCacheKey = () => 'holo-wire-clip';
 }
 
-export default function Terrain({ reducedMotion, wireframe = true }) {
+export default function Terrain({ wireframe = true }) {
   const heightImg = useLoader(THREE.ImageLoader, getActiveMap().heightmapUrl);
-  const scanRef = useRef();
 
   // Displace the planes on the CPU once — keeps materials simple and keeps
   // prisms flush via the same heightmap data the elevations were sampled from.
@@ -124,18 +149,23 @@ export default function Terrain({ reducedMotion, wireframe = true }) {
     };
   }, [heightImg]);
 
+  // Shared with the shader through onBeforeCompile; the gains follow the
+  // look store every frame
+  const uniforms = useMemo(() => ({
+    uTerrainLow: { value: new THREE.Color(COLORS.terrain) },
+    uTerrainHigh: { value: new THREE.Color(COLORS.terrainHigh) },
+    uFillGain: { value: look.terrainFill },
+    uContourColor: { value: new THREE.Color(COLORS.green) },
+    uContourGain: { value: look.contours },
+    uShoreColor: { value: new THREE.Color(COLORS.bright) },
+    uShoreGain: { value: look.shoreline },
+  }), []);
+
   const solidMaterial = useMemo(() => {
-    const mat = new THREE.MeshStandardMaterial({
-      color: COLORS.terrain,
-      flatShading: true,
-      emissive: COLORS.green,
-      emissiveIntensity: 0.05,
-      roughness: 1,
-      metalness: 0,
-    });
-    injectContours(mat);
+    const mat = new THREE.MeshBasicMaterial({ color: COLORS.terrain, toneMapped: false });
+    injectTerrainShading(mat, uniforms);
     return mat;
-  }, []);
+  }, [uniforms]);
 
   const wireMaterial = useMemo(() => {
     const mat = new THREE.MeshBasicMaterial({
@@ -153,46 +183,20 @@ export default function Terrain({ reducedMotion, wireframe = true }) {
     return mat;
   }, []);
 
-  // Animated concentric scan ring expanding from the island center
-  useFrame(({ clock }) => {
-    const ring = scanRef.current;
-    if (!ring) return;
-    const t = (clock.elapsedTime % SCAN_PERIOD) / SCAN_PERIOD;
-    const radius = 0.5 + t * SCAN_MAX_RADIUS;
-    ring.scale.setScalar(radius);
-    ring.material.opacity = 0.1 * (1 - t);
+  useFrame(() => {
+    uniforms.uFillGain.value = look.terrainFill;
+    uniforms.uContourGain.value = look.contours;
+    uniforms.uShoreGain.value = look.shoreline;
   });
 
+  // The sea, its lattice and the sonar pulses live in TableStage
   return (
     <group>
-      {/* Solid pass — near-black green with faint emissive + contour bands */}
+      {/* Solid pass — near-black fill, contour bands and the shoreline */}
       <mesh geometry={geometry} material={solidMaterial} />
 
       {/* Wireframe pass — the "projected mesh" hologram look, island only */}
       {wireframe && <mesh geometry={wireGeometry} material={wireMaterial} />}
-
-      {/* Ocean void — oversized well past the point the exp2 fog has fully
-          saturated (background now matches the fog color too), so its
-          literal edge never reads as a visible seam */}
-      <mesh rotation-x={-Math.PI / 2} position-y={-0.03}>
-        <planeGeometry args={[240, 240]} />
-        <meshBasicMaterial color={COLORS.ocean} toneMapped={false} />
-      </mesh>
-
-      {/* Expanding ocean scan ring (skipped for reduced motion) */}
-      {!reducedMotion && (
-        <mesh ref={scanRef} rotation-x={-Math.PI / 2} position-y={0.01}>
-          <ringGeometry args={[0.985, 1, 96]} />
-          <meshBasicMaterial
-            color={COLORS.green}
-            transparent
-            opacity={0.1}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            toneMapped={false}
-          />
-        </mesh>
-      )}
     </group>
   );
 }
