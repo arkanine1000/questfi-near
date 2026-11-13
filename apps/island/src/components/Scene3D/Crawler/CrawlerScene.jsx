@@ -1,10 +1,10 @@
 import {
-  Component, Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore,
+  Component, Suspense, useEffect, useMemo, useRef, useState,
 } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { canUseBloom, COLORS } from '../worldUtils';
 import HouseFx, { houseFxAllowedByUrl } from '../HouseFx';
-import { look, subscribeLook, lookVersion } from '../look';
+import { look } from '../look';
 import CrawlerRig from './CrawlerRig';
 import CrawlerMaze from './CrawlerMaze';
 import CrawlerEnemy from './CrawlerEnemy';
@@ -92,11 +92,9 @@ class PostFxBoundary extends Component {
 /**
  * The house lens at point-of-view values: the island's bloom and CRT pass
  * with the stronger green grade and aberration Agent World switches to when
- * it looks through an agent's eyes. Values come from the look store's
- * `dungeon*` keys, so `?look=1` tunes them live.
+ * it looks through an agent's eyes. Values are the look's `dungeon*` keys.
  */
 function DungeonFx({ reducedMotion }) {
-  useSyncExternalStore(subscribeLook, lookVersion);
   return (
     <HouseFx
       bloomIntensity={look.dungeonBloomIntensity}

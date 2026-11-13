@@ -14,8 +14,7 @@ import {
  *
  * The CRT shader is a port of the one in apps/start/src/post.js. Every
  * strength is a uniform written each frame from props, so one compiled
- * shader serves the island and the dungeon with different values, and the
- * values can be tuned live without a recompile.
+ * shader serves the island and the dungeon with different values.
  *
  * `?fx=0` in the URL turns the whole pass off (see houseFxAllowedByUrl), so
  * a broken shader can be ruled out quickly.

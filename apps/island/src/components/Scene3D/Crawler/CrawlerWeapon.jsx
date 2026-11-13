@@ -116,7 +116,7 @@ function dressWeapon(root, holo) {
   }
 }
 
-/** Follow the look store's weapon values; called every frame. */
+/** Follow the look's weapon values; called every frame. */
 function syncWeaponHolo(holo) {
   holo.fill.emissiveIntensity = look.dungeonWeaponFill;
   holo.wire.opacity = look.dungeonWeaponWire;

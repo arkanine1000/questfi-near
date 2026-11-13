@@ -66,7 +66,7 @@ const TINT_STRENGTH = {
 
 // Black first, lit by torches: the stone barely glows on its own, so away
 // from a light it falls to near black and near one it shows its relief.
-// Base tints are the house bright green scaled down; the look store scales
+// Base tints are the house bright green scaled down; the look values scales
 // them again live (`dungeonWallTint`, `dungeonWallEmissive`).
 const WALL_BASE = new THREE.Color(COLORS.bright).multiplyScalar(0.45);
 const CEIL_BASE = new THREE.Color(COLORS.bright).multiplyScalar(0.18);
@@ -279,7 +279,7 @@ export default function CrawlerMaze({ model, reducedMotion }) {
   }, [model]);
 
   // Faint life in the fog-seal/tint planes — the only animated materials —
-  // and the surface brightness from the look store
+  // and the surface brightness from the look values
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     fogMat.opacity = reducedMotion ? 0.3 : 0.24 + 0.1 * Math.sin(t * 2.1);

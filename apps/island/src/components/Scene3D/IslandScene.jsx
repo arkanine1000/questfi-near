@@ -1,7 +1,6 @@
 import {
-  Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore,
+  Suspense, useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import Terrain from './Terrain';
 import TerrainProps from './TerrainProps';
@@ -15,20 +14,14 @@ import MissileArc from './MissileArc';
 import {
   prefersReducedMotion, canUseBloom, isTouchDevice, COLORS,
 } from './worldUtils';
-import { look, LOOK_DEFAULTS, subscribeLook, lookVersion } from './look';
+import { look } from './look';
 import { IS_TV } from '../../services/cast';
 import '../../styles/Scene3D.css';
-
-// Development-only tuning panel (?look=1). Lazy and DEV-gated so it never
-// reaches a production bundle; production renders the look defaults.
-const LookPanel = import.meta.env.DEV ? lazy(() => import('./LookPanel')) : null;
-const SHOW_LOOK_PANEL = import.meta.env.DEV && typeof window !== 'undefined'
-  && new URLSearchParams(window.location.search).get('look') === '1';
 
 // Clicks that follow an orbit drag larger than this (px) don't deselect
 const DRAG_CLICK_PX = 5;
 
-/** Keeps the fog density on the look store's value. */
+/** Keeps the fog density on the look value. */
 function LookFog() {
   useFrame(({ scene }) => {
     if (scene.fog) scene.fog.density = look.fogDensity;
@@ -36,9 +29,8 @@ function LookFog() {
   return null;
 }
 
-/** The house post pass with the island's values from the look store. */
+/** The house post pass with the island's look values. */
 function IslandFx({ reducedMotion }) {
-  useSyncExternalStore(subscribeLook, lookVersion);
   return (
     <HouseFx
       bloomIntensity={look.bloomIntensity}
@@ -138,7 +130,7 @@ export default function IslandScene({
         {/* The table is a hologram over a dark room: near-black background,
             a slightly greener fog that the far side of the island fades to */}
         <color attach="background" args={[COLORS.bg]} />
-        <fogExp2 attach="fog" args={[COLORS.fog, LOOK_DEFAULTS.fogDensity]} />
+        <fogExp2 attach="fog" args={[COLORS.fog, look.fogDensity]} />
         <LookFog />
 
         {/* The land is unlit; the lights only shape the hologram fills of
@@ -179,10 +171,6 @@ export default function IslandScene({
 
         {fxEnabled && <IslandFx reducedMotion={reducedMotion} />}
       </Canvas>
-      {SHOW_LOOK_PANEL && LookPanel && createPortal(
-        <Suspense fallback={null}><LookPanel postActive={fxEnabled} /></Suspense>,
-        document.body,
-      )}
     </div>
   );
 }

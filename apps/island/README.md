@@ -58,7 +58,6 @@ To serve the app under a sub-path, build with Vite's `--base`, as the hosted sit
 | `?pass=<pass id>` | The viewer's own agent pass, as the start app hands it on through Agent World. The agent carrying it is tagged **YOURS**, and it is followed as soon as it is on the roster, once per season (in the lobby that points the bet slip at it). |
 | `?capture=1` | Keep the dungeon canvas's drawing buffer, so headless tests can read real scene pixels |
 | `?fx=0` | Turn off the bloom and CRT pass in both scenes |
-| `?look=1` | Development server only: the look tuning panel ([Styling](#styling)) |
 | `?bench=weapon` | Development server only: a one-room dungeon with a fight in it, for looking at the first-person weapon models (`Scene3D/Crawler/WeaponBench.jsx`) |
 | `?preview=<scenario>` | Development server only: [preview mode](#preview-mode) |
 
@@ -217,7 +216,7 @@ apps/island/
     │   │   ├── Terrain.jsx       # The land and its contour lines
     │   │   ├── HouseFx.jsx       # Bloom and CRT pass, shared by both scenes
     │   │   ├── holo.js           # Hologram materials
-    │   │   ├── look.js           # Look values; LookPanel.jsx tunes them (dev only, ?look=1)
+    │   │   ├── look.js           # The look of both 3D scenes, in numbers
     │   │   ├── dungeonAdapter.js # Site map to dungeon scene model
     │   │   └── Crawler/          # The dungeon: CrawlerScene, Rig, Maze, Enemy, Props, Ambience,
     │   │                         #   LightPool, Weapon; CrawlerHud and CrawlerMinimap (the overlay);
@@ -419,7 +418,7 @@ The stylesheets are in `src/styles/`, one per area:
 
 `main.jsx` loads `index.css` (tokens and frame) first; each component imports its own sheet, which comes later in the cascade. The frame's state is a set of data attributes on the `.qf-shell` element (`data-field`, `data-dock`, `data-compact`, `data-embedded`, `data-tv`, `data-phase`, `data-follow`, `data-cam`), and the stylesheets key off those. Anything that must stay clear of the columns is placed from the `--stage-*` insets that `shell.css` derives from them. The shared components in `src/components/ui/` (`Tabs`, `Modal`, `FloatingWindow`, and the line icons in `icons.jsx`) have no stylesheets of their own: their `qf-` classes are in `tokens.css`.
 
-The 3D scenes use the same palette. `Scene3D/holo.js` holds the hologram materials, and `Scene3D/HouseFx.jsx` the one post pass both scenes share: a modest bloom, then a CRT pass (chromatic aberration, a rolling band, a green grade, faint scanlines, a vignette, a little noise). The pass is skipped under reduced motion or on fewer than four CPU cores, and `?fx=0` turns it off in any build. The tunable strengths of the island, the dungeon and the pass live in the look store, `Scene3D/look.js`, which the scenes read every frame. On the development server `?look=1` opens `LookPanel.jsx`, sliders over the store whose values can be copied back into `LOOK_DEFAULTS`; a production build renders the defaults.
+The 3D scenes use the same palette. `Scene3D/holo.js` holds the hologram materials, and `Scene3D/HouseFx.jsx` the one post pass both scenes share: a modest bloom, then a CRT pass (chromatic aberration, a rolling band, a green grade, faint scanlines, a vignette, a little noise). The pass is skipped under reduced motion or on fewer than four CPU cores, and `?fx=0` turns it off in any build. The strengths of the island, the dungeon and the pass are numbers in `Scene3D/look.js`, which the scenes read every frame.
 
 ---
 

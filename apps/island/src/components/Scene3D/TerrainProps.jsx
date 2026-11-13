@@ -410,7 +410,7 @@ function CraterDisc({ crater }) {
  */
 export default function TerrainProps({ reducedMotion, wireframe = true }) {
   // One outline material for every type: instance colours carry the hue,
-  // the material colour is the look store's gain
+  // the material colour is the look's gain
   const edgeMaterial = useMemo(() => new THREE.MeshBasicMaterial({
     side: THREE.BackSide,
     toneMapped: false,

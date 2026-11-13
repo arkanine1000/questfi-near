@@ -1,13 +1,9 @@
 /**
- * Live look values for the 3D views.
+ * The look of the 3D views, in numbers.
  *
- * Covers the island and the dungeon view (keys prefixed `dungeon`).
- *
- * A tiny mutable store: the scene reads `look` every frame, so changing a
- * value needs no React render. Production builds never change it and simply
- * render the defaults; in development the `?look=1` panel (LookPanel.jsx)
- * writes to it so the look can be tuned by eye and the numbers copied back
- * into LOOK_DEFAULTS.
+ * Covers the island and the dungeon view (keys prefixed `dungeon`). The
+ * values were set by eye against the start app and Agent World; the scenes
+ * read `look` every frame, so this file is the one place to change them.
  */
 
 export const LOOK_DEFAULTS = Object.freeze({
@@ -53,34 +49,4 @@ export const LOOK_DEFAULTS = Object.freeze({
   dungeonWeaponWire: 0.2, // the held weapon's wireframe opacity
 });
 
-export const look = { ...LOOK_DEFAULTS };
-
-const listeners = new Set();
-let version = 0;
-
-function notify() {
-  version += 1;
-  for (const fn of listeners) fn();
-}
-
-export function setLook(key, value) {
-  if (!(key in LOOK_DEFAULTS) || !Number.isFinite(value) || look[key] === value) return;
-  look[key] = value;
-  notify();
-}
-
-export function resetLook() {
-  Object.assign(look, LOOK_DEFAULTS);
-  notify();
-}
-
-/** Calls `fn` after every change; returns the unsubscribe function. */
-export function subscribeLook(fn) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
-}
-
-/** Increments on every change (a snapshot for useSyncExternalStore). */
-export function lookVersion() {
-  return version;
-}
+export const look = LOOK_DEFAULTS;

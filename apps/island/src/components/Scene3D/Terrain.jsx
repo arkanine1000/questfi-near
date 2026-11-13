@@ -150,7 +150,7 @@ export default function Terrain({ wireframe = true }) {
   }, [heightImg]);
 
   // Shared with the shader through onBeforeCompile; the gains follow the
-  // look store every frame
+  // look values every frame
   const uniforms = useMemo(() => ({
     uTerrainLow: { value: new THREE.Color(COLORS.terrain) },
     uTerrainHigh: { value: new THREE.Color(COLORS.terrainHigh) },
