@@ -116,11 +116,11 @@ try {
   for (const { scenario, w, h } of jobs) {
     const label = `${scenario.name}@${w}x${h}`;
     const t1 = Date.now();
-    await page.goto('about:blank');
-    problems = [];
-    await page.setViewportSize({ width: w, height: h });
     const url = new URL(`?${scenario.query}`, base).href;
     try {
+      await page.goto('about:blank');
+      problems = [];
+      await page.setViewportSize({ width: w, height: h });
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForFunction(
         () => document.documentElement.dataset.previewReady,
@@ -140,6 +140,11 @@ try {
       await page.screenshot({ path: join(outDir, `${label}.png`) });
     } catch (err) {
       problems.push(err.message.split('\n')[0]);
+    }
+    if (!browser.isConnected()) {
+      failures.push({ label, problems: ['the browser went away'] });
+      console.error(`✗ ${label}: the browser went away; rerun with --resume to finish`);
+      break;
     }
     const took = ((Date.now() - t1) / 1000).toFixed(1);
     if (problems.length) {
