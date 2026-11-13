@@ -84,7 +84,13 @@ export function installNetwork(spec, tracker) {
           try { controller.close(); } catch { /* already closed */ }
         };
         signal?.addEventListener('abort', close, { once: true });
-        for (const f of world.frames ?? []) if (f.tick >= sinceTick) send('frame', f);
+        // In development React mounts the provider twice, so the app attaches
+        // twice and drops the first stream at once. Holding the backfill a
+        // moment means only the stream that stays ever delivers it, as on a
+        // real server where the first connection would not have answered yet.
+        const backfill = () => {
+          for (const f of world.frames ?? []) if (f.tick >= sinceTick) send('frame', f);
+        };
         // The live part plays once the page has read what it waits on (the
         // market, so the chart gets a sample per live tick), then paced.
         const playLive = () => {
@@ -101,13 +107,21 @@ export function installNetwork(spec, tracker) {
           }, at));
         };
         const waitFor = spec.liveAfter ?? [];
-        const t0 = performance.now();
+        let t0;
         const poll = () => {
           if (closed) return;
-          if (waitFor.every((k) => tracker.has(k)) || performance.now() - t0 > 8000) playLive();
+          // answered, and nothing still in flight: React's strict mode reads
+          // everything twice, and the second read is the one that counts
+          const settled = waitFor.every((k) => tracker.has(k)) && (!waitFor.length || tracker.quietFor > 250);
+          if (settled || performance.now() - t0 > 8000) playLive();
           else timers.push(setTimeout(poll, 50));
         };
-        poll();
+        timers.push(setTimeout(() => {
+          if (closed) return;
+          backfill();
+          t0 = performance.now();
+          poll();
+        }, 40));
       },
     });
     return new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } });

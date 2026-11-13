@@ -398,7 +398,6 @@ export const STEPS = {
   fold: [{ click: /^Tuck the market away$/ }],
   settings: [{ click: /^Settings$/ }],
   'create-account': [{ click: /^Play with a test account/ }],
-  'combat-log': [{ click: /^COMBAT LOG/ }],
   'chan-blip': [{ click: /Prompt-chan's (new|last) message$/ }],
   claim: [{ click: /^Claim$/ }],
 };
@@ -713,7 +712,8 @@ export function buildScenario(params) {
     if (spec.url?.world && spec.game.worlds[spec.url.world]) {
       spec.ready.push('state', 'map', 'stream-done');
     }
-    if (spec.contractId && spec.url?.world && spec.chain?.seasons?.[spec.url.world] && !spec.rpcDown) {
+    const onChain = spec.game.worlds[spec.url?.world]?.state?.near?.enabled !== false;
+    if (spec.contractId && onChain && spec.url?.world && spec.chain?.seasons?.[spec.url.world] && !spec.rpcDown) {
       spec.ready.push('rpc:get_config', 'rpc:get_market');
       spec.liveAfter = ['rpc:get_config', 'rpc:get_market'];
       if (spec.guest && !spec.guestGone) spec.ready.push('rpc:view_account');

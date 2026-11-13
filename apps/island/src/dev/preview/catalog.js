@@ -106,7 +106,6 @@ export const SCENARIOS = [
   { name: 'follow-overworld', core: true, query: 'preview=follow-overworld' },
   { name: 'hex-picker', core: true, query: 'preview=hex-picker' },
   { name: 'follow-dungeon', core: true, query: 'preview=follow-dungeon' },
-  { name: 'follow-dungeon-log', query: 'preview=follow-dungeon&step=combat-log' },
   { name: 'follow-dungeon-chan', query: 'preview=follow-dungeon&step=chan-blip' },
   { name: 'follow-dungeon-pvp', core: true, query: 'preview=follow-dungeon-pvp' },
   { name: 'follow-dungeon-descent', query: 'preview=follow-dungeon&net=hold' },
