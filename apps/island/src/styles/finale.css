@@ -50,6 +50,10 @@
   container: qf-fin-area / size;
 }
 
+/* While an agent is followed, the frame's follow controls hold the top of
+   the stage: the card's area starts below them (the pill already does). */
+.qf-shell[data-follow] .qf-fin-area { top: 56px; }
+
 /* When nobody survived there is no cameo: the live caster delivers the
    sign-off (styles/stage.css), and on a stage of 721px or more she stands
    at full height at its bottom-left. Until the stage is wide enough for a
@@ -444,9 +448,11 @@
 /* The full form, when the stage is wide enough that a centred card stays
    clear of her: the whole figure standing at the stage's bottom-left,
    mirrored, with her caption as a desk in front of her. A 560px card is
-   centred at least 230px in from the left edge from about 1020px of stage. */
+   centred at least 230px in from the left edge from about 1020px of stage.
+   Not over the dungeon feed (data-cam): its vitals plate holds that corner,
+   and the live caster takes her camera form there too. */
 @container qf-fin (min-width: 1020px) {
-  .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan {
+  .qf-shell:not([data-compact]):not([data-tv]):not([data-cam]) .qf-fin-chan {
     right: auto;
     bottom: 0;
     width: auto;
@@ -454,21 +460,21 @@
     margin: 0;
     align-items: flex-end;
   }
-  .qf-shell:not([data-compact]):not([data-tv]) .qf-frame.qf-fin-chan__cam {
+  .qf-shell:not([data-compact]):not([data-tv]):not([data-cam]) .qf-frame.qf-fin-chan__cam {
     width: 214px;
     height: auto;
     margin-left: 6px;
     overflow: visible;
     background: none;
   }
-  .qf-shell:not([data-compact]):not([data-tv]) .qf-frame.qf-fin-chan__cam::before { display: none; }
-  .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan__sprite {
+  .qf-shell:not([data-compact]):not([data-tv]):not([data-cam]) .qf-frame.qf-fin-chan__cam::before { display: none; }
+  .qf-shell:not([data-compact]):not([data-tv]):not([data-cam]) .qf-fin-chan__sprite {
     position: static;
     display: block;
     width: 100%;
     filter: drop-shadow(0 0 6px rgba(53, 255, 125, 0.45));
   }
-  .qf-shell:not([data-compact]):not([data-tv]) .qf-panel.qf-fin-chan__desk {
+  .qf-shell:not([data-compact]):not([data-tv]):not([data-cam]) .qf-panel.qf-fin-chan__desk {
     flex: 0 1 600px;
     max-width: 600px;
     min-height: 104px;
@@ -479,7 +485,7 @@
 
 /* the TV's card is 15% larger, so it needs that much more stage */
 @container qf-fin (min-width: 1110px) {
-  .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan {
+  .qf-shell[data-tv]:not([data-compact]):not([data-cam]) .qf-fin-chan {
     right: auto;
     bottom: 0;
     width: auto;
@@ -487,21 +493,21 @@
     margin: 0;
     align-items: flex-end;
   }
-  .qf-shell[data-tv]:not([data-compact]) .qf-frame.qf-fin-chan__cam {
+  .qf-shell[data-tv]:not([data-compact]):not([data-cam]) .qf-frame.qf-fin-chan__cam {
     width: 214px;
     height: auto;
     margin-left: 6px;
     overflow: visible;
     background: none;
   }
-  .qf-shell[data-tv]:not([data-compact]) .qf-frame.qf-fin-chan__cam::before { display: none; }
-  .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan__sprite {
+  .qf-shell[data-tv]:not([data-compact]):not([data-cam]) .qf-frame.qf-fin-chan__cam::before { display: none; }
+  .qf-shell[data-tv]:not([data-compact]):not([data-cam]) .qf-fin-chan__sprite {
     position: static;
     display: block;
     width: 100%;
     filter: drop-shadow(0 0 6px rgba(53, 255, 125, 0.45));
   }
-  .qf-shell[data-tv]:not([data-compact]) .qf-panel.qf-fin-chan__desk {
+  .qf-shell[data-tv]:not([data-compact]):not([data-cam]) .qf-panel.qf-fin-chan__desk {
     flex: 0 1 600px;
     max-width: 600px;
     min-height: 104px;

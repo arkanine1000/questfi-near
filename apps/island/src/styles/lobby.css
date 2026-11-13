@@ -207,8 +207,13 @@
 }
 .qf-lobby-card__foot .qf-btn { display: inline-flex; align-items: center; gap: 8px; }
 
+/* While an agent is followed, the frame's follow controls hold the top of
+   the stage: the card is placed in what is left below them. */
+.qf-shell[data-follow] .qf-lobby { padding-top: 56px; }
+
 /* ---------- small windows: fits in 390px of height ---------- */
 .qf-shell[data-compact] .qf-lobby { padding: 8px 0; }
+.qf-shell[data-compact][data-follow] .qf-lobby { padding-top: 56px; }
 .qf-shell[data-compact] .qf-panel.qf-lobby-card { padding: 9px 16px 10px; }
 .qf-shell[data-compact] .qf-lobby-card__headline { margin-top: 6px; }
 .qf-shell[data-compact] .qf-lobby-count { font-size: 56px; margin-top: 2px; }
