@@ -77,32 +77,41 @@ function HpBar({ hp, maxHp, className }) {
   );
 }
 
+function HuntedPill({ where }) {
+  return (
+    <span className={`qf-cam-pill qf-cam-pill--red qf-cam-hunted-pill is-${where}`}>
+      <IconDanger size={11} />
+      Hunted
+    </span>
+  );
+}
+
+// Two rows: who (REC, HUNTED, the name), then where (the site, the room).
+// On a narrow stage HUNTED moves down beside the room, so the first row is
+// just REC and the name; it is rendered in both rows and cam.css shows one.
 function FeedLine({ agentName, siteName, roomType, tick, hunted }) {
   const room = ROOM_KINDS[roomType];
   return (
     <div className="qf-cam-feed">
       <div className="qf-cam-feed__main">
-        <span className="qf-cam-rec">
-          <i className="qf-dot qf-dot--live" />
-          REC
-        </span>
-        {hunted && (
-          <span className="qf-cam-pill qf-cam-pill--red qf-cam-hunted-pill">
-            <IconDanger size={11} />
-            Hunted
+        <div className="qf-cam-feed__row">
+          <span className="qf-cam-rec">
+            <i className="qf-dot qf-dot--live" />
+            REC
           </span>
-        )}
-        <span className="qf-cam-feed__name">{agentName}</span>
-        {siteName && (
-          <span className="qf-cam-feed__where">
-            <i className="qf-cam-feed__sep" />
-            <span className="qf-cam-feed__site">{siteName}</span>
-          </span>
-        )}
-        {room && (
-          <span className={`qf-cam-pill${room.tone ? ` qf-cam-pill--${room.tone}` : ''}`}>
-            {room.label}
-          </span>
+          {hunted && <HuntedPill where="who" />}
+          <span className="qf-cam-feed__name">{agentName}</span>
+        </div>
+        {(siteName || room || hunted) && (
+          <div className="qf-cam-feed__row qf-cam-feed__row--where">
+            {hunted && <HuntedPill where="where" />}
+            {siteName && <span className="qf-cam-feed__site">{siteName}</span>}
+            {room && (
+              <span className={`qf-cam-pill${room.tone ? ` qf-cam-pill--${room.tone}` : ''}`}>
+                {room.label}
+              </span>
+            )}
+          </div>
         )}
       </div>
       {tick != null && (
