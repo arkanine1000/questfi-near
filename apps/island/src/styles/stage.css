@@ -138,10 +138,13 @@
    ====================================================================== */
 .qf-stage > .qf-hexpick {
   position: absolute;
-  left: 50%;
-  translate: -50% 0;
+  /* centred by auto margins, not left: 50%, so it may use the stage's
+     whole width before it wraps */
+  left: 8px;
+  right: 8px;
+  width: fit-content;
+  margin-inline: auto;
   bottom: calc(var(--lower-h) + 8px);
-  max-width: calc(100% - 16px);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -426,9 +429,8 @@
   }
   .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage:has(> .qf-caster) > .qf-hexpick {
     left: 214px;
-    translate: none;
+    margin-left: 0;
     bottom: 136px;
-    max-width: calc(100% - 222px);
   }
 }
 
