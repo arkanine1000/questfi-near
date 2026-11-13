@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { CELL, EYE, cellCenter, idToGrid } from './CrawlerMaze';
 import { COLORS } from '../worldUtils';
+import { look } from '../look';
 
 // The single queue consumer: calls queue.update(delta) every frame (frame
 // clock, no timers) and drives the first-person camera from the beats.
@@ -10,6 +11,11 @@ import { COLORS } from '../worldUtils';
 // already-advanced queue state in the same frame.
 
 const COMBAT_BACKOFF = 1.25; // stand back from the cell center when foes wait there
+// The light the followed agent carries, at look gain 1. A step up from
+// before: the stone has almost no glow of its own now, so this light is
+// what shows its relief.
+const AGENT_LIGHT = 26;
+const AGENT_LIGHT_FLICKER = 8;
 const _from = new THREE.Vector3();
 
 function smoothstep(t) {
@@ -216,7 +222,7 @@ export default function CrawlerRig({ model, queue, reducedMotion }) {
       const flicker = reducedMotion
         ? 0
         : Math.sin(t * 11) * 0.18 + Math.sin(t * 23 + 1.7) * 0.12;
-      light.intensity = 22 + flicker * 7;
+      light.intensity = (AGENT_LIGHT + flicker * AGENT_LIGHT_FLICKER) * look.dungeonAgentLight;
     }
   });
 
@@ -224,7 +230,7 @@ export default function CrawlerRig({ model, queue, reducedMotion }) {
     <pointLight
       ref={lightRef}
       color={COLORS.wire}
-      intensity={22}
+      intensity={AGENT_LIGHT}
       distance={CELL * 4.5}
       decay={1.6}
     />

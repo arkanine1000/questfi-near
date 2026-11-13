@@ -13,6 +13,7 @@ import {
 } from './crawlerAssets';
 import { useRoomLight, LIGHT_PRIORITY } from './CrawlerLightPool';
 import { COLORS } from '../worldUtils';
+import { look } from '../look';
 
 // Cosmetic set dressing: wall torches with an animated billboarded flame,
 // and cobwebs in wall corners. Nothing here reads or affects game state —
@@ -20,6 +21,9 @@ import { COLORS } from '../worldUtils';
 // identical every time it's rendered.
 
 const FLAME_FPS = 10;
+// Pooled torch light at look gain 1; brighter than before because the stone
+// no longer glows on its own, so the torches are what reveal it
+const TORCH_LIGHT = 9;
 const FLAME_SIZE = 0.62;
 const TORCH_HEIGHT = 1.05; // bracket only, world units — reads at 4m room scale
 // Mount point. The head lands at 2.40 — above EYE (1.7) so the flame reads
@@ -171,6 +175,8 @@ function Torch({ placement, template, reducedMotion }) {
   const frameRef = useRef(-1);
 
   useFrame(({ clock }) => {
+    // the pool reads the live spec every frame
+    torchLight.intensity = TORCH_LIGHT * look.dungeonTorch;
     const frame = reducedMotion
       ? 1 // hold the mid frame — a lit torch, just not a moving one
       : pingPongFrame(clock.elapsedTime + phase, FLAME_SHEET.columns, FLAME_FPS);
@@ -197,12 +203,12 @@ function Torch({ placement, template, reducedMotion }) {
     return [x + ax * c + az * s, TORCH_Y + ay, z - ax * s + az * c];
   }, [template, rotY, x, z]);
 
-  useRoomLight({
+  const torchLight = useRoomLight({
     x: flameWorld[0],
     y: flameWorld[1] + FLAME_SIZE * 0.4, // sit the light in the flame itself
     z: flameWorld[2],
-    color: COLORS.wire,
-    intensity: 7,
+    color: COLORS.bright,
+    intensity: TORCH_LIGHT,
     distance: CELL * 2.4,
     decay: 2,
     priority: LIGHT_PRIORITY.ambience,

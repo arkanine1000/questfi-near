@@ -14,8 +14,8 @@ import { publicUrl } from '../../../services/publicUrl';
 export function makeGridTexture({
   size = 256,
   lineColor = 'rgba(53,255,125,1)',
-  glowColor = 'rgba(30,180,90,0.55)',
-  bg = '#020a05',
+  glowColor = 'rgba(31,212,101,0.55)',
+  bg = '#010603',
   lineWidth = 2,
   glowWidth = 7,
   brightness = 1,
@@ -29,7 +29,7 @@ export function makeGridTexture({
   ctx.fillRect(0, 0, size, size);
 
   // faint inner noise/texture so tiles don't look flat black
-  ctx.fillStyle = 'rgba(40,120,70,0.05)';
+  ctx.fillStyle = 'rgba(53,255,125,0.04)';
   for (let i = 0; i < 60; i++) {
     ctx.fillRect(Math.random() * size, Math.random() * size, 1.5, 1.5);
   }
@@ -56,25 +56,27 @@ export function makeGridTexture({
 
 // Surface variants: floor reads brightest (it carries the player light),
 // walls a step dimmer, ceiling barely-there so the space feels tall & dark.
+// Lines in the house green and its fill tint, tiles near black (the house
+// background), so the grid is light on black.
 const VARIANTS = {
   floor: {
     lineColor: 'rgba(53,255,125,0.9)',
-    glowColor: 'rgba(30,180,90,0.5)',
-    bg: '#021008',
+    glowColor: 'rgba(31,212,101,0.4)',
+    bg: '#010603',
     brightness: 1,
     repeat: [2, 2],
   },
   wall: {
     lineColor: 'rgba(53,255,125,0.55)',
-    glowColor: 'rgba(30,180,90,0.3)',
-    bg: '#020c06',
+    glowColor: 'rgba(31,212,101,0.3)',
+    bg: '#010603',
     brightness: 0.8,
     repeat: [2, 1.5],
   },
   ceiling: {
     lineColor: 'rgba(53,255,125,0.28)',
-    glowColor: 'rgba(30,180,90,0.16)',
-    bg: '#010805',
+    glowColor: 'rgba(31,212,101,0.16)',
+    bg: '#010603',
     brightness: 0.55,
     repeat: [2, 2],
   },
