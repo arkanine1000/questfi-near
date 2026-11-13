@@ -80,7 +80,7 @@
   --cam-tick: block;
   --cam-wlabel: block;
   --cam-log: flex;
-  --cam-log-more: -webkit-box;
+  --cam-log-rows: 2;        /* each log line wraps to at most this many rows */
   --cam-thought-old: block;
 }
 
@@ -98,7 +98,7 @@
     --cam-thought-lines: 3;
     --cam-site: none;
     --cam-wlabel: none;
-    --cam-log-more: none;
+    --cam-tick: none;
   }
 }
 :where(.qf-shell[data-compact]) .qf-cam .qf-cam-layer {
@@ -110,7 +110,8 @@
   --cam-thought-lines: 3;
   --cam-site: none;
   --cam-wlabel: none;
-  --cam-log-more: none;
+  --cam-log-rows: 1;
+  --cam-tick: none;
 }
 
 /* The lean-back cut: everything 15% larger. Each plate scales from its own
@@ -425,32 +426,49 @@
 }
 
 /* ---------- bottom left: combat log over vitals ---------- */
+/* The column runs from the middle of the stage down to the bottom inset:
+   the vitals sit at its foot and the log has whatever height is left, so
+   the log can never climb past the middle. */
 .qf-cam .qf-cam-left {
   position: absolute;
+  top: 50%;
   left: var(--cam-in);
   bottom: var(--cam-in);
   width: var(--cam-col);
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  justify-content: flex-end;
   gap: 8px;
   transform: scale(var(--cam-k));
   transform-origin: bottom left;
 }
 
-/* the last four beats, newest at the bottom, older ones fading out */
+/* The last three beats, newest at the bottom, older ones fading out. Lines
+   stack upward (newest is first in the DOM) and wrap into a second flex
+   column when the height runs out; every line is as wide as the log, so
+   that second column starts past the log's right edge and is clipped. A
+   line that does not fit is hidden whole, never cut in half. */
 .qf-cam .qf-cam-log {
+  flex: 1 1 0;
+  min-height: 0;
   display: var(--cam-log);
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  max-width: 100%;
+  flex-direction: column-reverse;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 2px 8px;
+  overflow: hidden;
 }
 .qf-cam .qf-cam-log__line {
+  flex: none;
+  display: flex;
+  width: 100%;
+  animation: qf-cam-line-in 0.25s ease-out;
+}
+.qf-cam .qf-cam-log__line > span {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: var(--cam-log-rows);
+  line-clamp: var(--cam-log-rows);
   overflow: hidden;
   max-width: 100%;
   padding: 3px 9px;
@@ -460,15 +478,12 @@
   color: var(--qf-ink);
   background: rgba(2, 22, 10, 0.6);
   text-shadow: 0 0 6px rgba(var(--qf-green-rgb), 0.3);
-  animation: qf-cam-line-in 0.25s ease-out;
 }
-.qf-cam .qf-cam-log__line:nth-last-child(2) { opacity: 0.7; }
-.qf-cam .qf-cam-log__line:nth-last-child(3) { opacity: 0.45; }
-.qf-cam .qf-cam-log__line:nth-last-child(4) { opacity: 0.25; }
-.qf-cam .qf-cam-log__line:nth-last-child(n + 3) { display: var(--cam-log-more); }
+.qf-cam .qf-cam-log__line:nth-child(2) { opacity: 0.7; }
+.qf-cam .qf-cam-log__line:nth-child(3) { opacity: 0.4; }
 /* the agent hurt, a trap sprung: red; something picked up: amber */
-.qf-cam .qf-cam-log__line.is-red { color: color-mix(in srgb, var(--qf-red) 75%, var(--qf-ink)); }
-.qf-cam .qf-cam-log__line.is-amber { color: var(--qf-amber); }
+.qf-cam .qf-cam-log__line.is-red > span { color: color-mix(in srgb, var(--qf-red) 75%, var(--qf-ink)); }
+.qf-cam .qf-cam-log__line.is-amber > span { color: var(--qf-amber); }
 
 .qf-cam .qf-cam-vitals {
   --hp: var(--agent);

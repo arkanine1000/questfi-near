@@ -18,7 +18,9 @@ import { IconDanger, IconFlag, IconThought } from '../../ui/icons';
 // The element is a size container named `cam`; styles/cam.css adapts the
 // plates to the width of the stage rather than of the window.
 
-const LOG_LINES = 4;
+// The combat log keeps the last three beats. It never climbs past the middle
+// of the stage: lines that do not fit are hidden whole (see cam.css).
+const LOG_LINES = 3;
 
 // The followed agent's room, as the pill in the feed line names it, and the
 // colour its meaning gets (red for danger, amber for treasure).
@@ -266,15 +268,14 @@ export default function CrawlerHud({
         {target && <TargetPlate target={target} />}
 
         <div className="qf-cam-left">
-          {log.length > 0 && (
-            <div className="qf-cam-log">
-              {log.map((line) => (
-                <div key={line.id} className={`qf-cam-log__line${line.tone ? ` is-${line.tone}` : ''}`}>
-                  {line.label}
-                </div>
-              ))}
-            </div>
-          )}
+          {/* newest first in the DOM: the log stacks upward from the vitals */}
+          <div className="qf-cam-log">
+            {[...log].reverse().map((line) => (
+              <div key={line.id} className={`qf-cam-log__line${line.tone ? ` is-${line.tone}` : ''}`}>
+                <span>{line.label}</span>
+              </div>
+            ))}
+          </div>
           {hp != null && (
             <Vitals agentName={agentName} hp={hp} maxHp={maxHp} reducedMotion={reducedMotion} />
           )}
