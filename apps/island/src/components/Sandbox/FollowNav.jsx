@@ -1,110 +1,105 @@
 /**
- * Follow mode's controls: the way back to the island view with the previous
- * and next living agent either side of it, and the picker for a hex that
- * holds more than one agent.
+ * Follow mode's controls, at the top centre of the stage: the agent being
+ * followed on a small plate (its name opens its dossier), the way back to
+ * the island view (Esc, or the close button), and the previous and next
+ * living agent either side.
+ *
+ * Also the picker for a hex that holds more than one agent.
  */
 
-import { ISLAND_MASK, axialToPixel, getHexPoints } from '../HexGrid/hexUtils';
+import {
+  IconClose, IconFollow, IconLeft, IconRight,
+} from '../ui/icons';
+import { AgentHex } from './Field';
 
-
-// The exit control wears the island itself — the real hex mask shrunk to
-// a glyph, so "back to the island" is a picture, not a caption.
-const MINI_HEX = 3.2;
-const MINI_ISLAND = (() => {
-  const hexPts = getHexPoints(MINI_HEX * 0.88);
-  let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity;
-  const cells = [...ISLAND_MASK].map((key) => {
-    const [q, r] = key.split(',').map(Number);
-    const { x, y } = axialToPixel(q, r, MINI_HEX);
-    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-    return { key, x, y };
-  });
-  const pad = MINI_HEX * 1.5;
-  return {
-    cells,
-    hexPts,
-    viewBox: `${minX - pad} ${minY - pad} ${maxX - minX + pad * 2} ${maxY - minY + pad * 2}`,
-  };
-})();
-
-function MiniIsland() {
-  return (
-    <svg viewBox={MINI_ISLAND.viewBox} className="sbx-exit-pill__island" aria-hidden>
-      {MINI_ISLAND.cells.map(({ key, x, y }) => (
-        <polygon key={key} points={MINI_ISLAND.hexPts} transform={`translate(${x} ${y})`} />
-      ))}
-    </svg>
-  );
-}
-
-/** A crowded hex: choose who to ride. */
+/** A crowded hex: choose who to ride. Sits just above the caster's band. */
 export function HexPicker({ agents, onFollow, onClose }) {
   return (
-    <div className="sbx-hexpicker" role="menu">
-      <span className="sbx-hexpicker__label">Follow</span>
+    <div className="qf-panel qf-hexpick" role="group" aria-label="Agents on this hex">
+      <span className="qf-hexpick-label">On this hex</span>
       {agents.map((a) => (
         <button
           key={a.agent_id}
           type="button"
-          style={{ '--chip-color': a.color }}
+          className="qf-hexpick-agent"
+          style={{ '--agent': a.color }}
           onClick={() => onFollow(a)}
+          title={`Follow ${a.name}`}
         >
-          <i aria-hidden />{a.name}
+          <AgentHex agent={a} size={20} />
+          <span>{a.name}</span>
         </button>
       ))}
-      <button
-        type="button"
-        className="sbx-hexpicker__close"
-        onClick={onClose}
-        aria-label="Close"
-      >
-        ✕
+      <button type="button" className="qf-x" onClick={onClose} aria-label="Close the picker">
+        <IconClose size={14} />
       </button>
     </div>
   );
 }
 
-/** The way home, flanked by the previous and next living agent when there
- *  is another one to jump to. */
-export default function FollowNav({ prevAgent, nextAgent, onFollow, onExit }) {
+/** The previous or next agent: a small quiet button in its colour. */
+function Step({ agent, dir, onFollow }) {
+  if (!agent) return <span className={`qf-follow-slot qf-follow-slot--${dir}`} />;
   return (
-    <div className="sbx-agent-nav">
-      {prevAgent && (
-        <button
-          type="button"
-          className="sbx-agent-nav__btn sbx-agent-nav__btn--prev"
-          style={{ '--chip-color': prevAgent.color }}
-          onClick={() => onFollow(prevAgent)}
-          title={`Follow ${prevAgent.name}`}
-        >
-          <span className="sbx-agent-nav__arrow" aria-hidden>←</span>
-          <span className="sbx-agent-nav__name">{prevAgent.name}</span>
-        </button>
-      )}
+    <span className={`qf-follow-slot qf-follow-slot--${dir}`}>
       <button
         type="button"
-        className="sbx-exit-pill"
-        onClick={onExit}
-        title="Back to island view"
-        aria-label="Back to island view (Esc)"
+        className="qf-btn qf-btn--small qf-btn--quiet qf-follow-step"
+        style={{ '--agent': agent.color }}
+        onClick={() => onFollow(agent)}
+        aria-label={`Follow the ${dir === 'prev' ? 'previous' : 'next'} agent, ${agent.name}`}
+        title={`Follow ${agent.name}`}
       >
-        <span className="sbx-exit-pill__back" aria-hidden>⬑</span>
-        <MiniIsland />
-        <span className="sbx-exit-pill__key">esc</span>
+        {dir === 'prev' && <IconLeft size={14} />}
+        <span className="qf-follow-step-name">{agent.name}</span>
+        {dir === 'next' && <IconRight size={14} />}
       </button>
-      {nextAgent && (
+    </span>
+  );
+}
+
+export default function FollowNav({
+  agent, prevAgent, nextAgent, onCam = false, onFollow, onExit, onInfo,
+}) {
+  if (!agent) return null;
+  return (
+    <nav className="qf-follow" aria-label="Follow mode">
+      <Step agent={prevAgent} dir="prev" onFollow={onFollow} />
+      <div className="qf-panel qf-follow-plate" style={{ '--agent': agent.color }}>
+        {onCam ? (
+          <span className="qf-follow-mode is-cam">
+            <i className="qf-dot qf-dot--live" aria-hidden />
+            On cam
+          </span>
+        ) : (
+          <span className="qf-follow-mode">
+            <IconFollow size={14} />
+            Following
+          </span>
+        )}
         <button
           type="button"
-          className="sbx-agent-nav__btn sbx-agent-nav__btn--next"
-          style={{ '--chip-color': nextAgent.color }}
-          onClick={() => onFollow(nextAgent)}
-          title={`Follow ${nextAgent.name}`}
+          className="qf-follow-agent"
+          onClick={() => onInfo?.(agent)}
+          title={`Open the dossier on ${agent.name}`}
         >
-          <span className="sbx-agent-nav__name">{nextAgent.name}</span>
-          <span className="sbx-agent-nav__arrow" aria-hidden>→</span>
+          <AgentHex agent={agent} size={20} />
+          <span className="qf-follow-name">{agent.name}</span>
         </button>
-      )}
-    </div>
+        <button
+          type="button"
+          className="qf-key qf-follow-esc"
+          onClick={onExit}
+          aria-label="Stop following (Escape)"
+          title="Back to the island view"
+        >
+          Esc
+        </button>
+        <button type="button" className="qf-x qf-follow-close" onClick={onExit} aria-label="Stop following">
+          <IconClose size={14} />
+        </button>
+      </div>
+      <Step agent={nextAgent} dir="next" onFollow={onFollow} />
+    </nav>
   );
 }

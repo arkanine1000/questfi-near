@@ -149,6 +149,8 @@ export function createChain({ contractId, rpcUrl = 'https://test.rpc.fastnear.co
     getSeason: (seasonId) => view('get_season', { season_id: seasonId }),
     getMarket: (seasonId) => view('get_market', { season_id: seasonId }),
     getBets: (seasonId, accountId) => view('get_bets', { season_id: seasonId, account_id: accountId }),
+    // An agent pass's record (level, seasons, wins, kills, balance), or null.
+    getPass: (passId) => view('get_pass', { pass_id: String(passId) }),
     async accountExists(accountId) {
       try {
         await provider.viewAccount({ accountId });

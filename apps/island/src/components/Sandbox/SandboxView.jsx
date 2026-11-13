@@ -1,10 +1,12 @@
 /**
- * The sandbox spectator — full-bleed island under a thin overlay HUD.
+ * The island spectator: the full-bleed 3D island under the frame described
+ * in styles/shell.css (top bar, the field on the left, the market dock on
+ * the right, the stage between them).
  *
- * God view stays clean: colored beacons, dungeon-mouth rings, one crown tag,
- * a quiet ticker. Clicking a beacon or a roster chip enters FOLLOW mode:
- * the camera flies to the agent; if they're underground the first-person
- * crawler takes over (M6). Escape always returns to the god view.
+ * God view stays clean: coloured beacons, dungeon-mouth rings, one crown
+ * tag. Clicking a beacon or a row in the field enters FOLLOW mode: the
+ * camera flies to the agent, and if it is underground the first-person
+ * dungeon feed takes the stage. Escape always returns to the god view.
  */
 
 import {
@@ -17,6 +19,8 @@ import { IS_TV, onTvCommand, sendToTv } from '../../services/cast';
 import useTvDirector from '../../hooks/useTvDirector';
 import { axialToWorld, prefersReducedMotion } from '../Scene3D/worldUtils';
 import TopBar from './TopBar';
+import Field from './Field';
+import Dossier from './Dossier';
 import MarketPanel from './MarketPanel';
 import SandboxAgentMarkers from './SandboxAgentMarkers';
 import SandboxSiteMarkers from './SandboxSiteMarkers';
@@ -31,6 +35,13 @@ import FollowNav, { HexPicker } from './FollowNav';
 import { BootCurtain, OfflineOverlay, RotateGate } from './SystemScreens';
 import { BetsProvider } from './BettingContext';
 import '../../styles/Sandbox.css';
+// after the old sheet, so the restyled 3D name tags win over its rules
+import '../../styles/stage.css';
+
+/** Dossier windows open at once; opening one more closes the oldest. */
+const MAX_DOSSIERS = 3;
+/** Each further dossier opens this far down and right of the last. */
+const DOSSIER_CASCADE = 28;
 
 /** The HUD must outlive the hologram: if WebGL dies (headless CI, exotic
  * GPUs, context loss), the island degrades to a quiet backdrop and the
@@ -50,7 +61,7 @@ class SceneBoundary extends Component {
   }
 
   render() {
-    if (this.state.dead) return <div className="sbx-fallback" aria-hidden />;
+    if (this.state.dead) return <div className="qf-stage-fallback" aria-hidden />;
     return this.props.children;
   }
 }
@@ -60,7 +71,7 @@ export default function SandboxView() {
     status, world, islandMap, roster, followedAgentId, followedAgent, setFollowedAgentId,
     eventLog,
   } = useSandbox();
-  const { shellProps } = useLayout();
+  const { shellProps, fieldOpen, setFieldOpen } = useLayout();
   const [focusRequest, setFocusRequest] = useState(null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
   // Clicking a crowded hex offers its occupants: { key, agents: [...] }
@@ -193,6 +204,24 @@ export default function SandboxView() {
       && followedAgent.position.site_id,
   );
 
+  // The dungeon feed wants the width: fold the field while it has the stage
+  // and reopen it on the way out if it was open before. The viewer can still
+  // open it by hand meanwhile. A TV has no pointer to bring it back, so there
+  // the field stays where it is.
+  const fieldOpenRef = useRef(fieldOpen);
+  fieldOpenRef.current = fieldOpen;
+  const fieldBeforeCam = useRef(null);
+  useEffect(() => {
+    if (IS_TV) return;
+    if (crawlerActive) {
+      if (fieldBeforeCam.current == null) fieldBeforeCam.current = fieldOpenRef.current;
+      setFieldOpen(false);
+    } else if (fieldBeforeCam.current != null) {
+      if (fieldBeforeCam.current) setFieldOpen(true);
+      fieldBeforeCam.current = null;
+    }
+  }, [crawlerActive, setFieldOpen]);
+
   const handleDeselect = useCallback(() => {
     setHexPicker(null);
     setFollowedAgentId(null);
@@ -271,9 +300,14 @@ export default function SandboxView() {
 
   // Clicking a hex resolves to the agents standing on it (or descended
   // through its mouth): one occupant follows immediately, a crowd offers
-  // a picker.
-  const handleSelectHex = useCallback((hex) => {
-    const key = `${hex.q},${hex.r}`;
+  // a picker. A single click arrives as (q, r) and a double click as the
+  // hex object, so both forms are read.
+  const handleSelectHex = useCallback((hexOrQ, maybeR) => {
+    const isObj = hexOrQ != null && typeof hexOrQ === 'object';
+    const q = isObj ? hexOrQ.q : hexOrQ;
+    const r = isObj ? hexOrQ.r : maybeR;
+    if (q == null || r == null) return;
+    const key = `${q},${r}`;
     const here = roster.filter((a) => {
       if (!a.alive) return false;
       const pos = a.position || {};
@@ -295,6 +329,35 @@ export default function SandboxView() {
     return () => window.removeEventListener('keydown', onKey);
   }, [userDeselect]);
 
+  // Dossier windows, one per agent, oldest first. Each opens cascading from
+  // the stage's top-left corner; the window remembers where it was dragged.
+  const stageRef = useRef(null);
+  const [dossiers, setDossiers] = useState([]); // [{ id, initial, nonce }]
+  const openDossier = useCallback((agent) => {
+    if (!agent?.agent_id) return;
+    const rect = stageRef.current?.getBoundingClientRect();
+    const origin = { x: (rect?.left ?? 80) + 16, y: (rect?.top ?? 80) + 16 };
+    setDossiers((prev) => {
+      const open = prev.find((d) => d.id === agent.agent_id);
+      // Already open: bring it back to the front of the pile.
+      if (open) {
+        return [...prev.filter((d) => d !== open), { ...open, nonce: open.nonce + 1 }];
+      }
+      const slot = Math.min(prev.length, MAX_DOSSIERS - 1);
+      const entry = {
+        id: agent.agent_id,
+        nonce: 0,
+        initial: { x: origin.x + slot * DOSSIER_CASCADE, y: origin.y + slot * DOSSIER_CASCADE },
+      };
+      return [...prev, entry].slice(-MAX_DOSSIERS);
+    });
+  }, []);
+  const closeDossier = useCallback((id) => {
+    setDossiers((prev) => prev.filter((d) => d.id !== id));
+  }, []);
+  // A new season has new agents.
+  useEffect(() => { setDossiers([]); }, [world?.world_id]);
+
   const agentLayer = useCallback(({ reducedMotion: sceneReducedMotion }) => (
     <>
       <SandboxAgentMarkers
@@ -312,18 +375,17 @@ export default function SandboxView() {
     combatBeacons, handleBeaconDone,
   ]);
 
-  const rootCls = [
-    'qf-shell',
-    'sbx-root',
-    IS_TV ? 'sbx-root--tv' : '',
-    crawlerActive ? 'sbx-root--crawler' : '',
-    // the finale card is up: the top bar and the market drawer stay above
-    // its dimming, usable (the drawer is where winnings are claimed)
-    status === 'ready' && world?.phase === 'finished' ? 'sbx-root--finale' : '',
-  ].filter(Boolean).join(' ');
+  const ready = status === 'ready' && Boolean(world);
+  const phase = world?.phase;
 
   return (
-    <div className={rootCls} {...shellProps}>
+    <div
+      className="qf-shell"
+      {...shellProps}
+      data-phase={ready ? phase : undefined}
+      data-follow={ready && followedAgent ? '' : undefined}
+      data-cam={ready && crawlerActive ? '' : undefined}
+    >
       <SceneBoundary>
         <IslandScene
           wireframe={false}
@@ -337,54 +399,78 @@ export default function SandboxView() {
         />
       </SceneBoundary>
 
-      {status === 'ready' && world && (
+      {ready && (
         <BetsProvider>
-          {/* FOLLOW MODE: underground agents take over the screen with the
-              first-person crawler; the roster rail stays on top so the
-              spectator can hop between agents without surfacing. */}
+          {/* FOLLOW MODE: an underground agent hands the stage to the
+              first-person dungeon feed. It places itself; the columns and
+              the stage furniture stay above it, so the viewer can hop
+              between agents without surfacing. */}
           {crawlerActive && (
-            <div className="sbx-crawler-overlay">
-              <SandboxCrawler
-                key={`${followedAgent.agent_id}:${followedAgent.position.site_id}`}
-                agent={followedAgent}
-                worldId={world.world_id}
-                siteId={followedAgent.position.site_id}
-              />
-            </div>
+            <SandboxCrawler
+              key={`${followedAgent.agent_id}:${followedAgent.position.site_id}`}
+              agent={followedAgent}
+              worldId={world.world_id}
+              siteId={followedAgent.position.site_id}
+            />
           )}
 
           <TopBar
             directorOn={directorOn}
             onToggleDirector={() => setDirectorOn((v) => !v)}
           />
-          {/* the drawer decides for itself whether the lobby gets a market */}
+          {/* the left column: who is on the island */}
+          <Field onFollow={userFollow} onInfo={openDossier} />
+          {/* the right-hand dock decides for itself whether the lobby gets a market */}
           <MarketPanel onFollow={userFollow} />
-          {world.phase === 'lobby' && <LobbyOverlay />}
-          {/* the caster works both desks: god view AND over the crawler —
-              and her name-drops are camera cues (click to follow). During
-              a crowned finale the victory cameo takes her chair instead. */}
-          {world.phase !== 'lobby' && !(world.phase === 'finished' && world.winner_name) && (
-            <PromptChan onFollow={userFollow} />
-          )}
+          {phase === 'lobby' && <LobbyOverlay />}
 
-          {/* crowded-hex picker: choose who to ride */}
-          {hexPicker && !followedAgent && (
-            <HexPicker agents={hexPicker.agents} onFollow={userFollow} onClose={() => setHexPicker(null)} />
-          )}
+          <div className="qf-stage" ref={stageRef}>
+            {/* follow mode always shows the way home, flanked by the
+                previous and next living agent: pointless on a TV, where
+                the director cuts */}
+            {followedAgent && !IS_TV && (
+              <FollowNav
+                agent={followedAgent}
+                prevAgent={prevAgent}
+                nextAgent={nextAgent}
+                onCam={crawlerActive}
+                onFollow={userFollow}
+                onExit={userDeselect}
+                onInfo={openDossier}
+              />
+            )}
 
-          {/* follow mode always shows the way home, flanked by prev/next
-              spectator-cycle buttons when there's another living agent
-              to jump to: pointless on a TV, where the director cuts */}
-          {followedAgent && !IS_TV && (
-            <FollowNav prevAgent={prevAgent} nextAgent={nextAgent} onFollow={userFollow} onExit={userDeselect} />
-          )}
-          {/* Above ground the thought stream has no crawler HUD to ride on —
-              same toasts, same bottom-center slot, fed from agentFeeds. */}
-          {followedAgent && !crawlerActive && world.phase !== 'lobby' && (
-            <FollowThoughts agent={followedAgent} reducedMotion={reducedMotion} />
-          )}
+            {/* crowded-hex picker: choose who to ride */}
+            {hexPicker && !followedAgent && (
+              <HexPicker agents={hexPicker.agents} onFollow={userFollow} onClose={() => setHexPicker(null)} />
+            )}
+
+            {/* Above ground the followed agent's thoughts stack over the
+                caster's band; underground the dungeon HUD shows them. */}
+            {followedAgent && !crawlerActive && phase !== 'lobby' && (
+              <FollowThoughts agent={followedAgent} reducedMotion={reducedMotion} />
+            )}
+
+            {/* The caster works both desks, the god view and over the
+                dungeon feed, and her name-drops are camera cues (click to
+                follow). During a crowned finale the victory cameo takes
+                her chair instead. */}
+            {phase !== 'lobby' && !(phase === 'finished' && world.winner_name) && (
+              <PromptChan onFollow={userFollow} />
+            )}
+          </div>
 
           <WinnerBanner />
+
+          {dossiers.map((d) => (
+            <Dossier
+              key={`${d.id}:${d.nonce}`}
+              agentId={d.id}
+              initial={d.initial}
+              onClose={() => closeDossier(d.id)}
+              onFollow={userFollow}
+            />
+          ))}
         </BetsProvider>
       )}
 

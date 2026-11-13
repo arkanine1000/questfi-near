@@ -1,25 +1,23 @@
 import { useMemo } from 'react';
 import { useSandbox } from '../../context/SandboxContext';
+import { IconThought } from '../ui/icons';
 import Typewriter from '../Typewriter';
 
 /**
- * Followed agent's thought stream, on the island map.
- *
- * The crawler HUD has always shown these underground; above ground they
- * went missing when the old right-hand FollowPanel was retired, even
- * though SandboxContext never stopped collecting agent_thought events into
- * agentFeeds. Same bottom-center toasts as the crawler, so following an
- * agent reads the same whichever side of a dungeon mouth they're on.
+ * The followed agent's thoughts, while it is above ground (underground the
+ * dungeon HUD shows them). They sit at the bottom centre of the stage,
+ * directly above the caster's band: the newest typed out on a card edged in
+ * the agent's colour, the one before it a single dim line above.
  */
 
-const MAX_TOASTS = 3;
+const MAX_CARDS = 2;
 
 export default function FollowThoughts({ agent, reducedMotion }) {
   const { agentFeeds } = useSandbox();
   const feed = agentFeeds[agent.agent_id];
 
   // Consecutive repeats (an agent restating the same plan tick after tick)
-  // collapse to one card, matching the crawler's pushThought.
+  // collapse to one card, matching the dungeon HUD.
   const shown = useMemo(() => {
     const out = [];
     for (const t of feed?.thoughts ?? []) {
@@ -27,32 +25,32 @@ export default function FollowThoughts({ agent, reducedMotion }) {
       if (out.length && out[out.length - 1].text === t.text) continue;
       out.push(t);
     }
-    return out.slice(-MAX_TOASTS);
+    return out.slice(-MAX_CARDS);
   }, [feed]);
 
   if (!shown.length) return null;
+  const latest = shown[shown.length - 1];
+  const before = shown.length > 1 ? shown[0] : null;
 
   return (
-    <div className="sbx-thoughts" style={{ '--chip-color': agent.color }}>
-      {shown.map((th, i) => {
-        const isLatest = i === shown.length - 1;
-        return (
-          // Keyed by content, not by window index: the window slides as new
-          // thoughts land, and an index key would remount the newest card
-          // and restart its typewriter mid-reveal.
-          <div
-            key={`${th.tick}:${th.text}`}
-            className={`sbx-thoughts__card${isLatest ? '' : ' sbx-thoughts__card--old'}`}
-          >
-            <span className="sbx-thoughts__label">{'> '}{agent.name} (thinking)</span>
-            <span className="sbx-thoughts__text">
-              {isLatest
-                ? <Typewriter text={th.text} reducedMotion={reducedMotion} />
-                : th.text}
-            </span>
-          </div>
-        );
-      })}
+    <div className="qf-thoughts" style={{ '--agent': agent.color }}>
+      {/* Keyed by content, not position: the window slides as new thoughts
+          land, and a position key would remount the newest card and
+          restart its typing mid-line. */}
+      {before && (
+        <p key={`${before.tick}:${before.text}`} className="qf-thought-old" title={before.text}>
+          {before.text}
+        </p>
+      )}
+      <article key={`${latest.tick}:${latest.text}`} className="qf-panel qf-thought">
+        <header className="qf-thought-head">
+          <IconThought size={12} />
+          <span>{agent.name} · Thinking</span>
+        </header>
+        <p className="qf-thought-text">
+          <Typewriter text={latest.text} reducedMotion={reducedMotion} />
+        </p>
+      </article>
     </div>
   );
 }
