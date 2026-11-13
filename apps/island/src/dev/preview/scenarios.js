@@ -207,7 +207,9 @@ function earlyWorld({ host = false, locked = false } = {}) {
 }
 
 /** The recorded season after its last tick. */
-function finishedWorld({ extinction = false, settled = true, reason = null } = {}) {
+function finishedWorld({
+  extinction = false, settled = true, reason = null, liveEnd = false,
+} = {}) {
   const state = clone(FINAL);
   const frames = [frameAt(37), frameAt(38)];
   if (reason) {
@@ -232,13 +234,27 @@ function finishedWorld({ extinction = false, settled = true, reason = null } = {
     end.data = { winner: null, winner_name: null, win_reason: 'extinction', tick: 38 };
     end.description = 'The season is over — no one survived.';
   }
+  const signOff = { event: 'commentary', data: chan(38, extinction ? LINES.none : LINES.won) };
+  if (liveEnd) {
+    // watched to the end: attach at tick 37, the last tick plays live
+    return {
+      state: {
+        ...state, phase: 'running', tick: 37, roster: frames[0].roster, auto_running: true, winner: null, winner_name: null, win_reason: null,
+      },
+      map: clone(season.map),
+      sites: {},
+      frames: [frames[0]],
+      live: [{ event: 'frame', data: frames[1] }, signOff],
+      closeAfter: true,
+    };
+  }
   return {
     state,
     map: clone(season.map),
     sites: {},
     frames,
     // the server holds a finished stream open for the sign-off, then closes
-    live: [{ event: 'commentary', data: chan(38, extinction ? LINES.none : LINES.won) }],
+    live: [signOff],
     closeAfter: true,
   };
 }
@@ -613,7 +629,10 @@ const BASES = {
     mine: { [PASS('Kell')]: 0.05, [PASS('Dain')]: 0.01 }, reason: p.get('reason'),
   }),
   'finale-sim': (p) => ({
-    ...finale('Finale on practice chips', {}),
+    // watched live to the last tick: practice chips settle only when the
+    // season ends in front of you (opened on a finished season, the stake
+    // has not loaded when settlement runs, and no payout shows)
+    ...finale('Finale on practice chips', { liveEnd: true }),
     contract: false,
     // the simulated market's own storage: a stake on Kell, or on Marra
     storage: {
@@ -632,9 +651,11 @@ const BASES = {
 };
 
 function finale(title, {
-  mine = {}, others = OTHERS, refund = false, settled = true, extinction = false, reason = null,
+  mine = {}, others = OTHERS, refund = false, settled = true, extinction = false, reason = null, liveEnd = false,
 }) {
-  const world = finishedWorld({ extinction, settled, reason });
+  const world = finishedWorld({
+    extinction, settled, reason, liveEnd,
+  });
   const status = settled ? 'Settled' : 'Running';
   return {
     title,
