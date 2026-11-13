@@ -7,7 +7,7 @@
 import { useSandbox } from '../../../context/SandboxContext';
 import { useBets } from '../BettingContext';
 import Modal from '../../ui/Modal';
-import { fmtOdds, moneyOf } from './bits';
+import { fmtOdds, fmtReturn, moneyOf } from './bits';
 
 const pct = (n) => `${Number.isInteger(n) ? n : n.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}%`;
 
@@ -93,7 +93,7 @@ function Example() {
       <p>The pool holds {pool} right now, {fmt(onAgent)} {u} of it on {agent.name}.</p>
       <p>
         {q != null
-          ? `${fmt(amount)} ${u} on ${agent.name} now would return ${fmt(q)} ${u} if ${agent.name} wins (×${fmtOdds(q / amount)}), ${chain ? 'as long as nobody bets after you' : 'if nothing else changes'}.`
+          ? `${fmt(amount)} ${u} on ${agent.name} now would return ${fmtReturn(q, chain)} ${u} if ${agent.name} wins (×${fmtOdds(q / amount)}), ${chain ? 'as long as nobody bets after you' : 'if nothing else changes'}.`
           : `Nothing prices ${agent.name} yet.`}
       </p>
     </>

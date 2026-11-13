@@ -67,7 +67,7 @@ export default function MarketPanel({ onFollow }) {
   const { world, roster } = useSandbox();
   const m = useBets();
   const {
-    dockOpen, toggleDock, tv,
+    dockOpen, toggleDock, setDockOpen, tv,
   } = useLayout();
   const { chain, unit, fmt } = moneyOf(m);
   const worldId = world?.world_id ?? null;
@@ -82,6 +82,9 @@ export default function MarketPanel({ onFollow }) {
   const [tab, setTab] = useState('odds');
   const [help, setHelp] = useState(false);
   useEffect(() => { setTab('odds'); }, [worldId]);
+  // Nobody at a TV can unfold a column, so there the dock stays open even
+  // where a small window would start it folded.
+  useEffect(() => { if (tv && !dockOpen) setDockOpen(true); }, [tv, dockOpen, setDockOpen]);
 
   // Once the season has a result for this viewer, YOUR BETS comes forward
   // by itself, once per season.
