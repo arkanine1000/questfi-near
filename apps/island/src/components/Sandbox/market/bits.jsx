@@ -4,6 +4,7 @@
  * line that reports a bet or a claim.
  */
 
+import { useEffect, useRef } from 'react';
 import { formatNear } from '../../../services/marketMath';
 import { explorerTx, shortHash } from '../../../services/explorer';
 import { IconClose, IconExternal } from '../../ui/icons';
@@ -101,8 +102,16 @@ export function TxLink({ hash, children }) {
  * screen reader hears the report when it arrives.
  */
 export function Notice({ notice, onDismiss }) {
+  // A report lands at the foot of a panel that may be scrolled; bring it
+  // into view, so a bettor sees what became of the bet without hunting.
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!notice || !ref.current) return;
+    const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    ref.current.scrollIntoView({ block: 'nearest', behavior: still ? 'auto' : 'smooth' });
+  }, [notice]);
   return (
-    <div className="qf-mkt-live" aria-live="polite">
+    <div className="qf-mkt-live" aria-live="polite" ref={ref}>
       {notice && (
         <p className={`qf-mkt-notice qf-mkt-notice--${notice.tone}`} role={notice.tone === 'bad' ? 'alert' : undefined}>
           <span className="qf-mkt-notice__text">{notice.text}</span>
