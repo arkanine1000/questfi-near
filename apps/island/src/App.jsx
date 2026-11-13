@@ -10,6 +10,13 @@ const WeaponBench = import.meta.env.DEV
   ? lazy(() => import('./components/Scene3D/Crawler/WeaponBench'))
   : null;
 
+// Dev-only preview mode (?preview=<scenario>): the interface from recorded
+// data, with no canvas and no network (src/dev/preview). Lazy + DEV-gated
+// like the bench, so none of it reaches a production bundle.
+const Preview = import.meta.env.DEV
+  ? lazy(() => import('./dev/preview/PreviewApp'))
+  : null;
+
 // The multi-agent sandbox is the product, and now the only view. ?view=tv is
 // still the sandbox — the lean-back broadcast cut (cast receiver / TV
 // browsers), handled inside SandboxView via services/cast.js.
@@ -18,6 +25,13 @@ export default function App() {
     return (
       <Suspense fallback={null}>
         <WeaponBench />
+      </Suspense>
+    );
+  }
+  if (Preview && new URLSearchParams(window.location.search).has('preview')) {
+    return (
+      <Suspense fallback={null}>
+        <Preview />
       </Suspense>
     );
   }

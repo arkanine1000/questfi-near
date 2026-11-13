@@ -122,6 +122,9 @@ export default function CrawlerScene({
   // crawler", and silently turns a teardown into a failed assertion.
   useEffect(() => () => { delete window.__crawler; }, []);
 
+  // Preview mode (dev only, src/dev/preview) puts a DOM backdrop here: no canvas.
+  if (import.meta.env.DEV && window.__questfiPreview) return window.__questfiPreview.standIn('dungeon', { queue, onReady });
+
   return (
     <Canvas
       dpr={capture ? 1 : [1, 1.5]} // capture mode eases software-GL memory pressure
