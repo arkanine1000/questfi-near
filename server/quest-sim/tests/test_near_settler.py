@@ -115,6 +115,19 @@ async def test_a_rejected_batch_is_dropped_and_its_seq_reused(tmp_path):
     assert settler.status("w-a")["failed_calls"] == 1
 
 
+async def test_the_status_block_says_when_betting_locks(tmp_path):
+    fake = FakeNearClient()
+    by_tick = _settler(tmp_path, fake, lock_tick=5)
+    _started(by_tick, "w-a")
+    assert by_tick.status("w-a")["lock_tick"] == 5
+    # a lock tick of 0 means only the season's end locks the market
+    other = tmp_path / "other"
+    other.mkdir()
+    at_the_end = _settler(other, fake, lock_tick=0)
+    _started(at_the_end, "w-b")
+    assert at_the_end.status("w-b")["lock_tick"] is None
+
+
 async def test_a_settle_that_landed_but_timed_out_is_not_sent_twice(tmp_path):
     fake = FakeNearClient()
     settler = _settler(tmp_path, fake)
@@ -371,6 +384,7 @@ def test_a_finished_season_settles_exactly_once_after_its_events(chain_api):
     near_block = state["near"]
     assert near_block["enabled"] is True and near_block["contract_id"] == "questfi.test"
     assert near_block["season_status"] == "Settled"
+    assert near_block["lock_tick"] == 5
     assert near_block["queue_depth"] == 0
     assert near_block["recent_txs"][0]["method"] == "settle_season"
     assert all(a["pass_id"] for a in state["roster"])

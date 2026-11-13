@@ -220,6 +220,7 @@ def test_the_countdown_starts_the_season_and_it_settles(tmp_path, monkeypatch):
         assert len(entered) == 3 and "101" not in entered  # three house seats
         # betting locked a fixed number of ticks in (lock_ticks=3)
         assert settler.lock_tick_for(wid) == 3
+        assert settler.status(wid)["lock_tick"] == 3
         assert [c for c in fake.applied("lock_market") if c.args["season_id"] == wid]
 
 
