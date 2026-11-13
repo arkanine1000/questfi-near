@@ -71,7 +71,7 @@ function Example() {
   const { chain, fmt, amountOf } = moneyOf(m);
   const agent = followedAgent;
   const live = !chain || m.readState === 'live';
-  const backable = agent && live && (!chain || m.canBack(agent));
+  const backable = agent?.alive && live && (!chain || m.canBack(agent));
   const st = m.stakes?.[1] ?? m.stakes?.[0];
   const u = chain ? 'NEAR' : 'chips';
 
@@ -93,7 +93,7 @@ function Example() {
       <p>The pool holds {pool} right now, {fmt(onAgent)} {u} of it on {agent.name}.</p>
       <p>
         {q != null
-          ? `${fmt(amount)} ${u} on ${agent.name} now would return ${fmt(q)} ${u} if ${agent.name} wins (×${fmtOdds(q / amount)}), as long as nobody bets after you.`
+          ? `${fmt(amount)} ${u} on ${agent.name} now would return ${fmt(q)} ${u} if ${agent.name} wins (×${fmtOdds(q / amount)}), ${chain ? 'as long as nobody bets after you' : 'if nothing else changes'}.`
           : `Nothing prices ${agent.name} yet.`}
       </p>
     </>

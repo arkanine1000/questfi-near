@@ -116,7 +116,11 @@ export default function BetSlip({ onFollow, onSeeBets }) {
 
   const onAgent = agent ? m.pools.byAgent[agent.agent_id] ?? 0 : 0;
   const mine = agent ? m.bets[agent.agent_id] ?? 0 : 0;
-  const x = agent && backable ? m.odds(agent.agent_id) : null;
+  // a fallen agent cannot win, so it gets no price
+  const x = agent && backable && agent.alive ? m.odds(agent.agent_id) : null;
+  // once the season is over the slip's 'pays if it wins' has been answered;
+  // YOUR BETS says how each stake ended
+  const over = chain ? m.status === 'settled' || m.status === 'cancelled' : !m.bettingOpen;
   const win = agent && mine > 0 ? m.ifWins(agent.agent_id) : null;
 
   const place = (st) => {
@@ -204,7 +208,7 @@ export default function BetSlip({ onFollow, onSeeBets }) {
   } else if (chain && m.readState === 'waiting') {
     body = <p className="qf-mkt-msg is-waiting">This season&apos;s market is opening on NEAR…</p>;
   } else if (!agent) {
-    head = <div className="qf-mkt-slip__head"><span className="qf-label qf-label--strong">Back an agent</span></div>;
+    if (!closed) head = <div className="qf-mkt-slip__head"><span className="qf-label qf-label--strong">Back an agent</span></div>;
     body = closed ? (
       <Closed reason={closed} onSeeBets={onSeeBets} hasStake={m.myTotal > 0} />
     ) : (
@@ -258,10 +262,12 @@ export default function BetSlip({ onFollow, onSeeBets }) {
               <span>Your stake on {agent.name}</span>
               <Amount value={hasAccount ? mine : null} unit={unit} fmt={fmt} tone="ice" />
             </div>
-            <div className="qf-row">
-              <span>Pays if {agent.name} wins</span>
-              <Amount value={win} unit={unit} fmt={fmt} tone="amber" />
-            </div>
+            {!over && (
+              <div className="qf-row">
+                <span>Pays if {agent.name} wins</span>
+                <Amount value={win} unit={unit} fmt={fmt} tone="amber" />
+              </div>
+            )}
           </div>
           {action}
         </>
