@@ -6,15 +6,20 @@
  * so the market dock beside it stays usable: winnings are claimed there.
  * The card is centred above the stage's bottom band, where the caster
  * cheers the winner.
+ *
+ * The card folds away to a pill at the top of the stage, so the viewer can
+ * go on looking at the island and the agents once the season is over: by
+ * its own button, and by itself when the viewer starts following an agent.
+ * The pill brings it back.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSandbox } from '../../context/SandboxContext';
 import { IS_TV } from '../../services/cast';
 import { formatNear } from '../../services/marketMath';
 import { useBets } from './BettingContext';
 import {
-  IconArrowRight, IconDead, IconKills, IconYou,
+  IconArrowRight, IconDead, IconKills, IconMinus, IconTrophy, IconYou,
 } from '../ui/icons';
 import { WinnerTrophy, WinnerConfetti, WinnerChan } from './WinnerCelebration';
 import '../../styles/finale.css';
@@ -63,13 +68,15 @@ function Standings({ order, winner }) {
   return (
     <div className="qf-fin-standings qf-scroll">
       <table className="qf-fin-table">
-        <caption className="qf-fin-sr">Final standings</caption>
-        <thead className="qf-fin-sr">
-          <tr>
-            <th scope="col">Place</th>
-            <th scope="col">Agent</th>
-            <th scope="col">Kills</th>
-            <th scope="col">Finish</th>
+        <caption className="qf-sr">Final standings</caption>
+        {/* A header row with no height: its cells give the fixed layout its
+            column widths, and their names are there for screen readers. */}
+        <thead>
+          <tr className="qf-fin-head">
+            <th scope="col" className="qf-fin-rank"><span className="qf-sr">Place</span></th>
+            <th scope="col" className="qf-fin-agent"><span className="qf-sr">Agent</span></th>
+            <th scope="col" className="qf-fin-kills"><span className="qf-sr">Kills</span></th>
+            <th scope="col" className="qf-fin-fate"><span className="qf-sr">Finish</span></th>
           </tr>
         </thead>
         <tbody>
@@ -85,13 +92,13 @@ function Standings({ order, winner }) {
                 <td className="qf-fin-rank">{String(i + 1).padStart(2, '0')}</td>
                 <td className="qf-fin-agent">
                   <span className="qf-fin-agent__in">
-                    <span className="qf-hex qf-fin-hex" aria-hidden />
+                    <span className="qf-hex qf-fin-hex" aria-hidden>{(a.name || '?').trim().charAt(0)}</span>
                     <span className="qf-fin-who">{a.name}</span>
                   </span>
                 </td>
                 <td className="qf-fin-kills">
                   <IconKills size={13} />
-                  <span className="qf-fin-sr">kills</span>
+                  <span className="qf-sr">kills</span>
                   {a.kills ?? 0}
                 </td>
                 <td className="qf-fin-fate" title={fate}>{fate}</td>
@@ -161,12 +168,39 @@ function YourResult() {
   );
 }
 
+/**
+ * Whether the results are folded away. Unfolded for each new season; folded
+ * by the viewer, or by the viewer starting to follow an agent once the
+ * season is over (they have chosen to look at something), and it stays
+ * folded until they open it again. The TV never folds: it has no pointer,
+ * and its director follows agents on its own.
+ */
+function useFold(world, followedAgentId) {
+  const [folded, setFolded] = useState(false);
+  const worldId = world?.world_id;
+  const finished = world?.phase === 'finished';
+  useEffect(() => { setFolded(false); }, [worldId]);
+
+  const lastFollow = useRef(followedAgentId);
+  useEffect(() => {
+    if (!IS_TV && finished && followedAgentId && followedAgentId !== lastFollow.current) {
+      setFolded(true);
+    }
+    lastFollow.current = followedAgentId;
+  }, [followedAgentId, finished]);
+
+  return [!IS_TV && folded, setFolded];
+}
+
 export default function WinnerBanner() {
-  const { world, roster, eventLog, detachWorld } = useSandbox();
+  const {
+    world, roster, eventLog, detachWorld, followedAgentId,
+  } = useSandbox();
   const { order, winner } = useMemo(
     () => (world ? finishingOrder(roster, world, eventLog) : { order: [], winner: null }),
     [roster, world, eventLog],
   );
+  const [folded, setFolded] = useFold(world, followedAgentId);
   if (!world || world.phase !== 'finished') return null;
 
   const won = Boolean(world.winner_name);
@@ -174,40 +208,78 @@ export default function WinnerBanner() {
   const color = winner?.color;
 
   return (
-    <div className={`qf-fin${won ? ' has-chan' : ''}`}>
-      {won && <WinnerConfetti color={color} />}
-      <section
-        className={`qf-panel ${won ? 'qf-panel--amber' : 'qf-panel--red'} qf-fin-card`}
-        aria-label="Season results"
-      >
-        <div className="qf-fin-hero" style={color ? { '--agent': color } : undefined}>
-          {won ? <WinnerTrophy /> : <IconDead size={56} className="qf-fin-skull" />}
-          <p className="qf-label qf-fin-season">Season {world.world_id} · Final</p>
+    <div className={`qf-fin${won ? '' : ' is-none'}${folded ? ' is-folded' : ''}`}>
+      {won && !folded && <WinnerConfetti color={color} />}
+      {folded ? (
+        <button
+          type="button"
+          className={`qf-fin-pill${won ? '' : ' is-none'}`}
+          onClick={() => setFolded(false)}
+          aria-label={`Show the results: ${won ? `${world.winner_name} won` : 'no one survived'}`}
+        >
+          <IconTrophy size={14} />
+          <span className="qf-fin-pill__what">Results</span>
+          <span className="qf-fin-pill__sep" aria-hidden>·</span>
           {won ? (
-            <>
-              <p className="qf-fin-crown">Winner</p>
-              <h1 className="qf-fin-name">{world.winner_name}</h1>
-              {reason && <p className="qf-fin-reason">{reason}</p>}
-            </>
-          ) : (
-            <h1 className="qf-fin-name is-none">No one survived</h1>
-          )}
-        </div>
-
-        <div className="qf-fin-side">
-          {order.length > 0 && <Standings order={order} winner={winner} />}
-          <YourResult />
-          {/* The season is over, so the only move is out of it. The TV has
-              no pointer and stays put; the phone drives it. */}
-          {!IS_TV && (
-            <div className="qf-fin-foot">
-              <button type="button" className="qf-btn qf-btn--primary" onClick={() => detachWorld()}>
-                Back to seasons
+            <span>
+              <b className="qf-fin-pill__name" style={color ? { '--agent': color } : undefined}>{world.winner_name}</b>
+              {' '}won
+            </span>
+          ) : <span>No one survived</span>}
+        </button>
+      ) : (
+        // the part of the stage the card is centred in: above the caster
+        <div className="qf-fin-area">
+          <section
+            className={`qf-panel ${won ? 'qf-panel--amber' : 'qf-panel--red'} qf-fin-card`}
+            aria-label="Season results"
+          >
+            {!IS_TV && (
+              <button
+                type="button"
+                className="qf-btn qf-btn--quiet qf-btn--icon qf-fin-fold"
+                onClick={() => setFolded(true)}
+                aria-label="Fold the results away"
+                title="Fold the results away"
+              >
+                <IconMinus />
               </button>
+            )}
+            <div className="qf-fin-hero" style={color ? { '--agent': color } : undefined}>
+              {won ? (
+                // the slot sets the trophy's size; whatever draws it fills the slot
+                <div className="qf-fin-cup"><WinnerTrophy /></div>
+              ) : <IconDead size={56} className="qf-fin-skull" />}
+              <p className="qf-label qf-fin-season">Season {world.world_id} · Final</p>
+              {won ? (
+                <>
+                  <p className="qf-fin-crown">Winner</p>
+                  <h1 className="qf-fin-name">{world.winner_name}</h1>
+                  {reason && <p className="qf-fin-reason">{reason}</p>}
+                </>
+              ) : (
+                <h1 className="qf-fin-name is-none">No one survived</h1>
+              )}
             </div>
-          )}
+
+            <div className="qf-fin-side">
+              {order.length > 0 && <Standings order={order} winner={winner} />}
+              <YourResult />
+              {/* The season is over, so the only move is out of it. The TV has
+                  no pointer and stays put; the phone drives it. */}
+              {!IS_TV && (
+                <div className="qf-fin-foot">
+                  <button type="button" className="qf-btn qf-btn--primary" onClick={() => detachWorld()}>
+                    Back to seasons
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-      </section>
+      )}
+      {/* stays mounted while folded (only hidden), so unfolding does not
+          make her say her line again */}
       {won && <WinnerChan name={world.winner_name} />}
     </div>
   );

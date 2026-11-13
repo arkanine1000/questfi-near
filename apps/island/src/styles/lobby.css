@@ -100,17 +100,20 @@
 .qf-lobby-taken .qf-num { font-size: 26px; }
 
 .qf-lobby-seats {
+  --gap-x: 6px;
   list-style: none;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 12px 6px;
-  margin-top: 12px;
+  gap: 12px var(--gap-x);
+  /* wide enough for --per-row seats and no more (set per lobby) */
+  max-width: calc(var(--per-row, 8) * (var(--seat-hex) + 12px + var(--gap-x)));
+  margin: 12px auto 0;
+  --seat-hex: 56px;
 }
 
 .qf-lobby-seat {
   --agent: var(--qf-green);
-  --seat-hex: 56px;
   width: calc(var(--seat-hex) + 12px);
   display: flex;
   flex-direction: column;
@@ -118,7 +121,7 @@
   gap: 5px;
 }
 
-.qf-lobby-seat__hex {
+.qf-hex.qf-lobby-seat__hex {
   --hex: var(--seat-hex);
   --hex-edge: var(--agent);
   --hex-fill: color-mix(in srgb, var(--agent) 18%, #021209);
@@ -162,7 +165,7 @@
 .qf-lobby-seat__ready { color: var(--qf-green); }
 
 /* an open seat: the same hexagon, dashed and dim, nobody in it */
-.qf-lobby-seat.is-open .qf-lobby-seat__hex {
+.qf-lobby-seat.is-open .qf-hex.qf-lobby-seat__hex {
   --hex-edge: transparent;
   --hex-fill: rgba(var(--qf-green-rgb), 0.03);
   filter: none;
@@ -212,11 +215,49 @@
 .qf-shell[data-compact] .qf-lobby-wait { font-size: 15px; }
 .qf-shell[data-compact] .qf-lobby-card__seats { margin-top: 10px; }
 .qf-shell[data-compact] .qf-lobby-taken .qf-num { font-size: 21px; }
-.qf-shell[data-compact] .qf-lobby-seats { gap: 8px 4px; margin-top: 8px; }
-.qf-shell[data-compact] .qf-lobby-seat { --seat-hex: 40px; gap: 4px; }
-.qf-shell[data-compact] .qf-lobby-card__start { margin-top: 10px; gap: 6px; }
-.qf-shell[data-compact] .qf-lobby-card__start .qf-btn--big { padding: 10px 22px; font-size: 13px; }
-.qf-shell[data-compact] .qf-lobby-card__foot { margin-top: 10px; padding-top: 8px; }
+.qf-shell[data-compact] .qf-lobby-seats {
+  --seat-hex: 40px;
+  --gap-x: 4px;
+  max-width: calc(var(--per-row-compact, 10) * (var(--seat-hex) + 12px + var(--gap-x)));
+  row-gap: 8px;
+  margin-top: 8px;
+}
+.qf-shell[data-compact] .qf-lobby-seat { gap: 4px; }
+
+/* starting it and bringing an agent share one line, the start note under them */
+.qf-shell[data-compact] .qf-lobby-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 10px;
+  justify-items: center;
+}
+.qf-shell[data-compact] .qf-lobby-card > * { grid-column: 1 / -1; justify-self: stretch; }
+.qf-shell[data-compact] .qf-lobby-card__start { display: contents; }
+.qf-shell[data-compact] .qf-lobby-card__start > .qf-btn {
+  grid-column: 1;
+  justify-self: end;
+  margin-top: 10px;
+  padding: 9px 18px;
+  font-size: 12.5px;
+}
+.qf-shell[data-compact] .qf-lobby-card__start > .qf-lobby-note {
+  order: 1;
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.qf-shell[data-compact] .qf-lobby-card__foot {
+  margin-top: 10px;
+  padding-top: 8px;
+}
+.qf-shell[data-compact] .qf-lobby-card__start ~ .qf-lobby-card__foot {
+  grid-column: 2;
+  justify-self: start;
+  align-self: center;
+  margin-top: 10px;
+  padding-top: 0;
+  border-top: 0;
+}
 
 /* the TV reads from the sofa */
 .qf-shell[data-tv] .qf-lobby-card { zoom: 1.15; }

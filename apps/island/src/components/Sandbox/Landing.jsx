@@ -69,13 +69,19 @@ function Figure({ world }) {
   );
 }
 
-function SeasonRow({ world, onWatch, onPlay, onDelete }) {
+/**
+ * Whether this browser may delete a season. can_control on a LIST row can
+ * only answer for the operator key: X-Host-Key is one header and this is
+ * many worlds, so a host holding per-world keys cannot prove it in a single
+ * request. Our own keyring covers that; the server still gates the DELETE.
+ */
+const canDelete = (world) => world.can_control || Boolean(getHostKey(world.world_id));
+
+function SeasonRow({
+  world, slots, onWatch, onPlay, onDelete,
+}) {
   const { world_id: id, phase } = world;
-  // can_control on a LIST row can only answer for the operator key:
-  // X-Host-Key is one header and this is many worlds, so a host holding
-  // per-world keys cannot prove it in a single request. Our own keyring
-  // covers that; the server still gates the DELETE itself.
-  const mine = world.can_control || Boolean(getHostKey(id));
+  const mine = canDelete(world);
   const open = phase === 'lobby';
   const ended = phase !== 'lobby' && phase !== 'running';
 
@@ -108,7 +114,7 @@ function SeasonRow({ world, onWatch, onPlay, onDelete }) {
             >
               Play
             </button>
-          ) : <span className="qf-land-act--play" aria-hidden />}
+          ) : slots.play && <span className="qf-land-act--play" aria-hidden />}
           {mine ? (
             <button
               type="button"
@@ -119,7 +125,7 @@ function SeasonRow({ world, onWatch, onPlay, onDelete }) {
             >
               <IconTrash />
             </button>
-          ) : <span className="qf-land-act--del" aria-hidden />}
+          ) : slots.del && <span className="qf-land-act--del" aria-hidden />}
         </div>
       </td>
     </tr>
@@ -230,7 +236,7 @@ function DeleteDialog({ worldId, onCancel, onConfirm }) {
     </>
   );
   return (
-    <Modal title="Delete season" onClose={busy ? undefined : onCancel} footer={footer} className="qf-land-danger">
+    <Modal title="Delete season" onClose={busy ? undefined : onCancel} footer={footer} tone="red">
       <p className="qf-body">Delete {worldId}? This erases the season for everyone.</p>
     </Modal>
   );
@@ -299,6 +305,9 @@ export default function Landing() {
   const live = (worlds || []).filter((w) => w.phase === 'lobby' || w.phase === 'running');
   const over = (worlds || []).filter((w) => w.phase === 'finished').slice(0, 3);
   const rows = [...live, ...over];
+  // A column of buttons exists only when some row has that button, so the
+  // buttons that are there sit against the board's right edge.
+  const slots = { play: rows.some((w) => w.phase === 'lobby'), del: rows.some(canDelete) };
 
   let empty = null;
   if (worlds === null) empty = 'Scanning for seasons…';
@@ -317,7 +326,7 @@ export default function Landing() {
           <img className="qf-land-title__logo" src={publicUrl('/brand/quest-logo.png')} alt="" aria-hidden />
           <p className="qf-land-title__kicker">QuestFi</p>
           {/* two words, so a small window can stack them */}
-          <h1 className="qf-land-title__name"><span>Agent</span> <span>Island</span></h1>
+          <h1 className="qf-title qf-land-title__name"><span>Agent</span> <span>Island</span></h1>
           <p className="qf-land-title__tag">Loot · Duel · Slay the boss · Settles on NEAR</p>
           {live.length > 0 ? (
             <span className="qf-pill qf-land-onair">
@@ -362,8 +371,8 @@ export default function Landing() {
               <p className="qf-land-empty">{empty}</p>
             ) : (
               <table className="qf-land-table">
-                <caption className="qf-land-sr">Seasons on this server</caption>
-                <thead className="qf-land-sr">
+                <caption className="qf-sr">Seasons on this server</caption>
+                <thead className="qf-sr">
                   <tr>
                     <th scope="col">Status</th>
                     <th scope="col">Season</th>
@@ -376,6 +385,7 @@ export default function Landing() {
                     <SeasonRow
                       key={w.world_id}
                       world={w}
+                      slots={slots}
                       onWatch={attachWorld}
                       onPlay={setPlaying}
                       onDelete={setDeleting}

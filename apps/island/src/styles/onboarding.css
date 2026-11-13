@@ -98,21 +98,16 @@
   padding: 10px;
 }
 
-.qf-onb-qr {
+/* the code itself: a canvas, or the same drawing as an image where no
+   canvas may be made */
+.qf-onb__frame canvas,
+.qf-onb__frame img {
   display: block;
   width: 232px;
   height: auto;
   aspect-ratio: 1;
 }
 
-.qf-onb__sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 
 /* narrow dialogs: one column, the QR under the copy */
 @media (max-width: 720px) {
@@ -123,6 +118,7 @@
 /* short windows (a landscape phone): a smaller code beside the copy */
 @media (max-height: 640px) {
   .qf-onb { gap: 20px; }
-  .qf-onb-qr { width: 176px; }
+  .qf-onb__frame canvas,
+  .qf-onb__frame img { width: 176px; }
   .qf-onb__other { margin-top: 16px; }
 }

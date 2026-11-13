@@ -98,6 +98,16 @@ function arenaWaiting(lobby) {
   }
 }
 
+/**
+ * How many seats go on a line, so a lobby that needs two lines splits them
+ * evenly (ten seats are five and five, not eight and two). At most eight on
+ * a line, ten on a small window where the hexagons are smaller.
+ */
+function seatRows(seats) {
+  const even = (most) => Math.ceil(seats / Math.ceil(seats / most));
+  return { '--per-row': even(8), '--per-row-compact': even(10) };
+}
+
 function Seat({ agent }) {
   if (!agent) {
     return (
@@ -196,7 +206,7 @@ export default function LobbyOverlay() {
             <b className="qf-num">{joined} / {seats}</b>
             <span className="qf-label qf-label--small">Seats taken</span>
           </p>
-          <ul className="qf-lobby-seats" aria-label="Seats">
+          <ul className="qf-lobby-seats" aria-label="Seats" style={seatRows(seats)}>
             {Array.from({ length: seats }, (_, i) => (
               <Seat key={roster[i]?.agent_id ?? `open-${i}`} agent={roster[i]} />
             ))}
