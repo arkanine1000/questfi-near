@@ -529,8 +529,35 @@ gets the same account and pass back on the next visit.
 
 The start app's **WALLET** panel also offers **DEPOSIT** and **WITHDRAW**,
 which move NEAR between the account and the pass with the owner's key.
-**CONNECT A NEAR WALLET** and **MOVE PASS TO MY WALLET** are implemented
-(through near-connect) but have not been run with a real wallet.
+**MOVE PASS TO MY WALLET** appears once a test account holds a pass. After
+the pass's season has ended it opens the wallet picker (near-connect), and
+with a wallet account connected it sends the pass there with `nft_transfer`,
+signed by the test account: the balance, the level and the record go with
+the pass, and the agent link is cleared. From then on the owner's actions
+are approved in the wallet. **CONNECT A NEAR WALLET** starts from a wallet
+account instead of a test account.
+
+This was run by hand once, with one wallet on testnet. Pass #21 was moved to
+a wallet account, which withdrew 0.05 NEAR from it and claimed its card:
+
+```bash
+view get_activity '{"pass_id":"21","from_index":0,"limit":10}' | jq -r '.[] | .kind'
+```
+
+```text
+card
+withdraw
+transfer
+unlink
+enter
+link
+mint
+```
+
+Newest first: the claim and the withdrawal by the wallet account, the
+transfer, the agent link it cleared, and before them the test account's
+season entry, link and mint. Linking an agent from a wallet account, which
+adds the limited key through the wallet, was not run.
 
 ## C. From a clone
 
@@ -542,7 +569,9 @@ cd questfi-near
 ### C1. The whole flow from a terminal
 
 `apps/start/scripts/walkthrough.mjs` takes a fresh test account through the
-flow with the same chain module the start app uses. Node 22:
+flow with the same chain module the start app uses. Node 22 or 24 (on Node 22
+releases before 22.22.2, `npm ci` prints an engine warning for near-api-js
+and the script still runs):
 
 ```bash
 cd apps/start

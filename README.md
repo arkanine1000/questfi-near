@@ -152,7 +152,7 @@ In a clone, `bash scripts/check-public.sh` checks this run the same way and
 runs the rest of the read-only checks (the code hash, the wasm's SHA-256,
 the game server, the site): 22 `ok` lines and exit status 0.
 
-**From a terminal, the whole flow in one command** (Node 22; about six
+**From a terminal, the whole flow in one command** (Node 22 or 24; about six
 minutes; real testnet transactions from a fresh test account):
 
 1. `git clone https://github.com/arkanine1000/questfi-near && cd questfi-near/apps/start && npm ci`
@@ -183,10 +183,15 @@ app and the island. One Vercel project builds the three apps into one site
   The contract's own known limits and their planned fixes are in
   [`contracts/README.md`](contracts/README.md#known-limits).
 - Everything runs on NEAR testnet.
-- Implemented but not run with a real wallet: connecting a NEAR wallet
-  (near-connect) and **MOVE PASS TO MY WALLET**. Linking your own agent over
-  MCP is implemented on the game server but not run end to end from the start
-  app.
+- Connecting a NEAR wallet (near-connect) and **MOVE PASS TO MY WALLET** were
+  run by hand once, with one wallet on testnet: pass #21 was
+  [moved](https://testnet.nearblocks.io/txns/6ad6CY1PJupwaJy3GwDbDdpKsiF4WkM1hsKZTBimEYUg) from a test
+  account to a wallet account, which then
+  [withdrew](https://testnet.nearblocks.io/txns/84WmSjTqQac8j2ZWpFgDtUq3anMv4Y9HNe7LLbtBJqjs) from it and
+  [claimed its card](https://testnet.nearblocks.io/txns/CFJo8toYcTpzWQtfwbnwU41Ry5NaKgPyuAuHYsnWquLJ).
+  Linking an agent from a wallet account was not run. Linking your own agent
+  over MCP is implemented on the game server but not run end to end from the
+  start app.
 - `pay_agent` is what the limits test calls; agents do not pay each other
   during play.
 - The card claim issues a ticket on the contract; printing and shipping a
