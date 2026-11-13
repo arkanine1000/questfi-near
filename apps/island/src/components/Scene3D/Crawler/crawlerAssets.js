@@ -3,7 +3,7 @@ import { useLoader } from '@react-three/fiber';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { WEAPON_PALETTE_URL, loaderFor, weaponModelUrl, weaponSpecFor } from './weaponCatalog';
+import { loaderFor, weaponModelUrl, weaponSpecFor } from './weaponCatalog';
 import { getWallTilesTexture, getWallTilesNormalTexture } from './crawlerTextures';
 import { getSpriteSheetTexture } from './spriteSheet';
 import { whenTrackedLoadsSettle } from './loadTracker';
@@ -127,7 +127,6 @@ export function preloadCrawlerAssets(weaponNames = []) {
   useLoader.preload(THREE.TextureLoader, CHEST_TEXTURE_URL);
   useLoader.preload(GLTFLoader, AGENT_MODEL_URL);
   useLoader.preload(THREE.TextureLoader, ENEMY_SPRITE_URLS);
-  useLoader.preload(THREE.TextureLoader, WEAPON_PALETTE_URL);
 
   const weaponSpecs = new Map(
     weaponNames.filter(Boolean).map((name) => {
