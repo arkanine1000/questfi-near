@@ -60,25 +60,25 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
 .qf-top-brand img { width: 28px; height: 28px; object-fit: contain; mix-blend-mode: screen; }
 .qf-top-brand i { font-style: normal; opacity: 0.5; }
 
-.qf-top-back {
+.qf-shell .qf-top-back {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   height: var(--top-ctl);
   padding: 0 11px 0 6px;
 }
-.qf-top-back svg { flex: none; }
+.qf-shell .qf-top-back svg { flex: none; }
 
 /* ---------- season and phase ---------- */
-.qf-top-season { gap: 7px; padding-top: 4px; padding-bottom: 4px; }
+.qf-shell .qf-top-season { gap: 7px; padding-top: 4px; padding-bottom: 4px; }
 .qf-top-season-label { color: var(--qf-dim); }
 .qf-top-season-id { font-weight: 700; color: var(--qf-ink); }
 
-.qf-top-phase { gap: 7px; }
+.qf-shell .qf-top-phase { gap: 7px; }
 .qf-top-phase .qf-dot { width: 7px; height: 7px; }
-.qf-top-phase--live { color: var(--qf-green-bright); text-shadow: var(--qf-text-glow); }
+.qf-shell .qf-top-phase--live { color: var(--qf-green-bright); text-shadow: var(--qf-text-glow); }
 .qf-top-phase--live .qf-dot { color: var(--qf-red); }
-.qf-top-phase--paused { color: var(--qf-dim); border-color: var(--qf-line-soft); }
+.qf-shell .qf-top-phase--paused { color: var(--qf-dim); border-color: var(--qf-line-soft); }
 .qf-top-phase--paused .qf-dot { box-shadow: none; opacity: 0.7; }
 
 /* ---------- the clock ---------- */
@@ -129,9 +129,23 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
   box-shadow: 0 0 10px var(--qf-green), 0 0 3px var(--qf-green);
   transition: width 0.6s var(--qf-ease);
 }
+/* where betting locks: a small amber notch, dimmed once the clock has
+   passed it; a wider invisible hit area carries its tooltip */
+.qf-top-lock {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 8px;
+  margin-left: -1px;
+  background: var(--qf-amber);
+  box-shadow: 0 0 6px rgba(var(--qf-amber-rgb), 0.8);
+  pointer-events: auto;
+}
+.qf-top-lock::before { content: ''; position: absolute; inset: -6px -6px -4px; }
+.qf-top-lock.is-past { opacity: 0.4; box-shadow: none; }
 
 /* ---------- the viewer's side ---------- */
-.qf-top-account {
+.qf-shell .qf-top-account {
   gap: 8px;
   height: var(--top-ctl);
   padding: 0 11px 0 9px;
@@ -139,7 +153,7 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
   background: rgba(2, 18, 22, 0.78);
   transition: background 0.15s, box-shadow 0.15s;
 }
-.qf-top-account:hover { background: var(--qf-ice-wash); box-shadow: 0 0 16px rgba(var(--qf-ice-rgb), 0.22); }
+.qf-shell .qf-top-account:hover { background: var(--qf-ice-wash); box-shadow: 0 0 16px rgba(var(--qf-ice-rgb), 0.22); }
 .qf-top-account:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
 .qf-top-account svg { flex: none; }
 .qf-top-account-you { font-weight: 700; letter-spacing: 0.18em; }
@@ -155,25 +169,25 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
   color: var(--qf-ink);
 }
 
-.qf-top-play,
-.qf-top-begin { height: var(--top-ctl); padding-top: 0; padding-bottom: 0; }
+.qf-shell .qf-top-play,
+.qf-shell .qf-top-begin { height: var(--top-ctl); padding-top: 0; padding-bottom: 0; }
 
-.qf-top-icon {
+.qf-shell .qf-top-icon {
   width: var(--top-ctl);
   height: var(--top-ctl);
   padding: 0;
   display: grid;
   place-items: center;
 }
-.qf-top-icon.is-on {
+.qf-shell .qf-top-icon.is-on {
   color: var(--qf-green);
   border-color: var(--qf-line);
   background: rgba(var(--qf-green-rgb), 0.2);
   box-shadow: 0 0 14px rgba(var(--qf-green-rgb), 0.28);
   text-shadow: var(--qf-text-glow);
 }
-.qf-top-icon:hover:not(:disabled) { color: var(--qf-green); }
-.qf-top-icon.is-idle { opacity: 0.45; }
+.qf-shell .qf-top-icon:hover:not(:disabled) { color: var(--qf-green); }
+.qf-shell .qf-top-icon.is-idle { opacity: 0.45; }
 
 /* what just happened to the account, hanging under the bar's right end */
 .qf-top-toasts {
@@ -187,7 +201,7 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
   max-width: min(440px, calc(100vw - 2 * var(--gutter)));
   animation: qf-rise 0.25s var(--qf-ease) both;
 }
-.qf-top-toast {
+.qf-shell .qf-top-toast {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -200,7 +214,7 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
   color: var(--qf-ink);
   box-shadow: var(--qf-glow);
 }
-.qf-top-toast--ice { color: var(--qf-ice); border-color: var(--qf-ice-line); }
+.qf-shell .qf-top-toast--ice { color: var(--qf-ice); border-color: var(--qf-ice-line); }
 .qf-top-toast--ice a {
   display: inline-flex;
   flex-wrap: wrap;
@@ -212,7 +226,7 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
 .qf-top-toast--ice a:hover { text-decoration: underline; text-underline-offset: 2px; }
 .qf-top-toast--ice a:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
 .qf-top-toast-label { margin-right: 4px; font-size: 11px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
-.qf-top-toast--bad { color: #ffdede; border-color: var(--qf-red-line); background: rgba(26, 4, 6, 0.9); }
+.qf-shell .qf-top-toast--bad { color: #ffdede; border-color: var(--qf-red-line); background: rgba(26, 4, 6, 0.9); }
 
 /* ---------- small windows ---------- */
 .qf-shell[data-compact] .qf-top { --top-ctl: 28px; gap: 10px; }
@@ -257,9 +271,15 @@ button.qf-top-brand:hover { background: var(--qf-wash); border-color: var(--qf-l
 .qf-booth-group > .qf-btn--icon { display: grid; place-items: center; padding: 0 10px; }
 .qf-booth-group > .qf-btn--icon svg { width: 14px; height: 14px; }
 .qf-booth-switch { flex: none; min-width: 54px; }
-.qf-booth-switch.is-on { color: var(--qf-green-bright); border-color: var(--qf-green); }
-.qf-booth-build { margin-top: 20px; border-bottom: 0; color: var(--qf-faint); }
-.qf-booth-build .qf-num { color: var(--qf-dim); }
+.qf-booth .qf-booth-switch.is-on { color: var(--qf-green-bright); border-color: var(--qf-green); }
+.qf-booth .qf-booth-build { margin-top: 20px; border-bottom: 0; color: var(--qf-faint); }
+.qf-booth .qf-booth-build .qf-num { color: var(--qf-dim); }
+/* a short window: the booth fits without scrolling */
+@media (max-height: 640px) {
+  .qf-booth .qf-row { min-height: 34px; }
+  .qf-booth-section + .qf-booth-section,
+  .qf-booth .qf-booth-build { margin-top: 10px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .qf-top, .qf-top-toasts { animation: none; }

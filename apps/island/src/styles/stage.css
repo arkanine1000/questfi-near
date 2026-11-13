@@ -12,18 +12,17 @@
               when the stage is wide enough.
      compact  a bracketed camera square, head and shoulders, with the
               caption beside it, centred in the band. While the dungeon
-              feed is up (its vitals plate owns the bottom-left corner), on
-              small windows, and on a narrow stage. On a very narrow stage
-              only the caption is left.
+              feed is up (its vitals plate owns the bottom-left corner),
+              after the season (the results card keeps clear of the band,
+              not of a standing figure), on small windows, and on a narrow
+              stage. On a very narrow stage only the caption is left.
    The followed agent's thoughts and the crowded-hex picker stack above
    whichever form she is in. */
 
 /* Fixed elements always form a stacking context, so the stage itself
-   carries the furniture's layer: above the dungeon feed, below the
-   columns. During the finale it rises over the finale card's dimming, so
-   the caster can deliver the sign-off (as she always has). */
+   carries the furniture's layer: above the dungeon feed, below the finale
+   card and the columns. */
 .qf-shell > .qf-stage { z-index: calc(var(--qf-z-hud) + 10); }
-.qf-shell[data-phase='finished'] > .qf-stage { z-index: calc(var(--qf-z-card) + 10); }
 
 /* the backdrop when the 3D scene cannot run: the frame still broadcasts */
 .qf-stage-fallback {
@@ -59,7 +58,7 @@
 .qf-follow-slot > *,
 .qf-follow-plate { pointer-events: auto; }
 
-.qf-follow-step {
+.qf-shell .qf-follow-step {
   --agent: var(--qf-green);
   display: inline-flex;
   align-items: center;
@@ -71,7 +70,7 @@
   background: var(--qf-panel);
   border-color: color-mix(in srgb, var(--agent) 40%, transparent);
 }
-.qf-follow-step:hover:not(:disabled) { border-color: color-mix(in srgb, var(--agent) 75%, transparent); background: color-mix(in srgb, var(--agent) 12%, var(--qf-panel)); }
+.qf-shell .qf-follow-step:hover:not(:disabled) { border-color: color-mix(in srgb, var(--agent) 75%, transparent); background: color-mix(in srgb, var(--agent) 12%, var(--qf-panel)); }
 .qf-follow-step svg { flex: none; color: color-mix(in srgb, var(--agent) 70%, var(--qf-ink-hi)); }
 .qf-follow-step-name {
   min-width: 0;
@@ -83,7 +82,7 @@
   color: color-mix(in srgb, var(--agent) 78%, var(--qf-ink-hi));
 }
 
-.qf-follow-plate {
+.qf-shell .qf-follow-plate {
   --agent: var(--qf-green);
   display: flex;
   align-items: center;
@@ -129,8 +128,8 @@
   color: color-mix(in srgb, var(--agent) 78%, var(--qf-ink-hi));
   text-shadow: 0 0 8px color-mix(in srgb, var(--agent) 50%, transparent);
 }
-.qf-follow-esc { height: 22px; min-width: 34px; font-size: 10px; cursor: pointer; transition: background 0.15s; }
-.qf-follow-esc:hover { background: var(--qf-wash-hi); }
+.qf-shell .qf-follow-esc { height: 22px; min-width: 34px; font-size: 10px; cursor: pointer; transition: background 0.15s; }
+.qf-shell .qf-follow-esc:hover { background: var(--qf-wash-hi); }
 .qf-follow-esc:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
 .qf-follow-close { margin-left: -4px; }
 
@@ -197,7 +196,7 @@
   gap: 6px;
   pointer-events: none;
 }
-.qf-thought {
+.qf-shell .qf-thought {
   padding: 10px 14px 11px;
   border-color: var(--qf-line-soft);
   border-left: 2px solid var(--agent);
@@ -259,7 +258,7 @@
 }
 
 /* her camera: a bracketed square, head and shoulders */
-.qf-caster-cam {
+.qf-shell .qf-caster-cam {
   --frame-len: 12px;
   flex: none;
   width: 118px;
@@ -269,7 +268,7 @@
   opacity: 0.6;
   transition: opacity 0.5s ease;
 }
-.qf-caster.is-live .qf-caster-cam { opacity: 1; }
+.qf-shell .qf-caster.is-live .qf-caster-cam { opacity: 1; }
 /* the brackets over the picture, not under it */
 .qf-caster-cam::before { z-index: 2; }
 .qf-caster-cam img {
@@ -303,7 +302,7 @@
 .qf-caster-live .qf-dot { width: 6px; height: 6px; }
 
 /* her caption */
-.qf-caster-caption {
+.qf-shell .qf-caster-caption {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -316,7 +315,7 @@
   translate: 0 6px;
   transition: opacity 0.4s ease, translate 0.4s var(--qf-ease), visibility 0s linear 0.4s;
 }
-.qf-caster.is-live .qf-caster-caption {
+.qf-shell .qf-caster.is-live .qf-caster-caption {
   opacity: 1;
   visibility: visible;
   translate: 0 0;
@@ -366,11 +365,30 @@
   .qf-caster-cam { display: none; }
 }
 
+/* Over the dungeon feed the HUD's plates hold both bottom corners (the
+   vitals on the left, the weapon on the right): the band keeps 280px clear
+   at each side. Where that leaves under 420px, the camera goes and the
+   caption keeps the band. */
+.qf-shell[data-cam] .qf-stage > .qf-caster { width: max(240px, min(760px, calc(100% - 560px))); }
+@container stage (max-width: 979px) {
+  .qf-shell[data-cam] .qf-caster-cam { display: none; }
+  /* a narrow band: a smaller line, so the caption stays inside it */
+  .qf-shell[data-cam] .qf-caster-caption { padding: 8px 12px 9px; }
+  .qf-shell[data-cam] .qf-caster-head { margin-bottom: 4px; }
+  .qf-shell[data-cam] .qf-caster-line { font-size: 13px; line-height: 1.4; }
+}
+/* Narrower still, the two plates leave no band between them at all (a TV
+   keeps the field open over the dungeon feed): she steps aside until the
+   camera surfaces or the stage widens. */
+@container stage (max-width: 699px) {
+  .qf-shell[data-cam] .qf-stage > .qf-caster { display: none; }
+}
+
 /* ---- the full form: the presenter at her desk ----
-   On the overworld (no dungeon feed), in a regular window, on a stage wide
-   enough for the figure and a caption beside it. */
+   On the overworld (no dungeon feed) while the season is on, in a regular
+   window, on a stage wide enough for the figure and a caption beside it. */
 @container stage (min-width: 721px) {
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-stage > .qf-caster {
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage > .qf-caster {
     left: 0;
     right: 0;
     translate: none;
@@ -379,7 +397,7 @@
     align-items: flex-end;
     gap: 0;
   }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-cam {
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-caster-cam {
     width: 214px;
     height: auto;
     aspect-ratio: 794 / 1168; /* the sprite art, uncropped */
@@ -388,11 +406,11 @@
     background: none;
     opacity: 0.7;
   }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster.is-live .qf-caster-cam { opacity: 1; }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-cam::before { display: none; }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-cam img { width: 100%; left: 0; top: 0; }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-live { left: auto; right: 18px; bottom: 22px; }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-caption {
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-shell .qf-caster.is-live .qf-caster-cam { opacity: 1; }
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-caster-cam::before { display: none; }
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-caster-cam img { width: 100%; left: 0; top: 0; }
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-caster-live { left: auto; right: 18px; bottom: 22px; }
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-caster-caption {
     flex: 1 1 auto;
     max-width: 600px;
     min-height: 104px;
@@ -400,13 +418,13 @@
   }
 
   /* thoughts and the hex picker sit over her desk, aligned to the caption */
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-stage:has(> .qf-caster) > .qf-thoughts {
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage:has(> .qf-caster) > .qf-thoughts {
     left: 214px;
     translate: none;
     bottom: 136px;
     width: min(540px, calc(100% - 222px));
   }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-stage:has(> .qf-caster) > .qf-hexpick {
+  .qf-shell:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage:has(> .qf-caster) > .qf-hexpick {
     left: 214px;
     translate: none;
     bottom: 136px;
@@ -414,15 +432,16 @@
   }
 }
 
-/* the TV: the caster a size up, read from the sofa */
-.qf-shell[data-tv] .qf-stage > .qf-caster { scale: 1.15; transform-origin: 50% 100%; }
+/* the TV: the full form a size up, read from the sofa (the compact form
+   stays its size: it has to fit the band) */
 @container stage (min-width: 721px) {
-  .qf-shell[data-tv]:not([data-cam]):not([data-compact]) .qf-stage > .qf-caster {
+  .qf-shell[data-tv]:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage > .qf-caster {
     right: auto;
     width: calc(100% / 1.15);
+    scale: 1.15;
     transform-origin: 0 100%;
   }
-  .qf-shell[data-tv]:not([data-cam]):not([data-compact]) .qf-stage:has(> .qf-caster) > .qf-thoughts {
+  .qf-shell[data-tv]:not([data-cam]):not([data-compact]):not([data-phase='finished']) .qf-stage:has(> .qf-caster) > .qf-thoughts {
     left: calc(214px * 1.15);
     bottom: calc(136px * 1.15);
   }
@@ -448,8 +467,10 @@
 /* ======================================================================
    The dossier window
    ====================================================================== */
-/* short enough to open under the top bar and still end on screen */
-.qf-dossier { max-height: min(640px, calc(100vh - 80px)); }
+/* short enough that the third of a cascade, opening under the top bar,
+   still ends on screen; and
+   solid, so a dossier stacked on another does not show it through */
+.qf-window.qf-dossier { max-height: min(640px, calc(100vh - 124px)); background: rgb(1, 14, 7); }
 .qf-dossier-body {
   --agent: var(--qf-green);
   display: flex;
@@ -542,7 +563,7 @@
   margin-top: auto;
   padding: 12px 16px 14px;
   border-top: 1px solid var(--qf-line-faint);
-  background: var(--qf-panel-solid);
+  background: rgb(1, 14, 7); /* the rows scrolling under it must not show */
 }
 .qf-dossier-foot .qf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 
@@ -576,6 +597,7 @@
     inset 0 0 8px color-mix(in srgb, var(--tag-color, var(--qf-green)) 22%, transparent);
 }
 .sbx-tag--under { opacity: 0.55; }
+.sbx-tag--focus.sbx-tag--under { opacity: 0.85; }
 .sbx-tag__depth { margin-left: 5px; opacity: 0.8; }
 .sbx-tag svg, .sbx-boss-tag svg { width: 1em; height: 1em; vertical-align: -0.12em; }
 
