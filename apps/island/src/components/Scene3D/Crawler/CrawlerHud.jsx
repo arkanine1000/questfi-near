@@ -130,10 +130,21 @@ function TargetPlate({ target }) {
   );
 }
 
-function Vitals({ agentName, hp, maxHp }) {
+function Vitals({ agentName, hp, maxHp, reducedMotion }) {
   const low = hp != null && maxHp && hp / maxHp <= 0.3;
+
+  // Each drop in health replays a short red flash on the plate's edge.
+  const [hits, setHits] = useState(0);
+  const prevHpRef = useRef(hp);
+  useEffect(() => {
+    const prev = prevHpRef.current;
+    prevHpRef.current = hp;
+    if (!reducedMotion && prev != null && hp != null && hp < prev) setHits((n) => n + 1);
+  }, [hp, reducedMotion]);
+
   return (
     <div className={`qf-cam-vitals${low ? ' is-low' : ''}`}>
+      {hits > 0 && <i key={hits} className="qf-cam-vitals__hit" aria-hidden="true" />}
       <div className="qf-cam-vitals__head">
         <span className="qf-cam-vitals__name">{agentName}</span>
         <span className="qf-cam-vitals__tag">Vitals</span>
@@ -264,7 +275,9 @@ export default function CrawlerHud({
               ))}
             </div>
           )}
-          {hp != null && <Vitals agentName={agentName} hp={hp} maxHp={maxHp} />}
+          {hp != null && (
+            <Vitals agentName={agentName} hp={hp} maxHp={maxHp} reducedMotion={reducedMotion} />
+          )}
         </div>
 
         {weapon && <WeaponPlate weapon={weapon} />}

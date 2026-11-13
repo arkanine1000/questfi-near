@@ -473,6 +473,7 @@
 
 .qf-cam .qf-cam-vitals {
   --hp: var(--agent);
+  position: relative;
   width: 100%;
   padding: 9px 12px 11px;
   border: 1px solid var(--qf-line);
@@ -522,6 +523,16 @@
   letter-spacing: 0.06em;
   color: var(--qf-dim);
   text-shadow: none;
+}
+/* a hit: the plate's edge flashes red once */
+.qf-cam .qf-cam-vitals__hit {
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  border: 1px solid var(--qf-red);
+  box-shadow: 0 0 18px rgba(var(--qf-red-rgb), 0.5), inset 0 0 16px rgba(var(--qf-red-rgb), 0.25);
+  opacity: 0;
+  animation: qf-cam-hit 0.4s ease-out;
 }
 /* at 30% or less: red, and the plate pulses slowly */
 .qf-cam .qf-cam-vitals.is-low {
@@ -858,6 +869,10 @@
 @keyframes qf-cam-flash {
   0% { opacity: 0; }
   25% { opacity: 0.28; }
+  100% { opacity: 0; }
+}
+@keyframes qf-cam-hit {
+  0% { opacity: 1; }
   100% { opacity: 0; }
 }
 @keyframes qf-cam-hunted {
