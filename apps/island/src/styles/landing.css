@@ -97,15 +97,15 @@
   color: var(--qf-dim);
 }
 
-.qf-land-onair {
+.qf-pill.qf-land-onair {
   margin-top: 16px;
   color: var(--qf-ink-soft);
 }
-.qf-land-onair .qf-dot { color: var(--qf-red); width: 7px; height: 7px; }
+.qf-pill.qf-land-onair .qf-dot { color: var(--qf-red); width: 7px; height: 7px; }
 
 
 /* ---------- the board ---------- */
-.qf-land-board {
+.qf-panel.qf-land-board {
   flex: 0 1 auto;
   display: flex;
   flex-direction: column;
@@ -116,7 +116,7 @@
   animation: qf-rise 0.6s var(--qf-ease) 0.1s both;
 }
 
-.qf-land-board__head {
+.qf-head.qf-land-board__head {
   flex: none;
   align-items: center;
   margin-bottom: 4px;
@@ -424,7 +424,7 @@
 }
 .qf-shell[data-compact] .qf-land-title { grid-area: title; align-self: end; }
 .qf-shell[data-compact] .qf-land-foot { grid-area: foot; align-self: start; justify-self: center; }
-.qf-shell[data-compact] .qf-land-board {
+.qf-shell[data-compact] .qf-panel.qf-land-board {
   grid-area: board;
   width: 100%;
   max-height: calc(100vh - 28px);
@@ -434,7 +434,7 @@
 .qf-shell[data-compact] .qf-land-title__name { font-size: clamp(40px, 6vw, 64px); white-space: normal; }
 .qf-shell[data-compact] .qf-land-title__name > span { display: block; }
 .qf-shell[data-compact] .qf-land-title__tag { max-width: 22em; margin-top: 10px; font-size: 9.5px; line-height: 1.7; white-space: normal; }
-.qf-shell[data-compact] .qf-land-onair { margin-top: 10px; }
+.qf-shell[data-compact] .qf-pill.qf-land-onair { margin-top: 10px; }
 .qf-shell[data-compact] .qf-land-cell { padding: 7px 6px; }
 .qf-shell[data-compact] .qf-land-cell--status { width: 72px; }
 .qf-shell[data-compact] .qf-land-status { gap: 6px; font-size: 10px; letter-spacing: 0.14em; }
@@ -462,10 +462,10 @@
   .qf-shell[data-compact] .qf-land-title__tag { display: none; }
   .qf-shell[data-compact] .qf-land-title__name { font-size: 34px; white-space: nowrap; }
   .qf-shell[data-compact] .qf-land-title__name > span { display: inline; }
-  .qf-shell[data-compact] .qf-land-board { max-height: none; }
+  .qf-shell[data-compact] .qf-panel.qf-land-board { max-height: none; }
   .qf-shell[data-compact] .qf-land-cell--id { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qf-land-veil, .qf-land-title, .qf-land-board, .qf-land-foot { animation: none; }
+  .qf-land-veil, .qf-land-title, .qf-panel.qf-land-board, .qf-land-foot { animation: none; }
 }
