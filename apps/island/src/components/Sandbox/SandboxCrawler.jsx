@@ -454,11 +454,14 @@ export default function SandboxCrawler({ agent, worldId, siteId }) {
   // One segment per gate. drei's useProgress is deliberately NOT used: its
   // store is global and never resets, so it still reads 100 from the
   // island's own load when the crawler mounts — a bar that starts full and
-  // stays full. Three honest steps beat one confident lie, and the step in
-  // flight pulses so a long asset load never reads as a frozen screen.
-  const stagesDone = revealed
-    ? 3
-    : [sceneMountable, assetsSettled, sceneReady || !willRenderScene].filter(Boolean).length;
+  // stays full. Three honest steps beat one confident lie. Each segment is
+  // its own gate (they can clear in any order), and the first gate still
+  // open pulses: it is the one the label below names, so a long asset load
+  // never reads as a frozen screen.
+  const gates = revealed
+    ? [true, true, true]
+    : [sceneMountable, assetsSettled, sceneReady || !willRenderScene];
+  const currentGate = gates.indexOf(false);
   const stalled = heldTooLong && !sceneMountable;
 
   const siteName = model.siteName ?? mapData?.site_name ?? null;
@@ -547,7 +550,7 @@ export default function SandboxCrawler({ agent, worldId, siteId }) {
               {[0, 1, 2].map((i) => (
                 <i
                   key={i}
-                  className={`qf-cam-step${i < stagesDone ? ' is-done' : i === stagesDone ? ' is-current' : ''}`}
+                  className={`qf-cam-step${gates[i] ? ' is-done' : i === currentGate ? ' is-current' : ''}`}
                 />
               ))}
             </div>
