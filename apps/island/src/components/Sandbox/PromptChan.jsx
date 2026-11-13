@@ -123,8 +123,8 @@ export default function PromptChan({ onFollow }) {
     commentary, roster, latestFrame, followedAgent,
   } = useSandbox();
   // Voice is an island-view thing: underground the dungeon feed owns the
-  // audio stage, so she goes silent (and stays readable via the bubble
-  // when back topside).
+  // audio stage, so she stops speaking there; her caption still carries
+  // the line.
   const underground = followedAgent?.position?.kind === 'dungeon';
   const undergroundRef = useRef(underground);
   undergroundRef.current = underground;
