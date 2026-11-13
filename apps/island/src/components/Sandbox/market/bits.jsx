@@ -11,6 +11,18 @@ import { IconClose, IconExternal } from '../../ui/icons';
 /** A payout multiple as text: two decimals while it is small. */
 export const fmtOdds = (x) => (x < 10 ? x.toFixed(2) : x.toFixed(1));
 
+/**
+ * What a stake returns, short enough for its button: two decimals, three
+ * only below 0.01, rounded down so the button never promises more than the
+ * contract pays. Practice chips are whole numbers already.
+ */
+export function fmtReturn(n, chain) {
+  if (!chain) return Math.round(n).toLocaleString('en-US');
+  const places = n < 0.01 ? 3 : 2;
+  const k = 10 ** places;
+  return (Math.floor(n * k) / k).toFixed(places).replace(/\.?0+$/, '') || '0';
+}
+
 /** An implied win chance as a whole percentage. */
 export const fmtPct = (p) => `${Math.round(p * 100)}%`;
 

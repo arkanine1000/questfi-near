@@ -14,7 +14,7 @@ import { useSandbox } from '../../../context/SandboxContext';
 import { useBets } from '../BettingContext';
 import { IconLock, IconWarn } from '../../ui/icons';
 import {
-  AgentHex, AgentName, Amount, Notice, closedReason, closesSoon, fmtOdds, fmtPct, moneyOf,
+  AgentHex, AgentName, Amount, Notice, closedReason, closesSoon, fmtOdds, fmtPct, fmtReturn, moneyOf,
 } from './bits';
 
 /** In place of the stakes when this browser has no test account yet. */
@@ -172,7 +172,7 @@ export default function BetSlip({ onFollow, onSeeBets }) {
                   </span>
                 )}
                 <span className="qf-mkt-stake__ret">
-                  {q != null ? <>Returns <b>{fmt(q)}</b></> : 'No price yet'}
+                  {q != null ? <><span>Returns</span> <b>{fmtReturn(q, chain)}</b></> : 'No price yet'}
                 </span>
               </button>
             );

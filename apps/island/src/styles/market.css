@@ -242,11 +242,17 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 .qf-mkt-stakes__label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; }
 .qf-mkt-stakes__label .qf-mkt-name { font-size: inherit; letter-spacing: inherit; }
 .qf-mkt-slip > .qf-mkt-stakes { margin-top: 8px; }
-.qf-mkt-stakes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.qf-mkt-stakes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  /* the row's own width decides whether RETURNS and its sum share a line */
+  container: qf-mkt-stakes / inline-size;
+}
 /* a stake you can read from across the room */
 .qf-btn.qf-mkt-stake {
   min-height: 64px;
-  padding: 9px 4px 8px;
+  padding: 9px 2px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -266,17 +272,26 @@ a.qf-mkt-head__where:focus-visible { outline: 2px solid var(--qf-ink); outline-o
 .qf-mkt-stake__amt .qf-unit { font-size: 10px; letter-spacing: 0.12em; margin-left: 0.3em; color: rgba(var(--qf-amber-rgb), 0.72); text-shadow: none; }
 .qf-mkt-stake__amt--busy { font-size: 22px; letter-spacing: 0.08em; text-transform: uppercase; }
 .qf-mkt-stake__ret {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0 0.4em;
+  max-width: 100%;
   font-family: var(--qf-font);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   line-height: 1;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   white-space: nowrap;
   color: rgba(var(--qf-amber-rgb), 0.72);
   text-shadow: none;
 }
-.qf-mkt-stake__ret b { font-family: var(--qf-font-num); font-size: 15px; font-weight: 400; letter-spacing: 0.02em; color: var(--qf-amber); }
+.qf-mkt-stake__ret b { font-family: var(--qf-font-num); font-size: 14px; font-weight: 400; letter-spacing: 0.02em; color: var(--qf-amber); }
+/* a narrow row (the compact dock): the sum goes under the word */
+@container qf-mkt-stakes (max-width: 300px) {
+  .qf-mkt-stake__ret { flex-direction: column; align-items: center; gap: 3px; }
+}
 
 /* quick picks, when the slip is for nobody yet */
 .qf-label.qf-mkt-picks__label { margin-bottom: 8px; font-size: 10px; }
