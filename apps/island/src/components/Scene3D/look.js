@@ -12,26 +12,26 @@
 
 export const LOOK_DEFAULTS = Object.freeze({
   // post pass (HouseFx)
-  bloomIntensity: 0.6,
-  bloomThreshold: 0.4,
+  bloomIntensity: 0.82,
+  bloomThreshold: 0.15,
   bloomRadius: 0.5,
   grade: 0.22,
   aberration: 0.8,
-  scan: 0.06,
+  scan: 0.3,
   vignette: 0.45,
-  noise: 0.035,
+  noise: 0.006,
   // scene
   fogDensity: 0.04,
-  terrainFill: 1, // gain on the near-black height ramp of the land
-  contours: 0.28, // brightness of the topographic contour lines
-  shoreline: 0.9, // brightness of the sea-level contour
+  terrainFill: 1.88, // gain on the near-black height ramp of the land
+  contours: 0.56, // brightness of the topographic contour lines
+  shoreline: 1.17, // brightness of the sea-level contour
   hexOutline: 0.08, // brightness of a grid cell outline at rest
-  propEdges: 0.35, // gain on the outline around trees, rocks and ruins
+  propEdges: 0.57, // gain on the outline around trees, rocks and ruins
   seaLattice: 0.5, // brightness of the hex lattice drawn on the sea
   sonar: 1, // strength of the sonar pulses crossing the sea
   projector: 1, // gain on the projector rings around the island
   motes: 0.55, // opacity of the drifting motes
-  agentBeam: 1, // gain on the light beams under the agents
+  agentBeam: 1.36, // gain on the light beams under the agents
 
   // dungeon (first-person view): the house lens at point-of-view values
   dungeonBloomIntensity: 0.6,
@@ -39,9 +39,9 @@ export const LOOK_DEFAULTS = Object.freeze({
   dungeonBloomRadius: 0.5,
   dungeonGrade: 0.55,
   dungeonAberration: 1,
-  dungeonScan: 0.06,
+  dungeonScan: 0.3,
   dungeonVignette: 0.55,
-  dungeonNoise: 0.05,
+  dungeonNoise: 0.006,
   // dungeon scene
   dungeonWallTint: 1, // gain on the stone's base colour (what the lights catch)
   dungeonWallEmissive: 0.02, // the stone's own glow, away from any light
