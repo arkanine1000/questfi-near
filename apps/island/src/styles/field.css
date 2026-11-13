@@ -5,11 +5,17 @@
    button that opens the dossier sits in a narrow strip on the right and
    shows on hover, on keyboard focus, and always on a touch screen. */
 
+/* The panel hugs its rows, so the island shows below a short roster; a
+   long one scrolls inside the column's height. The empty column under it
+   lets clicks through to the island. */
+.qf-shell .qf-col--field { pointer-events: none; }
 .qf-field {
-  flex: 1;
+  flex: 0 1 auto;
+  max-height: 100%;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  pointer-events: auto;
 }
 
 /* ---------- head ---------- */
@@ -43,10 +49,10 @@
 
 .qf-field-list {
   list-style: none;
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   margin: 0;
-  padding: 0 0 12px;
+  padding: 0;
 }
 
 /* ---------- a row ---------- */
@@ -63,6 +69,7 @@
   transition: background 0.15s, border-color 0.15s;
 }
 .qf-field-row { border-bottom: 1px solid var(--qf-line-faint); }
+.qf-field-row:last-child { border-bottom: 0; }
 
 .qf-field-row.is-followed {
   border-left-color: var(--agent);
