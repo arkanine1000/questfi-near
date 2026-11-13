@@ -186,6 +186,22 @@ class NearRpcClient:
         except RequestError as e:
             raise TransportError(f"operator access key: {e}") from None
 
+    async def account_balance(self) -> int:
+        """yoctoNEAR on the operator's own account."""
+        if not self.account_id:
+            raise TransportError("no operator account configured")
+        params = {
+            "request_type": "view_account",
+            "finality": "final",
+            "account_id": self.account_id,
+        }
+        try:
+            account = await self._rpc("query", params)
+            return int(account["amount"])
+        except (_RpcFailure, RequestError, KeyError, TypeError, ValueError) as e:
+            # as with the access key: retryable, never a reason to drop a call
+            raise TransportError(f"operator account: {e}") from None
+
     # -- calls --------------------------------------------------------------
 
     async def call(

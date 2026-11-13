@@ -20,7 +20,7 @@ With the flag unset, none of this runs and no request leaves the server.
 | Game moment | Contract call |
 |---|---|
 | `POST /world/new` | `create_season({season_id: <world id>, entry_stake})` |
-| `POST /world/{id}/start` | `enter_season({pass_id, season_id})` for each house pass, then `start_season` |
+| `POST /world/{id}/start` | for each house pass, `deposit({pass_id})` if it cannot pay the stake (see House passes), then `enter_season({pass_id, season_id})`; then `start_season` |
 | Every tick | that tick's agent deaths and dungeon-boss kills, via `report_events({season_id, seq, events})` |
 | Tick reaches `QUEST_SIM_NEAR_LOCK_TICK` | `lock_market` |
 | Season ends | `lock_market` if not yet sent, then one `settle_season({season_id, winner_pass})` |
@@ -65,12 +65,36 @@ Transactions are signed in-process (`quest_sim/near/tx.py`, ed25519 over
 a Borsh-encoded transaction) and sent with `send_tx`, waiting for
 `EXECUTED_OPTIMISTIC`. No Node runtime or CLI is needed.
 
+## House passes
+
+The house agents' passes are the operator's own, and they pay the stake
+like any other pass. A house agent that keeps losing runs its pass dry;
+its `enter_season` is then refused, it plays off chain with no market on
+it, and a season it wins settles with no winner.
+
+So each house entry is preceded in the queue by a top-up. When its turn
+comes the settler reads the pass (`get_pass`) and the operator's account:
+
+- the pass can pay the season's stake: nothing is sent;
+- it cannot: `deposit({pass_id})` with `QUEST_SIM_NEAR_HOUSE_TOPUP_STAKES`
+  stakes attached (default 20), from the operator's account;
+- unless that would leave the operator's account under
+  `QUEST_SIM_NEAR_OPERATOR_RESERVE` yoctoNEAR (default 2 NEAR), which it
+  needs for gas: then nothing is sent, a warning is logged, and the pass
+  sits the season out as before.
+
+The read is repeated before every attempt, so a deposit that landed
+without an answer is not sent twice. `QUEST_SIM_NEAR_HOUSE_TOPUP_STAKES=0`
+turns top-ups off. The money a top-up moves stays the operator's: it is in
+a pass the operator owns and can `withdraw` from.
+
 ## Setup
 
 1. Register the server's account as an operator on the contract
    (`add_operator`), and fund it for gas.
 2. Mint the house passes from that same account (the server enters them
-   itself, as their owner), fund each with several entry stakes, and write
+   itself, as their owner), fund each with several entry stakes (the
+   server tops one up when it runs dry, see House passes), and write
    `near_passes.json` next to the server: `{"Kell": "1", "Marra": "2", ...}`,
    keyed by the hosted agent names in `engine/sandbox/build.py`. A hosted
    agent with no entry plays off chain. A pass still in an unsettled

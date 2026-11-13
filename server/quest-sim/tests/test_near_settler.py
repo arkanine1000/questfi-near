@@ -220,6 +220,95 @@ async def test_a_house_pass_in_an_unsettled_season_is_not_reused(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# House passes that have run dry
+# ---------------------------------------------------------------------------
+
+STAKE = 10**23  # what _settler sets
+TOPUP = 20 * STAKE
+
+
+def _entries(fake: FakeNearClient, season: str) -> list[str]:
+    return sorted(fake.seasons[season]["entrants"])
+
+
+async def test_a_house_pass_that_cannot_pay_the_stake_is_topped_up_first(tmp_path):
+    fake = FakeNearClient(balances={"1": 0, "2": STAKE})
+    settler = _settler(tmp_path, fake, house_topup_yocto=TOPUP)
+    _started(settler, "w-a")
+    assert await settler.drain()
+    # only the pass that could not pay was given anything
+    assert [(c.args, c.deposit_yocto) for c in fake.applied("deposit")] == [({"pass_id": "1"}, TOPUP)]
+    assert _entries(fake, "w-a") == ["1", "2"]
+    assert fake.balances == {"1": TOPUP - STAKE, "2": 0}
+    order = [(c.method, c.args.get("pass_id")) for c in fake.calls]
+    assert order.index(("deposit", "1")) < order.index(("enter_season", "1"))
+    assert settler.status("w-a")["failed_calls"] == 0
+    assert fake.seasons["w-a"]["status"] == "Running"
+
+
+async def test_without_a_top_up_a_house_pass_that_cannot_pay_stays_out(tmp_path):
+    fake = FakeNearClient(balances={"1": 0})
+    settler = _settler(tmp_path, fake)
+    _started(settler, "w-a")
+    assert await settler.drain()
+    assert fake.applied("deposit") == []
+    assert _entries(fake, "w-a") == ["2"]
+
+
+async def test_a_top_up_leaves_the_operator_account_its_reserve(tmp_path):
+    reserve = 10**24
+    fake = FakeNearClient(balances={"1": 0}, operator_balance=reserve + TOPUP - 1)
+    settler = _settler(tmp_path, fake, house_topup_yocto=TOPUP, operator_reserve_yocto=reserve)
+    _started(settler, "w-a")
+    assert await settler.drain()
+    assert [c for c in fake.calls if c.method == "deposit"] == []
+    assert fake.operator_balance == reserve + TOPUP - 1
+    assert _entries(fake, "w-a") == ["2"]  # the season still runs, without that pass
+    assert fake.seasons["w-a"]["status"] == "Running"
+
+    fake.operator_balance = reserve + TOPUP  # exactly enough
+    _started(settler, "w-b", passes=("1",))
+    assert await settler.drain()
+    assert _entries(fake, "w-b") == ["1"]
+    assert fake.operator_balance == reserve
+
+
+async def test_a_top_up_that_landed_but_timed_out_is_not_sent_twice(tmp_path):
+    fake = FakeNearClient(balances={"1": 0})
+    settler = _settler(tmp_path, fake, house_topup_yocto=TOPUP)
+    fake.fail_next("deposit", TransportError("timed out"), after_apply=True)
+    _started(settler, "w-a")
+    assert await settler.drain()
+    assert [c.outcome for c in fake.calls if c.method == "deposit"] == ["TransportError"]
+    assert fake.balances["1"] == TOPUP - STAKE
+    assert _entries(fake, "w-a") == ["1", "2"]
+
+
+async def test_a_top_up_waits_out_a_chain_outage_and_keeps_its_place(tmp_path):
+    fake = FakeNearClient(balances={"1": 0}, outage=True)
+    settler = _settler(tmp_path, fake, house_topup_yocto=TOPUP)
+    _started(settler, "w-a", passes=("1",))
+    await asyncio.sleep(0.05)
+    assert fake.applied() == []
+    fake.outage = False
+    assert await settler.drain()
+    assert [c.method for c in fake.applied()] == [
+        "create_season", "deposit", "enter_season", "start_season",
+    ]
+
+
+def test_the_top_up_is_set_in_stakes_and_the_reserve_in_yocto(tmp_path):
+    from tests.test_near_client import _test_secret
+
+    settler = near.build_settler(
+        _settings(tmp_path, near_operator_key=_test_secret(), near_house_topup_stakes=7)
+    )
+    assert settler.house_topup_yocto == 7 * 10**23
+    assert settler.operator_reserve_yocto == 2 * 10**24
+    assert Settings(_env_file=None).near_house_topup_stakes == 20
+
+
+# ---------------------------------------------------------------------------
 # Game events to contract events
 # ---------------------------------------------------------------------------
 

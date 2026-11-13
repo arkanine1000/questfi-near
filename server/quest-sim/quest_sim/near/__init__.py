@@ -66,6 +66,8 @@ def build_settler(settings) -> Settler:
         entry_stake_yocto=settings.near_entry_stake,
         lock_tick=settings.near_lock_tick,
         passes_file=settings.near_passes_file,
+        house_topup_yocto=settings.near_house_topup_stakes * (settings.near_entry_stake or 0),
+        operator_reserve_yocto=settings.near_operator_reserve,
     )
 
 

@@ -67,6 +67,10 @@ class NearClient(Protocol):
 
     async def view(self, method: str, args: dict) -> Any: ...
 
+    async def account_balance(self) -> int:
+        """yoctoNEAR on the operator's own account."""
+        ...
+
     async def aclose(self) -> None: ...
 
 
@@ -106,12 +110,19 @@ class FakeNearClient:
     ``hang = True`` makes calls block until it is cleared (polled, so it may
     be cleared from another thread); ``fail_next`` queues targeted
     failures. ``active`` is each pass's ``active_season``: a pass is in one
-    season at a time, until that season settles or is cancelled."""
+    season at a time, until that season settles or is cancelled.
+
+    ``balances`` holds the pass balances a test cares about, in yocto: a
+    listed pass pays its stake on entry and is refused when it cannot; a
+    pass not listed can always pay. ``operator_balance`` is what
+    ``account_balance`` answers, and a ``deposit`` moves it into a pass."""
 
     calls: list[FakeCall] = field(default_factory=list)
     views: list[tuple[str, dict]] = field(default_factory=list)
     seasons: dict[str, dict] = field(default_factory=dict)
     active: dict[str, str] = field(default_factory=dict)  # pass_id -> season_id
+    balances: dict[str, int] = field(default_factory=dict)  # pass_id -> yocto
+    operator_balance: int = 10**27
     outage: bool = False
     hang: bool = False
     _failures: list[_FakeFailure] = field(default_factory=list)
@@ -165,7 +176,7 @@ class FakeNearClient:
         self._tx_counter += 1
         tx_hash = f"faketx{self._tx_counter:04d}"
         try:
-            value = self._apply(method, args)
+            value = self._apply(method, args, deposit_yocto)
         except ContractError as e:
             record.outcome = "ContractError"
             e.tx_hash = tx_hash
@@ -200,8 +211,17 @@ class FakeNearClient:
             return None if season is None else {"open": season["market_open"]}
         if method == "get_pass":
             pass_id = str(args.get("pass_id"))
-            return {"token_id": pass_id, "active_season": self.active.get(pass_id)}
+            return {
+                "token_id": pass_id,
+                "active_season": self.active.get(pass_id),
+                "balance": str(self.balances.get(pass_id, 10**27)),
+            }
         raise ContractError(f"MethodNotFound: {method}")
+
+    async def account_balance(self) -> int:
+        if self.outage:
+            raise TransportError("chain unreachable (fake outage)")
+        return self.operator_balance
 
     async def aclose(self) -> None:
         return None
@@ -236,7 +256,14 @@ class FakeNearClient:
             raise ContractError(f"season is {season['status']}")
         return season
 
-    def _apply(self, method: str, args: dict) -> Any:
+    def _apply(self, method: str, args: dict, deposit_yocto: int = 0) -> Any:
+        if method == "deposit":
+            if deposit_yocto <= 0:
+                raise ContractError("attach a deposit")
+            pass_id = str(args["pass_id"])
+            self.balances[pass_id] = self.balances.get(pass_id, 0) + deposit_yocto
+            self.operator_balance -= deposit_yocto
+            return None
         if method == "create_season":
             if args["season_id"] in self.seasons:
                 raise ContractError("season already exists")
@@ -248,6 +275,11 @@ class FakeNearClient:
                 raise ContractError("pass already entered")
             if args["pass_id"] in self.active:
                 raise ContractError("pass is already in a season")
+            if args["pass_id"] in self.balances:
+                stake = int(season["entry_stake"])
+                if self.balances[args["pass_id"]] < stake:
+                    raise ContractError("not enough in the pass")
+                self.balances[args["pass_id"]] -= stake
             season["entrants"][args["pass_id"]] = {"name": "", "alive": True}
             self.active[args["pass_id"]] = args["season_id"]
             return None
