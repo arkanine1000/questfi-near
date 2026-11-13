@@ -55,7 +55,15 @@ async function until(test, timeoutMs, stepMs = 80) {
 }
 
 function accessibleName(el) {
-  return (el.getAttribute('aria-label') || el.textContent || '').replace(/\s+/g, ' ').trim();
+  const label = el.getAttribute('aria-label');
+  if (label) return label.trim();
+  // the visible text, leaving out decorations marked aria-hidden
+  const text = (node) => {
+    if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+    if (node.nodeType !== Node.ELEMENT_NODE || node.getAttribute('aria-hidden') === 'true') return '';
+    return [...node.childNodes].map(text).join('');
+  };
+  return text(el).replace(/\s+/g, ' ').trim();
 }
 
 function visible(el) {
