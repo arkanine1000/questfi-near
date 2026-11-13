@@ -20,7 +20,7 @@
   min-width: 0;
 }
 
-.qf-onb__hero {
+.qf-btn.qf-onb__hero {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -30,11 +30,11 @@
   padding-right: 18px;
   text-align: center;
 }
-.qf-onb__hero svg { flex: none; }
+.qf-btn.qf-onb__hero svg { flex: none; }
 
 .qf-onb__say { margin-top: 10px; }
 
-.qf-onb__other {
+.qf-label.qf-onb__other {
   margin: 24px 0 2px;
   padding-bottom: 7px;
   width: 100%;
@@ -68,12 +68,12 @@
 }
 .qf-onb-line__value::-webkit-scrollbar { display: none; }
 
-.qf-onb-line__copy {
+.qf-btn.qf-onb-line__copy {
   flex: none;
   border-width: 0 0 0 1px;
   border-color: var(--qf-line-soft);
 }
-.qf-onb-line__copy.is-copied { color: var(--qf-green); }
+.qf-btn.qf-onb-line__copy.is-copied { color: var(--qf-green); }
 
 .qf-onb__tag {
   padding: 2px 6px 1px;
@@ -93,15 +93,15 @@
   margin: 0;
 }
 
-.qf-onb__frame {
+.qf-frame.qf-onb__frame {
   --frame-len: 16px;
   padding: 10px;
 }
 
 /* the code itself: a canvas, or the same drawing as an image where no
    canvas may be made */
-.qf-onb__frame canvas,
-.qf-onb__frame img {
+.qf-frame.qf-onb__frame canvas,
+.qf-frame.qf-onb__frame img {
   display: block;
   width: 232px;
   height: auto;
@@ -118,7 +118,7 @@
 /* short windows (a landscape phone): a smaller code beside the copy */
 @media (max-height: 640px) {
   .qf-onb { gap: 20px; }
-  .qf-onb__frame canvas,
-  .qf-onb__frame img { width: 176px; }
-  .qf-onb__other { margin-top: 16px; }
+  .qf-frame.qf-onb__frame canvas,
+  .qf-frame.qf-onb__frame img { width: 176px; }
+  .qf-label.qf-onb__other { margin-top: 16px; }
 }

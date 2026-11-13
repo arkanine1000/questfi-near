@@ -27,7 +27,7 @@
   transition: left 0.5s var(--qf-ease), right 0.5s var(--qf-ease);
 }
 
-.qf-lobby-card {
+.qf-panel.qf-lobby-card {
   pointer-events: auto;
   width: min(620px, 100%);
   max-height: 100%;
@@ -58,7 +58,7 @@
   animation: qf-rise 0.5s var(--qf-ease) 0.1s both;
 }
 
-.qf-lobby-card__when { font-size: 11px; letter-spacing: 0.3em; margin-right: -0.3em; }
+.qf-label.qf-lobby-card__when { font-size: 11px; letter-spacing: 0.3em; margin-right: -0.3em; }
 
 .qf-lobby-count {
   margin-top: 6px;
@@ -209,7 +209,7 @@
 
 /* ---------- small windows: fits in 390px of height ---------- */
 .qf-shell[data-compact] .qf-lobby { padding: 8px 0; }
-.qf-shell[data-compact] .qf-lobby-card { padding: 9px 16px 10px; }
+.qf-shell[data-compact] .qf-panel.qf-lobby-card { padding: 9px 16px 10px; }
 .qf-shell[data-compact] .qf-lobby-card__headline { margin-top: 6px; }
 .qf-shell[data-compact] .qf-lobby-count { font-size: 56px; margin-top: 2px; }
 .qf-shell[data-compact] .qf-lobby-wait { font-size: 15px; }
@@ -225,13 +225,13 @@
 .qf-shell[data-compact] .qf-lobby-seat { gap: 4px; }
 
 /* starting it and bringing an agent share one line, the start note under them */
-.qf-shell[data-compact] .qf-lobby-card {
+.qf-shell[data-compact] .qf-panel.qf-lobby-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   column-gap: 10px;
   justify-items: center;
 }
-.qf-shell[data-compact] .qf-lobby-card > * { grid-column: 1 / -1; justify-self: stretch; }
+.qf-shell[data-compact] .qf-panel.qf-lobby-card > * { grid-column: 1 / -1; justify-self: stretch; }
 .qf-shell[data-compact] .qf-lobby-card__start { display: contents; }
 .qf-shell[data-compact] .qf-lobby-card__start > .qf-btn {
   grid-column: 1;
@@ -260,10 +260,10 @@
 }
 
 /* the TV reads from the sofa */
-.qf-shell[data-tv] .qf-lobby-card { zoom: 1.15; }
+.qf-shell[data-tv] .qf-panel.qf-lobby-card { zoom: 1.15; }
 
 @media (prefers-reduced-motion: reduce) {
-  .qf-lobby-card,
+  .qf-panel.qf-lobby-card,
   .qf-lobby-card__headline,
   .qf-lobby-card__seats,
   .qf-lobby-card__start,

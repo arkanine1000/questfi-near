@@ -50,21 +50,21 @@
 }
 
 /* an indeterminate bar: a bright segment sliding along a 4px track */
-.qf-sys-boot__bar {
+.qf-bar.qf-sys-boot__bar {
   position: relative;
   overflow: hidden;
   width: min(280px, 70vw);
   margin-top: 12px;
 }
-.qf-sys-boot__bar > i {
+.qf-bar.qf-sys-boot__bar > i {
   width: 32%;
   transition: none;
   animation: qf-sys-slide 1.5s var(--qf-ease) infinite;
 }
 
 @keyframes qf-sys-slide {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(320%); }
+  from { transform: translateX(-70%); }
+  to { transform: translateX(310%); }
 }
 
 /* ---------- the server not answering ---------- */
@@ -72,7 +72,7 @@
   background: radial-gradient(ellipse 70% 65% at 50% 48%, rgba(1, 6, 3, 0.55), rgba(1, 6, 3, 0.9) 80%);
 }
 
-.qf-sys-lost {
+.qf-panel.qf-sys-lost {
   width: min(440px, 100%);
   display: flex;
   flex-direction: column;
@@ -168,8 +168,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .qf-sys, .qf-sys-lost, .qf-sys-boot__line { animation: none; }
+  .qf-sys, .qf-panel.qf-sys-lost, .qf-sys-boot__line { animation: none; }
   /* a still, half-filled bar, and the phone shown already turned */
-  .qf-sys-boot__bar > i { width: 50%; animation: none; }
+  .qf-bar.qf-sys-boot__bar > i { width: 50%; animation: none; }
   .qf-sys-rotate__phone { animation: none; transform: rotate(90deg); }
 }

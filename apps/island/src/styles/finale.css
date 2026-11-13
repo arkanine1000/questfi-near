@@ -75,7 +75,7 @@
 }
 
 /* ---------- the card ---------- */
-.qf-fin-card {
+.qf-panel.qf-fin-card {
   --rows: 6;
   --row-h: 30px;
   position: relative;
@@ -112,7 +112,7 @@
   filter: drop-shadow(0 0 14px rgba(var(--qf-red-rgb), 0.6));
 }
 
-.qf-fin-season { font-size: 10.5px; letter-spacing: 0.22em; }
+.qf-label.qf-fin-season { font-size: 10.5px; letter-spacing: 0.22em; }
 
 .qf-fin-crown {
   margin-top: 12px;
@@ -268,7 +268,7 @@
   gap: 8px 12px;
 }
 
-.qf-fin-you__tag { gap: 6px; padding: 3px 8px; font-size: 10px; }
+.qf-pill.qf-fin-you__tag { gap: 6px; padding: 3px 8px; font-size: 10px; }
 
 .qf-fin-you__what {
   font-family: var(--qf-font-num);
@@ -313,14 +313,14 @@
 }
 
 /* ---------- folding the results away ---------- */
-.qf-fin-fold {
+.qf-btn.qf-fin-fold {
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 1;
   padding: 5px 6px;
 }
-.qf-fin-fold svg { width: 14px; height: 14px; }
+.qf-btn.qf-fin-fold svg { width: 14px; height: 14px; }
 
 /* folded: a pill at the top of the stage, and nothing else in it */
 .qf-fin-pill {
@@ -382,7 +382,7 @@
   animation: qf-rise 0.5s var(--qf-ease) 0.4s both;
 }
 
-.qf-fin-chan__cam {
+.qf-frame.qf-fin-chan__cam {
   --frame-len: 14px;
   flex: none;
   width: 118px;
@@ -390,7 +390,7 @@
   overflow: hidden;
   background: var(--qf-panel-dense);
 }
-.qf-fin-chan__cam::before { z-index: 1; }
+.qf-frame.qf-fin-chan__cam::before { z-index: 1; }
 
 .qf-fin-chan__sprite {
   position: absolute;
@@ -402,7 +402,7 @@
   user-select: none;
 }
 
-.qf-fin-chan__desk {
+.qf-panel.qf-fin-chan__desk {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -454,21 +454,21 @@
     margin: 0;
     align-items: flex-end;
   }
-  .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan__cam {
+  .qf-shell:not([data-compact]):not([data-tv]) .qf-frame.qf-fin-chan__cam {
     width: 214px;
     height: auto;
     margin-left: 6px;
     overflow: visible;
     background: none;
   }
-  .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan__cam::before { display: none; }
+  .qf-shell:not([data-compact]):not([data-tv]) .qf-frame.qf-fin-chan__cam::before { display: none; }
   .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan__sprite {
     position: static;
     display: block;
     width: 100%;
     filter: drop-shadow(0 0 6px rgba(53, 255, 125, 0.45));
   }
-  .qf-shell:not([data-compact]):not([data-tv]) .qf-fin-chan__desk {
+  .qf-shell:not([data-compact]):not([data-tv]) .qf-panel.qf-fin-chan__desk {
     flex: 0 1 600px;
     max-width: 600px;
     min-height: 104px;
@@ -487,21 +487,21 @@
     margin: 0;
     align-items: flex-end;
   }
-  .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan__cam {
+  .qf-shell[data-tv]:not([data-compact]) .qf-frame.qf-fin-chan__cam {
     width: 214px;
     height: auto;
     margin-left: 6px;
     overflow: visible;
     background: none;
   }
-  .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan__cam::before { display: none; }
+  .qf-shell[data-tv]:not([data-compact]) .qf-frame.qf-fin-chan__cam::before { display: none; }
   .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan__sprite {
     position: static;
     display: block;
     width: 100%;
     filter: drop-shadow(0 0 6px rgba(53, 255, 125, 0.45));
   }
-  .qf-shell[data-tv]:not([data-compact]) .qf-fin-chan__desk {
+  .qf-shell[data-tv]:not([data-compact]) .qf-panel.qf-fin-chan__desk {
     flex: 0 1 600px;
     max-width: 600px;
     min-height: 104px;
@@ -513,7 +513,7 @@
 /* ---------- less stage: a smaller card ---------- */
 /* The heights below are the card's area: the room above the bottom band. */
 @container qf-fin-area (max-height: 599px) {
-  .qf-fin-card { --rows: 4; --row-h: 28px; padding-top: 10px; }
+  .qf-panel.qf-fin-card { --rows: 4; --row-h: 28px; padding-top: 10px; }
   .qf-fin-cup { width: 100px; height: 100px; margin: -8px 0 -6px; }
   .qf-fin-skull { width: 44px; height: 44px; margin: 6px 0 6px; }
   .qf-fin-crown { margin-top: 8px; }
@@ -525,7 +525,7 @@
 
 /* very little: the hero beside the standings */
 @container qf-fin-area (max-height: 460px) {
-  .qf-fin-card {
+  .qf-panel.qf-fin-card {
     --rows: 4;
     --row-h: 26px;
     display: grid;
@@ -537,7 +537,7 @@
   }
   .qf-fin-cup { width: 76px; height: 76px; margin: -6px 0 -4px; }
   .qf-fin-skull { width: 36px; height: 36px; margin: 2px 0 6px; }
-  .qf-fin-season { font-size: 9.5px; letter-spacing: 0.16em; }
+  .qf-label.qf-fin-season { font-size: 9.5px; letter-spacing: 0.16em; }
   .qf-fin-crown { margin-top: 6px; font-size: 10px; }
   .qf-fin-name { margin-top: 4px; font-size: clamp(32px, 5vw, 44px); }
   .qf-fin-reason { margin-top: 6px; font-size: 10.5px; letter-spacing: 0.16em; }
@@ -551,12 +551,12 @@
   .qf-fin-foot .qf-btn { padding: 7px 14px; font-size: 11.5px; }
 }
 @container qf-fin-area (max-height: 250px) {
-  .qf-fin-card { --rows: 3; }
+  .qf-panel.qf-fin-card { --rows: 3; }
 }
 
 /* compact windows: a smaller camera square and caption */
-.qf-shell[data-compact] .qf-fin-chan__cam { --frame-len: 10px; width: 76px; height: 76px; }
-.qf-shell[data-compact] .qf-fin-chan__desk { margin-left: 8px; padding: 7px 12px 8px; }
+.qf-shell[data-compact] .qf-frame.qf-fin-chan__cam { --frame-len: 10px; width: 76px; height: 76px; }
+.qf-shell[data-compact] .qf-panel.qf-fin-chan__desk { margin-left: 8px; padding: 7px 12px 8px; }
 .qf-shell[data-compact] .qf-fin-chan__who { gap: 8px; }
 .qf-shell[data-compact] .qf-fin-chan__name,
 .qf-shell[data-compact] .qf-fin-chan__role { font-size: 9px; }
@@ -565,12 +565,12 @@
 /* Over the dungeon feed (a followed agent underground, as the TV's
    director does on its own) the card goes opaque, so the feed's titles do
    not show through its text. */
-.qf-shell[data-cam] .qf-fin-card { background: rgb(1, 14, 7); }
+.qf-shell[data-cam] .qf-panel.qf-fin-card { background: rgb(1, 14, 7); }
 
 /* the TV reads from the sofa */
-.qf-shell[data-tv] .qf-fin-card { zoom: 1.15; }
+.qf-shell[data-tv] .qf-panel.qf-fin-card { zoom: 1.15; }
 
 @media (prefers-reduced-motion: reduce) {
-  .qf-fin-card, .qf-fin-hero, .qf-fin-standings, .qf-fin-you, .qf-fin-foot, .qf-fin-chan, .qf-fin-pill,
+  .qf-panel.qf-fin-card, .qf-fin-hero, .qf-fin-standings, .qf-fin-you, .qf-fin-foot, .qf-fin-chan, .qf-fin-pill,
   .qf-fin-you.is-waiting .qf-fin-you__what { animation: none; }
 }
