@@ -17,6 +17,13 @@
 const BPS = 10000n;
 const YOCTO_PER_MICRO = 10n ** 18n; // one millionth of a NEAR
 
+/**
+ * What a betting account keeps back, in yocto (0.05 NEAR): an account has to
+ * hold the price of a call's whole gas allowance before the call is sent, so
+ * this is what lets it still claim after its last bet.
+ */
+export const FEE_RESERVE = 5n * 10n ** 22n;
+
 /** yoctoNEAR (string, number or BigInt) to NEAR, exact to a millionth. */
 export function fromYocto(yocto) {
   const v = BigInt(yocto ?? 0);

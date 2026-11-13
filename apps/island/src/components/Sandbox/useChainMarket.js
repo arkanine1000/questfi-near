@@ -21,7 +21,7 @@ import {
   useCallback, useEffect, useMemo, useRef, useState,
 } from 'react';
 import {
-  betReturn, cutsFrom, formatNear, fromYocto, isLive, isOver, oddsFor,
+  FEE_RESERVE, betReturn, cutsFrom, formatNear, fromYocto, isLive, isOver, oddsFor,
   settlePayout, statusOf, totalsByPass,
 } from '../../services/marketMath';
 
@@ -273,6 +273,10 @@ export function useChainMarket({ near, world, roster }) {
   const readState = market === undefined || !config ? 'loading' : market === null ? 'waiting' : 'live';
   const bettingOpen = Boolean(readState === 'live' && market.open && isLive(status) && world?.phase !== 'finished');
   const balance = hasAccount && near.balance != null ? fromYocto(near.balance) : null;
+  // What the account can still bet: its balance less the reserve that pays
+  // for gas, so a bettor is never left unable to claim.
+  const roomY = near.balance == null ? null : near.balance > FEE_RESERVE ? near.balance - FEE_RESERVE : 0n;
+  const canBet = hasAccount && roomY != null ? fromYocto(roomY) : null;
 
   // ---- the account's actions ---------------------------------------------
   const place = useCallback(async (agent, stake) => {
@@ -284,8 +288,8 @@ export function useChainMarket({ near, world, roster }) {
     }
     const yocto = typeof stake === 'object' ? stake.yocto : null;
     if (!yocto) return;
-    if (near.balance != null && near.balance < yocto) {
-      setNotice({ tone: 'bad', text: `The test account holds ${formatNear(near.balance)} NEAR, less than this ${formatNear(yocto)} NEAR bet.` });
+    if (roomY != null && roomY < yocto) {
+      setNotice({ tone: 'bad', text: `The test account holds ${formatNear(near.balance)} NEAR and keeps ${formatNear(FEE_RESERVE)} NEAR of it for network fees, so it cannot place this ${formatNear(yocto)} NEAR bet.` });
       return;
     }
     const label = `${formatNear(yocto)} NEAR on ${agent.name}`;
@@ -307,7 +311,7 @@ export function useChainMarket({ near, world, roster }) {
       setPending(null);
       refreshNow();
     }
-  }, [ready, pending, bettingOpen, byPass, near.balance, chain, session, seasonId, addTx, refreshNow]);
+  }, [ready, pending, bettingOpen, byPass, near.balance, roomY, chain, session, seasonId, addTx, refreshNow]);
 
   const claim = useCallback(async () => {
     if (!ready || pending) return;
@@ -381,6 +385,8 @@ export function useChainMarket({ near, world, roster }) {
     mode: 'chain',
     unit: 'NEAR',
     balance,
+    canBet,
+    feeReserve: fromYocto(FEE_RESERVE),
     bets,
     myTotal,
     pools,
@@ -414,7 +420,7 @@ export function useChainMarket({ near, world, roster }) {
     houseCutPct,
     lockTick,
     winnerId,
-  }), [balance, bets, myTotal, pools, odds, prob, probHistory, place, payout, bettingOpen,
+  }), [balance, canBet, bets, myTotal, pools, odds, prob, probHistory, place, payout, bettingOpen,
        stakes, quote, ifWins, canBack, claim, pending, notice, feedError, txs, status, readState,
        seasonId, accountId, hasAccount, near.status, near.error, createTestAccount, minBet,
        contractId, agentCutPct, houseCutPct, lockTick, winnerId]);

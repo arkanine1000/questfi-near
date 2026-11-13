@@ -131,13 +131,16 @@ export default function BetSlip({ onFollow, onSeeBets }) {
   };
 
   const stakesBlock = () => {
-    const short = m.stakes.some((st) => m.balance != null && amountOf(st) > m.balance);
+    // On chain the account keeps a reserve for gas, so what it can bet is
+    // less than what it holds; practice chips have no such reserve.
+    const room = m.canBet ?? m.balance;
+    const short = m.stakes.some((st) => room != null && amountOf(st) > room);
     let why = null;
     if (chain && m.pending?.kind === 'bet') why = 'Sending your bet to NEAR…';
     else if (chain && m.pending?.kind === 'claim') why = 'Claiming…';
     else if (short) {
       why = chain
-        ? 'Not enough NEAR on the test account for every stake.'
+        ? `The test account keeps ${fmt(m.feeReserve)} NEAR for network fees; the rest does not cover every stake.`
         : 'Not enough practice chips for every stake.';
     }
     return (
@@ -151,7 +154,7 @@ export default function BetSlip({ onFollow, onSeeBets }) {
             const q = m.quote(agent.agent_id, st);
             const placing = chain && m.pending?.kind === 'bet'
               && m.pending.agentId === agent.agent_id && m.pending.stake === amount;
-            const disabled = (chain && Boolean(m.pending)) || (m.balance != null && amount > m.balance);
+            const disabled = (chain && Boolean(m.pending)) || (room != null && amount > room);
             return (
               <button
                 key={keyOf(st)}

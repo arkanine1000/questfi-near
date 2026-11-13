@@ -77,7 +77,11 @@ export function explainError(err) {
 // ---------------------------------------------------------------------------
 // transactions
 // ---------------------------------------------------------------------------
-const call = (method, args = {}, { deposit = 0n, gas = 30 } = {}) => build.functionCall(method, args, teraToGas(gas), BigInt(deposit));
+// An account has to hold the price of all the gas a call attaches before the
+// call is sent (about 0.001 NEAR per Tgas, most of it returned afterwards).
+// So calls attach what they need with room to spare, not the most the
+// network allows: a bet uses under 3 Tgas and a claim under 4.
+const call = (method, args = {}, { deposit = 0n, gas = 20 } = {}) => build.functionCall(method, args, teraToGas(gas), BigInt(deposit));
 
 // What a finished transaction comes back as: its hash and the value the
 // contract returned.
@@ -175,7 +179,7 @@ export function createChain({ contractId, rpcUrl = 'https://test.rpc.fastnear.co
     placeBet: (session, seasonId, passId, yocto) =>
       session.send(contractId, [call('place_bet', { season_id: seasonId, pass_id: String(passId) }, { deposit: yocto })]),
     async claimWinnings(session, seasonId) {
-      const done = await session.send(contractId, [call('claim_winnings', { season_id: seasonId }, { gas: 50 })]);
+      const done = await session.send(contractId, [call('claim_winnings', { season_id: seasonId })]);
       return { ...done, paid: BigInt(done.value ?? 0) };
     },
   };
