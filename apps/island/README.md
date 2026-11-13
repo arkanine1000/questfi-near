@@ -217,7 +217,7 @@ parameters on top of a scenario:
 
 | Parameter | Effect |
 |-----------|--------|
-| `step=<name>` | An interaction performed once the data is in: `open-lobby`, `play`, `play-more`, `operator`, `start-now`, `invite-more`, `copy-invite`, `bet`, `fold`, `settings`, `create-account`, `combat-log`, `chan-blip`, `claim` |
+| `step=<name>` | An interaction performed once the data is in: `open-lobby`, `play`, `play-more`, `operator`, `start-now`, `invite-more`, `copy-invite`, `bet`, `fold`, `settings`, `create-account`, `chan-blip`, `claim` |
 | `tx=pending\|fail\|ok` | What the chain does with a bet or claim |
 | `guest=pending\|fail\|ok` | What the test-account service does |
 | `follow=slip` | Follow an agent on the surface, so the bet slip has someone to back |
