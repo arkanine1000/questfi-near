@@ -125,6 +125,14 @@ function FieldRow({
             <span className="qf-field-tag" title="Plays through the API with its own brain">API</span>
           )}
           {isYours(agent) && <span className="qf-field-tag qf-field-tag--ice" title="Carries your agent pass">Yours</span>}
+          {/* where it is underground, beside the name where the line has
+              room; a leading "The" spends width the name of the place needs */}
+          {where && (
+            <span className="qf-field-where" title={`Underground: ${where}`}>
+              <IconDescend size={10} />
+              <span>{where.replace(/^the\s+/i, '')}</span>
+            </span>
+          )}
         </span>
         {alive ? (
           <span className="qf-field-status">
@@ -137,15 +145,7 @@ function FieldRow({
                 <IconKills size={12} />{agent.kills}
               </span>
             )}
-            {/* a fight is the news: it takes the location's place */}
             {fighting && <span className="qf-field-combat">In combat</span>}
-            {!fighting && where && (
-              <span className="qf-field-where" title={`Underground: ${where}`}>
-                <IconDescend size={12} />
-                {/* a leading "The" spends width the name needs */}
-                <span>{where.replace(/^the\s+/i, '')}</span>
-              </span>
-            )}
           </span>
         ) : (
           <span className="qf-field-status qf-field-fate" title={deathSentence(agent)}>{deathSentence(agent)}</span>
