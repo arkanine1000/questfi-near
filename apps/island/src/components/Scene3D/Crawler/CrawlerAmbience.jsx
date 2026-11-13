@@ -12,6 +12,7 @@ import {
   FLAME_SHEET, TORCH_MODEL_URL, TORCH_TEXTURE_URLS, COBWEB_TEXTURE_URL,
 } from './crawlerAssets';
 import { useRoomLight, LIGHT_PRIORITY } from './CrawlerLightPool';
+import { COLORS } from '../worldUtils';
 
 // Cosmetic set dressing: wall torches with an animated billboarded flame,
 // and cobwebs in wall corners. Nothing here reads or affects game state —
@@ -200,7 +201,7 @@ function Torch({ placement, template, reducedMotion }) {
     x: flameWorld[0],
     y: flameWorld[1] + FLAME_SIZE * 0.4, // sit the light in the flame itself
     z: flameWorld[2],
-    color: '#4dff8c',
+    color: COLORS.wire,
     intensity: 7,
     distance: CELL * 2.4,
     decay: 2,
@@ -260,7 +261,7 @@ export default function CrawlerAmbience({ model, reducedMotion }) {
       roughnessMap: orm, // ORM: roughness in G, metalness in B
       metalnessMap: orm,
       color: new THREE.Color(1.75, 2.45, 2.0),
-      emissive: '#2bcc6a',
+      emissive: COLORS.fill,
       emissiveMap: baseColor,
       emissiveIntensity: 1.15,
       roughness: 0.62, // some specular headroom so the relief catches light
@@ -326,7 +327,7 @@ export default function CrawlerAmbience({ model, reducedMotion }) {
     // read as light and vanish against the dark walls.
     return new THREE.MeshStandardMaterial({
       map: cobwebTex,
-      color: '#9fbfae',
+      color: COLORS.bright,
       transparent: true,
       opacity: COBWEB_OPACITY,
       depthWrite: false,

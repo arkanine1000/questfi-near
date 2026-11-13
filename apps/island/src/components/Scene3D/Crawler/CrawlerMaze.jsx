@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Instances, Instance } from '@react-three/drei';
 import { roomToWorld } from '../dungeonAdapter';
+import { COLORS } from '../worldUtils';
 import {
   getCrawlerTexture, getWallTilesTexture, getWallTilesNormalTexture, getGlowDiscTexture,
 } from './crawlerTextures';
@@ -47,12 +48,12 @@ const tileGeo = new THREE.PlaneGeometry(CELL, CELL);
 const tintGeo = new THREE.PlaneGeometry(CELL * 0.94, CELL * 0.94);
 
 // Floor glow wash per special room type — the walk-in "what is this room"
-// cue (danger red, loot amber, boss crimson, entrance green)
+// cue (danger red, loot amber, boss red, entrance green)
 const TINT_COLORS = {
-  trap_room: '#ff4020',
-  treasure_room: '#ffb020',
-  boss_room: '#ff0048',
-  entrance: '#16ff60',
+  trap_room: COLORS.red,
+  treasure_room: COLORS.amber,
+  boss_room: COLORS.red,
+  entrance: COLORS.green,
 };
 
 /**
@@ -76,7 +77,7 @@ export default function CrawlerMaze({ model, reducedMotion }) {
   // in unison
   const fogMat = useMemo(
     () => new THREE.MeshBasicMaterial({
-      color: '#ff0040',
+      color: COLORS.red,
       transparent: true,
       opacity: 0.28,
       side: THREE.DoubleSide,
@@ -179,7 +180,7 @@ export default function CrawlerMaze({ model, reducedMotion }) {
       <Instances limit={MAX_CELLS} geometry={tileGeo} frustumCulled={false}>
         <meshStandardMaterial
           map={floorTex}
-          emissive="#2bff70"
+          emissive={COLORS.green}
           emissiveMap={floorTex}
           emissiveIntensity={0.5}
           color="#123522"
@@ -197,7 +198,7 @@ export default function CrawlerMaze({ model, reducedMotion }) {
           map={ceilTex}
           normalMap={ceilNormalTex}
           normalScale={[2.2, 2.2]}
-          emissive="#1d8f4a"
+          emissive={COLORS.green}
           emissiveMap={ceilTex}
           emissiveIntensity={0.06}
           color="#3d6b50"
@@ -220,7 +221,7 @@ export default function CrawlerMaze({ model, reducedMotion }) {
           map={wallTex}
           normalMap={wallNormalTex}
           normalScale={[2.2, 2.2]}
-          emissive="#2bff70"
+          emissive={COLORS.green}
           emissiveMap={wallTex}
           emissiveIntensity={0.14}
           color="#8fd9ae"

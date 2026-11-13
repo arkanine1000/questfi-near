@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import CrawlerScene from './CrawlerScene';
 import { createBeatQueue } from './crawlerEvents';
 import { adaptSiteMapData } from '../dungeonAdapter';
+import { COLORS } from '../worldUtils';
 import { weaponSpecFor } from './weaponCatalog';
 import { preloadCrawlerAssets } from './crawlerAssets';
 
@@ -56,7 +57,7 @@ function benchMapData(enemyId) {
         visited: true,
         is_entrance: true,
         connections: {},
-        players: [{ agent_id: PLAYER_ID, name: 'Bench', color: '#69ff8f' }],
+        players: [{ agent_id: PLAYER_ID, name: 'Bench', color: COLORS.greenBright }],
         entities: [{ type: 'hostile', id: enemyId, name: enemyId, hp: 20, max_hp: 20 }],
         combat: { active: true, combatant_ids: [PLAYER_ID, enemyId] },
       },
@@ -179,7 +180,7 @@ export default function WeaponBench() {
         queue={queue}
         activeBeat={activeBeat}
         weapon={{ name: weaponName }}
-        weaponTint="#69ff8f"
+        weaponTint={COLORS.greenBright}
         reducedMotion={reducedMotion}
       />
 

@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { CELL, EYE, cellCenter, idToGrid } from './CrawlerMaze';
+import { COLORS } from '../worldUtils';
 
 // The single queue consumer: calls queue.update(delta) every frame (frame
 // clock, no timers) and drives the first-person camera from the beats.
@@ -222,7 +223,7 @@ export default function CrawlerRig({ model, queue, reducedMotion }) {
   return (
     <pointLight
       ref={lightRef}
-      color="#49ff88"
+      color={COLORS.wire}
       intensity={22}
       distance={CELL * 4.5}
       decay={1.6}

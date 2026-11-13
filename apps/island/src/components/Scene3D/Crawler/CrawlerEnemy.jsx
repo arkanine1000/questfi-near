@@ -11,6 +11,7 @@ import {
   getSpriteSheetTexture, cloneFrameTexture, setFrame, pingPongFrame,
   makeSheetTintVariant,
 } from './spriteSheet';
+import { COLORS } from '../worldUtils';
 
 // Hostile holograms: the questfi-lobby enemy.js treatment — additive
 // projection billboard, no depth write, hovering idle, red-channel-swap
@@ -115,7 +116,7 @@ function EnemyBillboard({ enemy, model, queue, reducedMotion, textures }) {
     y: 0.35,
     z: 0,
     color: sheet?.light
-      ?? (enemy.boss ? '#ff2038' : enemy.invader ? '#00bfff' : '#30ff70'),
+      ?? (enemy.boss ? COLORS.red : enemy.invader ? COLORS.ice : COLORS.green),
     intensity: 3.5,
     distance: 5,
     decay: 2,

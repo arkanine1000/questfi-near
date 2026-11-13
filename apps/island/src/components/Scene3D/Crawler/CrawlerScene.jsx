@@ -1,7 +1,7 @@
 import { Component, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
-import { canUseBloom } from '../worldUtils';
+import { canUseBloom, COLORS } from '../worldUtils';
 import CrawlerRig from './CrawlerRig';
 import CrawlerMaze from './CrawlerMaze';
 import CrawlerEnemy from './CrawlerEnemy';
@@ -10,7 +10,7 @@ import CrawlerAmbience from './CrawlerAmbience';
 import CrawlerLightPool from './CrawlerLightPool';
 import CrawlerWeapon from './CrawlerWeapon';
 
-const FOG_COLOR = '#010603';
+const FOG_COLOR = COLORS.bg;
 
 // Frames to let land after the shader warm-up, before calling the scene
 // presentable. Postprocessing compiles its own chain on the composer's first
@@ -137,7 +137,7 @@ export default function CrawlerScene({
     >
       <color attach="background" args={[FOG_COLOR]} />
       <fog attach="fog" args={[FOG_COLOR, 2, 22]} />
-      <ambientLight color="#0d5a2b" intensity={0.8} />
+      <ambientLight color={COLORS.deep} intensity={0.8} />
 
       {/* Rig first: it advances the beat queue for everyone downstream */}
       <CrawlerRig model={model} queue={queue} reducedMotion={reducedMotion} />

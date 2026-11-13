@@ -5,6 +5,7 @@ import { WEAPON_PALETTE_URL, loaderFor, weaponModelUrl, weaponSpecFor } from './
 import {
   bellowsIdleAngle, bellowsPlayAngle, pumpBellows, rigBellows,
 } from './weaponRigs';
+import { COLORS } from '../worldUtils';
 
 // First-person weapon viewmodel: a lag-following group that trails the
 // camera (R3F's default camera lives outside the scene graph, so a
@@ -105,8 +106,8 @@ function WeaponModel({ spec, tint }) {
       })
       : new THREE.MeshStandardMaterial({
         map: palette,
-        color: '#2a9e5c',
-        emissive: '#0f8f43',
+        color: COLORS.fill,
+        emissive: COLORS.deep,
         emissiveMap: palette,
         emissiveIntensity: 0.24, // a touch brighter to sell the holo look
         roughness: 0.82,
@@ -165,7 +166,7 @@ function RiggedWeaponModel({ spec, tint, queue, reducedMotion }) {
   // references into this clone's vertex buffers, so anything that rebuilds
   // one has to rebuild the other or the deform drives a discarded model.
   const { object, rig } = useMemo(() => {
-    const base = new THREE.Color(tint || '#c98a5b');
+    const base = new THREE.Color(tint || COLORS.greenBright);
     const mat = new THREE.MeshStandardMaterial({
       color: base.clone().multiplyScalar(0.25),
       emissive: base,

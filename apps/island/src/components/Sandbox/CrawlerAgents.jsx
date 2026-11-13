@@ -20,6 +20,7 @@ import { CELL, cellCenter } from '../Scene3D/Crawler/CrawlerMaze';
 import { loaderFor, weaponModelUrl, weaponSpecFor } from '../Scene3D/Crawler/weaponCatalog';
 import { useRoomLight, LIGHT_PRIORITY } from '../Scene3D/Crawler/CrawlerLightPool';
 import { AGENT_MODEL_URL as AGENT_MODEL } from '../Scene3D/Crawler/crawlerAssets';
+import { COLORS } from '../Scene3D/worldUtils';
 import { useSandbox } from '../../context/SandboxContext';
 
 const AGENT_H = 1.7;
@@ -110,7 +111,7 @@ function makeColoredRig(scene, color) {
   const rig = skeletonClone(scene);
   rig.rotation.y = Math.PI; // source mannequin is authored backward
 
-  const tint = new THREE.Color(color || '#69ff8f');
+  const tint = new THREE.Color(color || COLORS.greenBright);
   const fillMat = new THREE.MeshStandardMaterial({
     color: tint.clone().multiplyScalar(0.18),
     emissive: tint,
@@ -163,7 +164,7 @@ function makeColoredRig(scene, color) {
 
 /** Clone and normalize one of the map's existing low-poly weapon models. */
 function makeHeldWeapon(model, spec, color) {
-  const tint = new THREE.Color(color || '#69ff8f');
+  const tint = new THREE.Color(color || COLORS.greenBright);
   const material = new THREE.MeshStandardMaterial({
     color: tint.clone().multiplyScalar(0.24),
     emissive: tint,
@@ -291,7 +292,7 @@ function AnimatedAgent({
     x: 0,
     y: 0.65,
     z: 0,
-    color: agent.color || '#69ff8f',
+    color: agent.color || COLORS.greenBright,
     intensity: 2.4,
     distance: 4.5,
     decay: 2,
@@ -672,13 +673,13 @@ function AnimatedAgent({
 
     // Lobby-style red material hit flash, restored every other frame.
     if (takingHit && queue.progress < 0.72) {
-      colored.fillMat.emissive.set('#ff2020');
+      colored.fillMat.emissive.set(COLORS.red);
       colored.fillMat.emissiveIntensity = 0.9;
-      colored.wireMat.color.set('#ff5d5d');
+      colored.wireMat.color.set(COLORS.red);
     } else {
-      colored.fillMat.emissive.set(agent.color || '#69ff8f');
+      colored.fillMat.emissive.set(agent.color || COLORS.greenBright);
       colored.fillMat.emissiveIntensity = 0.42;
-      colored.wireMat.color.set(agent.color || '#69ff8f');
+      colored.wireMat.color.set(agent.color || COLORS.greenBright);
     }
   });
 
@@ -723,7 +724,7 @@ export default function CrawlerAgents({ model, queue, reducedMotion }) {
         const identity = rosterById[entry.id] || {};
         out.push({
           ...entry,
-          color: entry.color || identity.color || '#69ff8f',
+          color: entry.color || identity.color || COLORS.greenBright,
           preset: identity.preset || 'fighter',
           weapon: identity.weapon || null,
           roomId: room.id,

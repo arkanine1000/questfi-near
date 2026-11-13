@@ -8,6 +8,7 @@ import { getWallTilesTexture, getWallTilesNormalTexture } from './crawlerTexture
 import { getSpriteSheetTexture } from './spriteSheet';
 import { whenTrackedLoadsSettle } from './loadTracker';
 import { publicUrl } from '../../../services/publicUrl';
+import { COLORS } from '../worldUtils';
 
 /**
  * The crawler's fixed asset manifest, plus the warm-up that pulls all of it
@@ -87,7 +88,7 @@ export const BOSS_SHEETS = {
     lift: 0.15, // perched and rearing, not airborne — the art has planted feet
     lunge: 0.45, // a heavy thing lunges less, and a 2.4-unit quad at full
     // lunge distance swallows the viewport
-    light: '#5bff6a', // green, to match the breath — the default boss red
+    light: COLORS.green, // green, to match the breath — the default boss red
     // fights it
   },
 };
