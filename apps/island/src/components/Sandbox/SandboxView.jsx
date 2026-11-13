@@ -34,7 +34,6 @@ import WinnerBanner from './Finale';
 import FollowNav, { HexPicker } from './FollowNav';
 import { BootCurtain, OfflineOverlay, RotateGate } from './SystemScreens';
 import { BetsProvider } from './BettingContext';
-import '../../styles/Sandbox.css';
 // after the old sheet, so the restyled 3D name tags win over its rules
 import '../../styles/stage.css';
 
