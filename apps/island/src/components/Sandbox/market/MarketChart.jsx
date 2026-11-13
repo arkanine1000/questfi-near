@@ -51,8 +51,11 @@ export default function MarketChart({ onFollow }) {
     );
   }
 
-  const x0 = probHistory[0].tick;
-  const x1 = probHistory[probHistory.length - 1].tick;
+  // the span of ticks sampled; taken from the extremes, not the ends, so a
+  // history that is not in tick order still fits the plot
+  const ticks = probHistory.map((s) => s.tick);
+  const x0 = Math.min(...ticks);
+  const x1 = Math.max(...ticks);
   const span = Math.max(1, x1 - x0);
   const peak = Math.max(...series.flatMap(({ pts }) => pts.map(([, p]) => p)));
   const yMax = niceMax(peak);

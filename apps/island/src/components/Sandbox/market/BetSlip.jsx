@@ -192,7 +192,7 @@ export default function BetSlip({ onFollow, onSeeBets }) {
       <>
         {q != null && (
           <p className="qf-mkt-msg">
-            A {fmt(amountOf(st))} NEAR bet now returns {fmt(q)} NEAR if {agent.name} wins.
+            A {fmt(amountOf(st))} NEAR bet now returns {fmtReturn(q, chain)} NEAR if {agent.name} wins.
           </p>
         )}
         <AccountOffer />
