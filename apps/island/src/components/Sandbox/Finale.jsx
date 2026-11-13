@@ -85,7 +85,7 @@ function Standings({ order, winner }) {
                 <td className="qf-fin-rank">{String(i + 1).padStart(2, '0')}</td>
                 <td className="qf-fin-agent">
                   <span className="qf-fin-agent__in">
-                    <span className="qf-hex qf-fin-hex" aria-hidden />
+                    <span className="qf-hex qf-fin-hex" aria-hidden>{(a.name || '?').trim().charAt(0)}</span>
                     <span className="qf-fin-who">{a.name}</span>
                   </span>
                 </td>

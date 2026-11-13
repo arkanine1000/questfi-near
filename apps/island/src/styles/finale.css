@@ -176,7 +176,7 @@
   gap: 9px;
   min-width: 0;
 }
-.qf-fin-hex {
+.qf-hex.qf-fin-hex {
   --hex: 20px;
   --hex-edge: var(--agent);
   --hex-fill: color-mix(in srgb, var(--agent) 24%, #021209);

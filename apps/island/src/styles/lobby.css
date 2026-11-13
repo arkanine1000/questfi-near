@@ -118,7 +118,7 @@
   gap: 5px;
 }
 
-.qf-lobby-seat__hex {
+.qf-hex.qf-lobby-seat__hex {
   --hex: var(--seat-hex);
   --hex-edge: var(--agent);
   --hex-fill: color-mix(in srgb, var(--agent) 18%, #021209);
@@ -162,7 +162,7 @@
 .qf-lobby-seat__ready { color: var(--qf-green); }
 
 /* an open seat: the same hexagon, dashed and dim, nobody in it */
-.qf-lobby-seat.is-open .qf-lobby-seat__hex {
+.qf-lobby-seat.is-open .qf-hex.qf-lobby-seat__hex {
   --hex-edge: transparent;
   --hex-fill: rgba(var(--qf-green-rgb), 0.03);
   filter: none;
