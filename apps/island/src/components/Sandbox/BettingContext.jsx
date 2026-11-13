@@ -155,10 +155,28 @@ function useSimMarket() {
     [bets],
   );
 
+  /** What a new stake on the agent pays if it wins, the pool as it stands
+   *  plus this stake: the same sum settlement does, for this stake alone. */
+  const quote = useCallback((agentId, stake) => {
+    const share = pools.byAgent[agentId] ?? 0;
+    if (!stake || !pools.total) return null;
+    return Math.round((pools.total + stake) * (stake / (share + stake)) * (1 - RAKE));
+  }, [pools]);
+
+  /** What the chips already on the agent pay if it wins, the pool as it stands. */
+  const ifWins = useCallback((agentId) => {
+    const mine = bets[agentId] ?? 0;
+    const share = pools.byAgent[agentId] ?? 0;
+    if (!mine || !share) return null;
+    return Math.round(pools.total * (mine / share) * (1 - RAKE));
+  }, [bets, pools]);
+
   return useMemo(() => ({
     mode: 'sim', unit: '⬡', stakes: STAKES,
     balance, bets, myTotal, pools, odds, prob, probHistory, place, payout, bettingOpen,
-  }), [balance, bets, myTotal, pools, odds, prob, probHistory, place, payout, bettingOpen]);
+    quote, ifWins, rakePct: RAKE * 100,
+  }), [balance, bets, myTotal, pools, odds, prob, probHistory, place, payout, bettingOpen,
+       quote, ifWins]);
 }
 
 export function BetsProvider({ children }) {
@@ -178,6 +196,7 @@ const INERT = {
   balance: 0, bets: {}, myTotal: 0, pools: { total: 0, byAgent: {} },
   odds: () => null, prob: () => 0, probHistory: [], place: () => {},
   payout: null, bettingOpen: false,
+  quote: () => null, ifWins: () => null, rakePct: RAKE * 100,
 };
 
 /** Safe outside the provider (legacy view) — everything inert. */
