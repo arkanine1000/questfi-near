@@ -5,16 +5,17 @@
  *
  *   npm run dev -- --port 5311 --strictPort        # in another terminal
  *   node scripts/preview-shots.mjs --out <dir> [--only a,b] [--viewports 1600x900,844x390]
- *                                  [--base http://localhost:5311/]
+ *                                  [--base http://localhost:5311/] [--resume]
  *
  * For each scenario and viewport it loads the page, waits for the fonts and
  * for <html data-preview-ready="1">, and writes <out>/<scenario>@<w>x<h>.png.
  * It stops with a non-zero exit and says why when a page contains a <canvas>,
  * asks a host other than the dev server (or a font host) for anything, throws
- * an uncaught error, or never becomes ready. One page at a time.
+ * an uncaught error, or never becomes ready. One page at a time. --resume
+ * skips shots already in <dir>, to finish a run that was cut short.
  */
 
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium } from 'playwright';
 import { DEFAULT_VIEWPORTS, SCENARIOS } from '../src/dev/preview/catalog.js';
@@ -23,7 +24,9 @@ const FONT_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com'];
 const READY_TIMEOUT_MS = 45000;
 
 function parseArgs(argv) {
-  const out = { base: 'http://localhost:5311/', only: null, viewports: null, out: null };
+  const out = {
+    base: 'http://localhost:5311/', only: null, viewports: null, out: null, resume: false,
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     const next = () => {
@@ -35,6 +38,7 @@ function parseArgs(argv) {
     else if (a === '--out') out.out = next();
     else if (a === '--only') out.only = next().split(',').map((s) => s.trim()).filter(Boolean);
     else if (a === '--viewports') out.viewports = next().split(',').map(parseViewport);
+    else if (a === '--resume') out.resume = true;
     else if (a === '--help' || a === '-h') out.help = true;
     else throw new Error(`unknown option ${a}`);
   }
@@ -47,7 +51,7 @@ function parseViewport(text) {
   return [Number(m[1]), Number(m[2])];
 }
 
-const usage = 'usage: node scripts/preview-shots.mjs --out <dir> [--base <url>] [--only a,b] [--viewports 1600x900,844x390]';
+const usage = 'usage: node scripts/preview-shots.mjs --out <dir> [--base <url>] [--only a,b] [--viewports 1600x900,844x390] [--resume]';
 
 let args;
 try {
@@ -83,7 +87,10 @@ mkdirSync(outDir, { recursive: true });
 const jobs = [];
 for (const s of scenarios) {
   const viewports = args.viewports ?? s.viewports ?? (s.core ? DEFAULT_VIEWPORTS : [DEFAULT_VIEWPORTS[0]]);
-  for (const [w, h] of viewports) jobs.push({ scenario: s, w, h });
+  for (const [w, h] of viewports) {
+    if (args.resume && existsSync(join(outDir, `${s.name}@${w}x${h}.png`))) continue;
+    jobs.push({ scenario: s, w, h });
+  }
 }
 
 const browser = await chromium.launch({
@@ -136,6 +143,7 @@ try {
     }
     const took = ((Date.now() - t1) / 1000).toFixed(1);
     if (problems.length) {
+      rmSync(join(outDir, `${label}.png`), { force: true });
       failures.push({ label, problems });
       console.error(`✗ ${label} (${took} s)\n    ${problems.join('\n    ')}`);
     } else {
