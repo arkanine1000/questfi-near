@@ -22,7 +22,7 @@ const PAD_R = 42; // room for the % gridline labels
 const niceMax = (v) => [0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1].find((s) => v <= s - 0.02) ?? 1;
 
 export default function MarketChart({ onFollow }) {
-  const { roster, followedAgentId } = useSandbox();
+  const { roster, followedAgentId, world } = useSandbox();
   const { probHistory } = useBets();
   const [cursor, setCursor] = useState(null); // history index while scrubbing
 
@@ -44,6 +44,8 @@ export default function MarketChart({ onFollow }) {
   })), [top, probHistory]);
 
   if (probHistory.length < 2 || !top.length) {
+    // after the game nothing is forming any more: no history, no chart
+    if (world?.phase === 'finished') return null;
     return (
       <div className="qf-mkt-chart is-forming">
         <span>Market forming…</span>
