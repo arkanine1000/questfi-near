@@ -75,6 +75,11 @@ if (!redirecting) {
   refuseWebGL();
   installMemoryStorage(spec?.storage ?? {});
   window.__questfiPreview = { standIn, selectHex, note: (k) => tracker.note(k) };
+  // "Copy" buttons work, and the real clipboard is left alone
+  Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: async () => {}, readText: async () => '' },
+  });
   if (spec) {
     installNetwork(spec, tracker);
     // the address bar the app reads at mount: the world to attach, the pass to follow

@@ -33,6 +33,7 @@ npm run dev
 | `npm run preview` | Preview production build |
 | `node scripts/generateMask.js` | Regenerate island mask from image |
 | `npm run build:spritesheet` | Pack sprite animation frames into a strip + manifest |
+| `node scripts/preview-shots.mjs --out <dir>` | Screenshot every [preview scenario](#preview-mode) (dev server running) |
 
 ### Environment Variables
 
@@ -162,6 +163,77 @@ window.questfi.clearOperatorKey()
 
 It is never built into the bundle. See the warning under
 [Environment Variables](#environment-variables).
+
+---
+
+## Preview mode
+
+A development-only way to look at every 2D surface without a game server, a
+chain or a GPU. On the dev server, `?preview=<scenario>` renders the real
+interface (the app's own providers and components) from recorded data:
+
+- **No canvas.** The island, the dungeon and the winner's trophy get plain DOM
+  backdrops, the confetti a still, and the invite QR is drawn as an image. The
+  components that hold a canvas (`IslandScene`, `CrawlerScene`,
+  `WinnerCelebration`, `InviteQr`) hand over to
+  `window.__questfiPreview.standIn()` when it exists; it exists only in
+  preview mode. A new canvas needs the same hand-over, or the screenshot
+  script fails.
+- **No network.** A stand-in `fetch` answers the game server's routes and
+  SSE stream, the NEAR RPC (views, and signed bets and claims, which go
+  nowhere) and the test-account service from `src/dev/fixtures/`. Any other
+  host is refused.
+- **No real storage.** `localStorage` is an in-memory copy for the page, so a
+  scenario's test account never touches the real slots on the dev origin.
+- **Not in production.** `App.jsx` loads `src/dev/preview` lazily behind
+  `import.meta.env.DEV`; a build contains none of it.
+
+```bash
+npm run dev -- --port 5311 --strictPort
+# http://localhost:5311/?preview lists every scenario as a link
+
+node scripts/preview-shots.mjs --out ../preview-shots          # all of them
+node scripts/preview-shots.mjs --out ../preview-shots --only lobby,finale-won --viewports 1600x900,844x390
+```
+
+The script (Playwright, headless shell, GPU and 3D APIs off) loads each
+scenario at each viewport, waits for the fonts and for
+`<html data-preview-ready="1">`, and writes `<scenario>@<w>x<h>.png`. Core
+scenarios are shot at 1600×900, 1280×720 and 844×390, sub-states at 1600×900,
+`rotate` at 390×844; `--viewports` overrides. It exits non-zero, naming the
+page, when a page contains a `<canvas>`, asks any host other than the dev
+server or a font host for anything, throws an uncaught error, or never
+becomes ready (`data-preview-error` says what it was waiting for).
+
+**Scenarios** (`src/dev/preview/catalog.js` has the full list with URLs):
+`landing`, `landing-empty`, `boot`, `offline`, `rotate`, `lobby`,
+`lobby-waiting`, `lobby-hosted`, `running-open`, `running-bet`,
+`running-locked`, `running-sim`, `no-account`, `follow-overworld`,
+`hex-picker`, `follow-dungeon`, `follow-dungeon-pvp`, `follow-dungeon-death`,
+`finale-won`, `finale-lost`, `finale-refund`, `finale-settling`,
+`finale-none`, `tv`, and `gallery` (the DOM that drei's `<Html>` projects out
+of the 3D scenes: name tags, the boss crown, rival tags). Sub-states are extra
+parameters on top of a scenario:
+
+| Parameter | Effect |
+|-----------|--------|
+| `step=<name>` | An interaction performed once the data is in: `open-lobby`, `play`, `play-more`, `operator`, `start-now`, `invite-more`, `copy-invite`, `bet`, `fold`, `settings`, `create-account`, `combat-log`, `chan-blip`, `claim` |
+| `tx=pending\|fail\|ok` | What the chain does with a bet or claim |
+| `guest=pending\|fail\|ok` | What the test-account service does |
+| `follow=slip` | Follow an agent on the surface, so the bet slip has someone to back |
+| `host=1` / `host=open` | This browser holds the host key / anyone may open a lobby |
+| `paused=1`, `feed=1`, `chain=error\|off`, `rpc=down`, `account=none\|gone` | Clock stopped; the visitor's own transactions in the on-chain feed; the server's chain trouble, or a season off chain; the RPC unreachable; no test account, or one that no longer exists |
+| `net=hold\|down` | The scenario's main request never answers / fails |
+| `hex=q,r` | Click that hex (the crowded-hex picker) |
+| `wait=countdown\|player\|running_season\|chain` | What an arena lobby waits for |
+| `view=tv` | The TV cut |
+
+Steps find their controls by accessible name (an `aria-label`, else the
+text), never by class name; when a redesign renames one, update `STEPS` in
+`src/dev/preview/scenarios.js`. The fixtures were recorded read-only from the
+public game server and testnet, trimmed, and edited in `scenarios.js` (the
+visitor's bets, a settled market, a PvP fight); account ids in them are made
+up.
 
 ---
 

@@ -85,18 +85,29 @@ export function installNetwork(spec, tracker) {
         };
         signal?.addEventListener('abort', close, { once: true });
         for (const f of world.frames ?? []) if (f.tick >= sinceTick) send('frame', f);
-        // the live part plays after the page has had time to read the market
-        let at = world.liveDelayMs ?? 900;
-        for (const item of world.live ?? []) {
-          if (item.event === 'frame' && item.data.tick < sinceTick) continue;
-          timers.push(setTimeout(() => send(item.event, item.data), at));
-          at += item.gapMs ?? 650;
-        }
-        timers.push(setTimeout(() => {
+        // The live part plays once the page has read what it waits on (the
+        // market, so the chart gets a sample per live tick), then paced.
+        const playLive = () => {
+          let at = world.liveDelayMs ?? 300;
+          for (const item of world.live ?? []) {
+            if (item.event === 'frame' && item.data.tick < sinceTick) continue;
+            timers.push(setTimeout(() => send(item.event, item.data), at));
+            at += item.gapMs ?? 400;
+          }
+          timers.push(setTimeout(() => {
+            if (closed) return;
+            tracker.note('stream-done');
+            if (world.closeAfter) close();
+          }, at));
+        };
+        const waitFor = spec.liveAfter ?? [];
+        const t0 = performance.now();
+        const poll = () => {
           if (closed) return;
-          tracker.note('stream-done');
-          if (world.closeAfter) close();
-        }, at));
+          if (waitFor.every((k) => tracker.has(k)) || performance.now() - t0 > 8000) playLive();
+          else timers.push(setTimeout(poll, 50));
+        };
+        poll();
       },
     });
     return new Response(stream, { status: 200, headers: { 'content-type': 'text/event-stream' } });
@@ -123,6 +134,7 @@ export function installNetwork(spec, tracker) {
     }
     if (method === 'POST' && path === '/near/arena/start') {
       const a = game.arenaStart ?? { status: 200, body: {} };
+      if (a.hold) return hold(signal, tracker, tok);
       return json(a.body, a.status);
     }
     if (method === 'POST' && path === '/world/new') {

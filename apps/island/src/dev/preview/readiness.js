@@ -113,7 +113,7 @@ export async function watchReadiness(spec, tracker) {
       await runStep(step); // eslint-disable-line no-await-in-loop
       await until(() => tracker.quietFor > 300, 8000); // eslint-disable-line no-await-in-loop
     }
-    await sleep(spec.settleMs ?? 1300);
+    await sleep(spec.settleMs ?? 1000);
     await until(imagesLoaded, 5000);
     await document.fonts?.ready;
     const canvas = document.querySelector('canvas');

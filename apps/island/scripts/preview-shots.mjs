@@ -93,19 +93,25 @@ const browser = await chromium.launch({
 
 const failures = [];
 const t0 = Date.now();
+// One context and one page for the whole run, so the dev server's modules
+// stay in the HTTP cache between loads; each shot is a fresh navigation.
+const context = await browser.newContext({ viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1 });
+const page = await context.newPage();
+let problems = [];
+page.on('request', (req) => {
+  const u = new URL(req.url());
+  if (u.protocol === 'data:' || u.protocol === 'blob:' || u.protocol === 'about:') return;
+  if (u.host === base.host || FONT_HOSTS.includes(u.hostname)) return;
+  problems.push(`asked another host: ${req.method()} ${req.url()}`);
+});
+page.on('pageerror', (err) => problems.push(`uncaught: ${err.message}`));
 try {
   for (const { scenario, w, h } of jobs) {
     const label = `${scenario.name}@${w}x${h}`;
-    const context = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
-    const page = await context.newPage();
-    const problems = [];
-    page.on('request', (req) => {
-      const u = new URL(req.url());
-      if (u.protocol === 'data:' || u.protocol === 'blob:') return;
-      if (u.host === base.host || FONT_HOSTS.includes(u.hostname)) return;
-      problems.push(`asked another host: ${req.method()} ${req.url()}`);
-    });
-    page.on('pageerror', (err) => problems.push(`uncaught: ${err.message}`));
+    const t1 = Date.now();
+    await page.goto('about:blank');
+    problems = [];
+    await page.setViewportSize({ width: w, height: h });
     const url = new URL(`?${scenario.query}`, base).href;
     try {
       await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -127,14 +133,13 @@ try {
       await page.screenshot({ path: join(outDir, `${label}.png`) });
     } catch (err) {
       problems.push(err.message.split('\n')[0]);
-    } finally {
-      await context.close();
     }
+    const took = ((Date.now() - t1) / 1000).toFixed(1);
     if (problems.length) {
       failures.push({ label, problems });
-      console.error(`✗ ${label}\n    ${problems.join('\n    ')}`);
+      console.error(`✗ ${label} (${took} s)\n    ${problems.join('\n    ')}`);
     } else {
-      console.log(`✓ ${label}`);
+      console.log(`✓ ${label} (${took} s)`);
     }
   }
 } finally {

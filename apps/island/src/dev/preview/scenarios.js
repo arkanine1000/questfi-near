@@ -207,9 +207,14 @@ function earlyWorld({ host = false, locked = false } = {}) {
 }
 
 /** The recorded season after its last tick. */
-function finishedWorld({ extinction = false, settled = true } = {}) {
+function finishedWorld({ extinction = false, settled = true, reason = null } = {}) {
   const state = clone(FINAL);
   const frames = [frameAt(37), frameAt(38)];
+  if (reason) {
+    // hand edit: the same crown, won another way
+    state.win_reason = reason;
+    frames[1].win_reason = reason;
+  }
   if (!settled) {
     state.near = nearBlock(SEASON_ID, 'Running', [...STARTED_TXS, 'lock_market', 'report_events'], { queue_depth: 1, queue_depth_total: 1 });
   }
@@ -239,7 +244,9 @@ function finishedWorld({ extinction = false, settled = true } = {}) {
 }
 
 /** The recorded arena lobby, with challengers seated (hand edit). */
-function lobbyWorld({ seated = 3, host = false, hosted = false } = {}) {
+function lobbyWorld({
+  seated = 3, host = false, hosted = false, chainOpen = true,
+} = {}) {
   const state = clone(lobbyFx.state);
   const id = state.world_id;
   const spawn = season.map.spawn_ring;
@@ -249,7 +256,8 @@ function lobbyWorld({ seated = 3, host = false, hosted = false } = {}) {
     name: a.name,
     tactics: a.tactics,
     color: a.color,
-    brain: a.brain,
+    // hand edit: the third seat is a visitor's own agent, over the API
+    brain: i === 2 ? 'external' : a.brain,
     preset: a.preset,
     ready: i < 2,
     ...(hosted ? {} : { pass_id: a.pass_id }),
@@ -269,6 +277,10 @@ function lobbyWorld({ seated = 3, host = false, hosted = false } = {}) {
   if (hosted) {
     state.near = { enabled: false };
     state.pool_size = 10;
+  }
+  if (!chainOpen) {
+    // the season is still being opened on NEAR: nothing sent yet
+    state.near = { ...state.near, season_status: null, recent_txs: [] };
   }
   return {
     state,
@@ -381,6 +393,7 @@ export const STEPS = {
   operator: [{ click: /^Operator sign-in$/ }],
   'start-now': [{ click: /^Start the season now$/ }],
   'invite-more': [{ click: /^Other ways to connect$/ }],
+  'copy-invite': [{ click: /Copy invite for your agent/, settleMs: 150 }],
   bet: [{ click: /^Bet [\d.]+ NEAR on / }],
   fold: [{ click: /^Tuck the market away$/ }],
   settings: [{ click: /^Settings$/ }],
@@ -404,12 +417,13 @@ const LANDING_ROWS = [
   { world_id: 'w-61e3ab07', phase: 'finished', tick: 44, joined: 6, pool_size: 6, winner_name: null, can_control: false },
 ];
 
-function landing({ empty = false } = {}) {
+function landing({ empty = false, host = false } = {}) {
   const run = runningWorld({ id: RUNNING_ALIAS });
+  const rows = LANDING_ROWS.map((r) => ({ ...r, can_control: host }));
   return {
     title: empty ? 'Landing board, nothing on air' : 'Landing board',
     game: {
-      list: { ...landingFx.listing, worlds: empty ? [] : LANDING_ROWS },
+      list: { ...landingFx.listing, worlds: empty ? [] : rows },
       worlds: empty ? {} : {
         [RUNNING_ALIAS]: run,
         [SEASON_ID]: finishedWorld(),
@@ -431,6 +445,10 @@ function landing({ empty = false } = {}) {
 function runningScenario(params, {
   title, open = true, mine = {}, locked = false,
 } = {}) {
+  // entrants=recorded: only the passes that really entered the recorded
+  // season on chain (three of six; the others' enter_season failed)
+  const entered = params.get('entrants') === 'recorded'
+    ? new Set(chainFx.season_settled.entrants.map((e) => e.pass_id)) : null;
   const slip = params.get('follow') === 'slip';
   const host = params.get('host') === '1';
   const world = slip
@@ -451,7 +469,10 @@ function runningScenario(params, {
     chain: {
       seasons: {
         [SEASON_ID]: chainSeason(SEASON_ID, {
-          status, open: open && !locked, roster: world.state.roster, mine,
+          status,
+          open: open && !locked,
+          roster: entered ? world.state.roster.filter((a) => entered.has(a.pass_id)) : world.state.roster,
+          mine,
         }),
       },
     },
@@ -460,7 +481,7 @@ function runningScenario(params, {
 }
 
 const BASES = {
-  landing: () => landing(),
+  landing: (p) => landing({ host: p.get('host') === '1' }),
   'landing-empty': () => landing({ empty: true }),
   'landing-notice': () => ({
     ...landing(),
@@ -488,7 +509,9 @@ const BASES = {
       game: {
         worlds: { [world.state.world_id]: world },
         arena: lobbyArena({ seated: 3, wait: 'countdown' }),
-        arenaStart: { status: 429, body: { detail: 'A house season can start again in 212s' } },
+        arenaStart: p.get('start') === 'hold'
+          ? { hold: true }
+          : { status: 429, body: { detail: 'A house season can start again in 212s' } },
       },
       chain: {
         seasons: {
@@ -504,7 +527,7 @@ const BASES = {
   'lobby-waiting': (p) => {
     const wait = p.get('wait') || 'player';
     const seated = wait === 'player' || wait === 'chain' ? 0 : 1;
-    const world = lobbyWorld({ seated });
+    const world = lobbyWorld({ seated, chainOpen: wait !== 'chain' });
     return {
       title: `Arena lobby waiting for ${wait}`,
       game: {
@@ -512,7 +535,8 @@ const BASES = {
         arena: lobbyArena({ seated, wait }),
       },
       chain: {
-        seasons: {
+        // waiting for the chain: the contract has no such season yet
+        seasons: wait === 'chain' ? {} : {
           [world.state.world_id]: chainSeason(world.state.world_id, {
             status: 'Open', open: true, roster: world.state.roster, others: {},
           }),
@@ -546,6 +570,9 @@ const BASES = {
   'running-sim': (p) => ({
     ...runningScenario(p, { title: p.get('chain') === 'off' ? 'Season off chain: practice chips' : 'No contract: practice chips' }),
     contract: p.get('chain') === 'off',
+    storage: p.get('bets') === '1'
+      ? { 'sbx-chips': 650, [`sbx-bets:${SEASON_ID}`]: { [AGENT('Kell')]: 250, [AGENT('Bren')]: 100 } }
+      : {},
   }),
 
   'follow-overworld': (p) => ({
@@ -563,7 +590,8 @@ const BASES = {
     url: { pass: PASS('Kell') },
     game: { worlds: { [SEASON_ID]: { ...runningWorld({ line: LINES.dungeon }), siteMode: p.get('net') === 'hold' ? 'hold' : 'ok' } } },
     ready: p.get('net') === 'hold' ? ['site-held'] : ['site', 'standin:dungeon'],
-    settleMs: 2600,
+    // stall=1: hold past the curtain's 12 s ceiling, to its stalled note
+    settleMs: p.get('stall') === '1' ? 12600 : 2600,
   }),
   'follow-dungeon-pvp': (p) => ({
     ...runningScenario(p, { title: 'Following Vex: Bren turns on her' }),
@@ -577,10 +605,23 @@ const BASES = {
     url: { pass: PASS('Vex') },
     game: { worlds: { [SEASON_ID]: runningWorld({ pvp: 'kill', line: LINES.pvp }) } },
     ready: ['site'],
-    settleMs: 3600, // the death cut waits 2.6 s after the killing blow
+    // the death cut waits 2.6 s after the killing blow; cut=blow shows the
+    // HUD in that moment instead
+    settleMs: p.get('cut') === 'blow' ? 500 : 3600,
   }),
 
-  'finale-won': () => finale('Finale: the visitor backed the winner', { mine: { [PASS('Kell')]: 0.05, [PASS('Dain')]: 0.01 } }),
+  'finale-won': (p) => finale('Finale: the visitor backed the winner', {
+    mine: { [PASS('Kell')]: 0.05, [PASS('Dain')]: 0.01 }, reason: p.get('reason'),
+  }),
+  'finale-sim': (p) => ({
+    ...finale('Finale on practice chips', {}),
+    contract: false,
+    // the simulated market's own storage: a stake on Kell, or on Marra
+    storage: {
+      'sbx-chips': 900,
+      [`sbx-bets:${SEASON_ID}`]: { [AGENT(p.get('bet') === 'lost' ? 'Marra' : 'Kell')]: 100 },
+    },
+  }),
   'finale-lost': () => finale('Finale: the visitor backed a loser', { mine: { [PASS('Marra')]: 0.05 } }),
   'finale-refund': () => finale('Finale: nobody backed the winner, bets refunded', {
     mine: { [PASS('Marra')]: 0.05 }, others: { [PASS('Dain')]: 0.2, [PASS('Vex')]: 0.1 }, refund: true,
@@ -592,9 +633,9 @@ const BASES = {
 };
 
 function finale(title, {
-  mine = {}, others = OTHERS, refund = false, settled = true, extinction = false,
+  mine = {}, others = OTHERS, refund = false, settled = true, extinction = false, reason = null,
 }) {
-  const world = finishedWorld({ extinction, settled });
+  const world = finishedWorld({ extinction, settled, reason });
   const status = settled ? 'Settled' : 'Running';
   return {
     title,
@@ -636,9 +677,11 @@ function applyParams(spec, p) {
   if (p.get('host') === 'open' && out.game?.list) {
     out.game = { ...out.game, list: { ...out.game.list, can_create: true, operator_only: false } };
   }
-  if (p.get('operator') === 'refused') {
-    out.storage = { ...out.storage, 'sbx-admin-key': 'preview-wrong-operator-key' };
-    out.game = { ...out.game, whoami: { operator: false, operator_only: true, admin_key_configured: true } };
+  const operator = p.get('operator');
+  if (operator === 'refused' || operator === 'accepted') {
+    out.storage = { ...out.storage, 'sbx-admin-key': 'preview-operator-key' };
+    out.game = { ...out.game, whoami: { operator: operator === 'accepted', operator_only: true, admin_key_configured: true } };
+    if (operator === 'accepted') out.game.list = { ...out.game.list, can_create: true };
     out.ready.push('whoami');
   }
   if (p.get('account') === 'gone') out.guestGone = true;
@@ -672,6 +715,7 @@ export function buildScenario(params) {
     }
     if (spec.contractId && spec.url?.world && spec.chain?.seasons?.[spec.url.world] && !spec.rpcDown) {
       spec.ready.push('rpc:get_config', 'rpc:get_market');
+      spec.liveAfter = ['rpc:get_config', 'rpc:get_market'];
       if (spec.guest && !spec.guestGone) spec.ready.push('rpc:view_account');
     }
   }
