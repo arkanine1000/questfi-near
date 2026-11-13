@@ -403,19 +403,33 @@ function chainSeason(seasonId, {
 // found by accessible name (aria-label, else text), never by class name.
 // ---------------------------------------------------------------------------
 export const STEPS = {
+  // the season list
   'open-lobby': [{ click: /^Open a lobby$/ }],
-  play: [{ click: /^Play$/ }],
-  'play-more': [{ click: /^Play$/ }, { click: /^Other ways to connect$/ }],
-  operator: [{ click: /^Operator sign-in$/ }],
+  play: [{ click: /^Play w-[0-9a-f]+: bring your agent$/ }],
+  operator: [{ click: /^Operator (sign-in|key (held|refused|accepted))$/ }],
+  delete: [{ click: /^Delete w-[0-9a-f]+$/ }],
+  // the lobby
   'start-now': [{ click: /^Start the season now$/ }],
-  'invite-more': [{ click: /^Other ways to connect$/ }],
-  'copy-invite': [{ click: /Copy invite for your agent/, settleMs: 150 }],
-  bet: [{ click: /^Bet [\d.]+ NEAR on / }],
-  fold: [{ click: /^Tuck the market away$/ }],
-  settings: [{ click: /^Settings$/ }],
+  'bring-agent': [{ click: /^Bring your agent$/ }],
+  'copy-invite': [{ click: /^Bring your agent$/ }, { click: /^Copy invite for your agent$/, settleMs: 150 }],
+  // the top bar
+  booth: [{ click: /^Booth settings$/ }],
+  settings: [{ click: /^Booth settings$/ }], // the old name for the same dialog
+  sound: [{ click: /^Sound effects$/ }],
   'create-account': [{ click: /^Play with a test account/ }],
-  'chan-blip': [{ click: /Prompt-chan's (new|last) message$/ }],
+  // the market dock
+  bet: [{ click: /^Bet [\d.]+ NEAR on / }],
   claim: [{ click: /^Claim$/ }],
+  help: [{ click: /^How betting works$/ }],
+  fold: [{ click: /^Fold the market away$/ }],
+  'tab-bets': [{ click: /^Your bets/ }],
+  'tab-chain': [{ click: /^On chain$/ }],
+  // the field
+  'fold-field': [{ click: /^Fold the field away$/ }],
+  'fold-both': [{ click: /^Fold the field away$/ }, { click: /^Fold the market away$/ }],
+  dossier: [{ click: /^Open the dossier on Kell$/ }],
+  'dossier-dead': [{ click: /^Open the dossier on Vex$/ }],
+  dossiers: [{ click: /^Open the dossier on Kell$/ }, { click: /^Open the dossier on Bren$/ }],
 };
 
 // ---------------------------------------------------------------------------
