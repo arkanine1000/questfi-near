@@ -4,17 +4,22 @@ import {
 } from './look';
 
 /**
- * Development-only tuning panel for the island's look (`?look=1` on the dev
- * server). Sliders write to the look store, which the scene reads every
- * frame; "copy values" puts the current values on the clipboard as JSON so
- * they can be pasted into LOOK_DEFAULTS. Plain DOM with inline styles, so it
- * does not depend on the app's stylesheets.
+ * Development-only tuning panel for the island's and the dungeon's look
+ * (`?look=1` on the dev server). Sliders write to the look store, which the
+ * scenes read every frame; "copy values" puts the current values on the
+ * clipboard as JSON so they can be pasted into LOOK_DEFAULTS. Plain DOM with
+ * inline styles, so it does not depend on the app's stylesheets.
+ *
+ * The island scene mounts it and keeps running behind the dungeon view, so
+ * it stays up while the dungeon is shown; its z-index clears every overlay.
+ * Each group folds away on its title.
  */
 
 // [key, label, min, max, step]
 const SECTIONS = [
   {
-    title: 'post pass',
+    title: 'island post pass',
+    post: true,
     rows: [
       ['bloomIntensity', 'bloom intensity', 0, 2, 0.01],
       ['bloomThreshold', 'bloom threshold', 0, 1, 0.01],
@@ -27,7 +32,7 @@ const SECTIONS = [
     ],
   },
   {
-    title: 'scene',
+    title: 'island scene',
     rows: [
       ['fogDensity', 'fog density', 0, 0.12, 0.001],
       ['terrainFill', 'terrain fill brightness', 0, 4, 0.01],
@@ -42,16 +47,44 @@ const SECTIONS = [
       ['agentBeam', 'agent beams', 0, 3, 0.01],
     ],
   },
+  {
+    title: 'dungeon lens',
+    post: true,
+    rows: [
+      ['dungeonBloomIntensity', 'bloom intensity', 0, 2, 0.01],
+      ['dungeonBloomThreshold', 'bloom threshold', 0, 1, 0.01],
+      ['dungeonBloomRadius', 'bloom radius', 0, 1, 0.01],
+      ['dungeonGrade', 'green grade', 0, 1, 0.01],
+      ['dungeonAberration', 'aberration', 0, 3, 0.01],
+      ['dungeonScan', 'scanlines', 0, 0.3, 0.005],
+      ['dungeonVignette', 'vignette', 0, 1, 0.01],
+      ['dungeonNoise', 'noise', 0, 0.15, 0.001],
+    ],
+  },
+  {
+    title: 'dungeon scene',
+    rows: [
+      ['dungeonWallTint', 'wall brightness', 0, 3, 0.01],
+      ['dungeonWallEmissive', 'wall emissive', 0, 0.3, 0.002],
+      ['dungeonEdgeLines', 'edge lines', 0, 3, 0.01],
+      ['dungeonFloorLines', 'floor lines', 0, 3, 0.01],
+      ['dungeonTorch', 'torch light', 0, 3, 0.01],
+      ['dungeonAgentLight', 'agent light', 0, 3, 0.01],
+      ['dungeonWeaponFill', 'weapon fill', 0, 1, 0.005],
+      ['dungeonWeaponWire', 'weapon wire', 0, 1, 0.01],
+    ],
+  },
 ];
 
 const COLLAPSED_KEY = 'questfi.lookPanel.collapsed';
+const CLOSED_GROUPS_KEY = 'questfi.lookPanel.closedGroups';
 
 const S = {
   panel: {
     position: 'fixed',
     top: 60,
     left: 8,
-    zIndex: 10000,
+    zIndex: 20000,
     width: 268,
     maxHeight: 'calc(100vh - 72px)',
     overflowY: 'auto',
@@ -72,11 +105,19 @@ const S = {
   },
   title: { color: '#35ff7d', letterSpacing: 1, textTransform: 'uppercase' },
   section: {
+    display: 'block',
+    width: '100%',
     margin: '8px 0 2px',
+    padding: 0,
+    background: 'none',
+    border: 0,
+    textAlign: 'left',
     color: '#7dffb0',
     opacity: 0.75,
+    font: 'inherit',
     textTransform: 'uppercase',
     letterSpacing: 1,
+    cursor: 'pointer',
   },
   row: { margin: '4px 0' },
   label: { display: 'flex', justifyContent: 'space-between', gap: 8 },
@@ -121,6 +162,23 @@ function writeCollapsed(value) {
   }
 }
 
+function readClosedGroups() {
+  try {
+    const list = JSON.parse(window.localStorage.getItem(CLOSED_GROUPS_KEY) || '[]');
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeClosedGroups(list) {
+  try {
+    window.localStorage.setItem(CLOSED_GROUPS_KEY, JSON.stringify(list));
+  } catch {
+    // storage unavailable: every group opens next time
+  }
+}
+
 /** The current values, rounded, as pretty JSON. */
 function valuesJson() {
   const out = {};
@@ -154,7 +212,16 @@ async function copyText(text) {
 export default function LookPanel({ postActive = true }) {
   useSyncExternalStore(subscribeLook, lookVersion);
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const [closedGroups, setClosedGroups] = useState(readClosedGroups);
   const [status, setStatus] = useState('');
+
+  const toggleGroup = (title) => {
+    setClosedGroups((list) => {
+      const next = list.includes(title) ? list.filter((t) => t !== title) : [...list, title];
+      writeClosedGroups(next);
+      return next;
+    });
+  };
 
   const toggle = () => {
     setCollapsed((c) => {
@@ -195,8 +262,16 @@ export default function LookPanel({ postActive = true }) {
         <>
           {SECTIONS.map((section) => (
             <div key={section.title}>
-              <div style={S.section}>{section.title}</div>
-              {section.rows.map(([key, label, min, max, step]) => {
+              <button
+                type="button"
+                style={S.section}
+                onClick={() => toggleGroup(section.title)}
+                aria-expanded={!closedGroups.includes(section.title)}
+              >
+                {closedGroups.includes(section.title) ? '+ ' : '\u2212 '}
+                {section.title}
+              </button>
+              {!closedGroups.includes(section.title) && section.rows.map(([key, label, min, max, step]) => {
                 const value = look[key];
                 const changed = value !== LOOK_DEFAULTS[key];
                 return (
@@ -221,7 +296,7 @@ export default function LookPanel({ postActive = true }) {
                   </div>
                 );
               })}
-              {section.title === 'post pass' && !postActive && (
+              {section.post && !postActive && !closedGroups.includes(section.title) && (
                 <div style={S.note}>post pass is off here (?fx=0, reduced motion or a low-end device)</div>
               )}
             </div>
