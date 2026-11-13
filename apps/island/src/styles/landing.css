@@ -166,6 +166,7 @@
 }
 .qf-land-cell:first-child { padding-left: 8px; }
 .qf-land-cell:last-child { padding-right: 4px; }
+.qf-land-row:last-child > .qf-land-cell { border-bottom: 0; }
 
 .qf-land-cell--status { width: 88px; }
 .qf-land-status {
@@ -219,10 +220,13 @@
    not its neighbours are there */
 .qf-land-acts {
   display: inline-grid;
-  grid-template-columns: 78px 64px 34px;
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
   gap: 6px;
   align-items: center;
 }
+.qf-land-act--watch { width: 78px; }
+.qf-land-act--play { width: 64px; }
 .qf-land-acts > .qf-btn { justify-self: stretch; }
 .qf-land-act--del { width: 34px; height: 30px; }
 .qf-land-act--del.qf-btn { padding: 0; display: grid; place-items: center; }
@@ -304,6 +308,8 @@
 }
 
 .qf-land-field__label {
+  flex: none;
+  white-space: nowrap;
   font-size: 11.5px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -394,6 +400,13 @@
 .qf-land-hint code { font-family: var(--qf-font-num); font-size: 17px; color: var(--qf-ink); }
 
 
+/* short windows: the form's lines tighten so the whole form fits */
+@media (max-height: 640px) {
+  .qf-land-field { padding: 5px 0; }
+  .qf-land-input { height: 30px; font-size: 18px; }
+  .qf-land-check { padding-top: 9px; }
+}
+
 /* ---------- small windows: the title beside the board ---------- */
 .qf-shell[data-compact] .qf-land-frame {
   display: grid;
@@ -422,8 +435,19 @@
 .qf-shell[data-compact] .qf-land-title__name > span { display: block; }
 .qf-shell[data-compact] .qf-land-title__tag { max-width: 22em; margin-top: 10px; font-size: 9.5px; line-height: 1.7; white-space: normal; }
 .qf-shell[data-compact] .qf-land-onair { margin-top: 10px; }
-.qf-shell[data-compact] .qf-land-cell { padding-top: 8px; padding-bottom: 8px; }
-.qf-shell[data-compact] .qf-land-cell--id { max-width: 120px; }
+.qf-shell[data-compact] .qf-land-cell { padding: 7px 6px; }
+.qf-shell[data-compact] .qf-land-cell--status { width: 72px; }
+.qf-shell[data-compact] .qf-land-status { gap: 6px; font-size: 10px; letter-spacing: 0.14em; }
+.qf-shell[data-compact] .qf-land-status.is-ended { padding-left: 13px; }
+.qf-shell[data-compact] .qf-land-cell--id { max-width: 96px; font-size: 11px; letter-spacing: 0.04em; }
+/* the figure's unit goes under it, so the row fits beside the title */
+.qf-shell[data-compact] .qf-land-cell--fig { white-space: normal; }
+.qf-shell[data-compact] .qf-land-fig { font-size: 20px; }
+.qf-shell[data-compact] .qf-land-fig__unit { display: block; margin: 2px 0 0; font-size: 9px; letter-spacing: 0.14em; }
+.qf-shell[data-compact] .qf-land-acts { gap: 5px; }
+.qf-shell[data-compact] .qf-land-act--watch { width: 64px; }
+.qf-shell[data-compact] .qf-land-act--play { width: 52px; }
+.qf-shell[data-compact] .qf-land-acts .qf-btn--small { padding-left: 6px; padding-right: 6px; }
 
 /* the narrowest landscape phones: the title above the board, on one line */
 @media (max-width: 720px) {
