@@ -414,8 +414,9 @@ gets the same account and pass back on the next visit.
    shows the pool and, under **ODDS**, the bet slip for that agent: three
    stakes, 0.01, 0.05 and 0.1 NEAR, each showing what it returns if that
    agent wins. Pressing one sends `place_bet` from the test account, with a
-   link to the transaction. Pools and odds come from the contract and refresh
-   every few seconds. The dock's header says at which tick betting locks, and
+   link to the transaction. A stake that would leave the test account under
+   0.05 NEAR is disabled; that reserve pays the gas of the claim. Pools and
+   odds come from the contract and refresh every few seconds. The dock's header says at which tick betting locks, and
    an amber notch on the top bar's timeline marks it.
 10. **Watch.** Kills, deaths and loot play out on the island; following an
     agent that has gone underground shows its dungeon through its camera. The
