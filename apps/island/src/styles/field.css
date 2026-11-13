@@ -285,7 +285,7 @@ button.qf-field-main:hover { background: rgba(var(--qf-green-rgb), 0.06); }
 /* ---------- small windows: a narrower column, tighter rows ---------- */
 .qf-shell[data-compact] .qf-field-main { grid-template-columns: 26px minmax(0, 1fr) auto; gap: 9px; padding-left: 10px; }
 .qf-shell[data-compact] .qf-field-row { grid-template-columns: minmax(0, 1fr) 24px; }
-.qf-shell[data-compact] .qf-field-hex { --hex: 26px !important; }
+.qf-shell[data-compact] .qf-field .qf-field-hex { --hex: 26px !important; }
 .qf-shell[data-compact] .qf-field-hpbar { flex-basis: 40px; width: 40px; }
 .qf-shell[data-compact] .qf-field-status { gap: 7px; }
 .qf-shell[data-compact] .qf-field-hp { gap: 5px; }
@@ -295,7 +295,7 @@ button.qf-field-main:hover { background: rgba(var(--qf-green-rgb), 0.06); }
 /* ---------- the TV: no pointer, read from the sofa ---------- */
 .qf-shell[data-tv] .qf-field-main { grid-template-columns: 34px minmax(0, 1fr) auto; padding-right: 14px; }
 .qf-shell[data-tv] .qf-field-row { grid-template-columns: minmax(0, 1fr); }
-.qf-shell[data-tv] .qf-field-hex { --hex: 34px !important; }
+.qf-shell[data-tv] .qf-field .qf-field-hex { --hex: 34px !important; }
 .qf-shell[data-tv] .qf-field-name-text { font-size: 14px; }
 .qf-shell[data-tv] .qf-field-status { font-size: 12.5px; }
 .qf-shell[data-tv] .qf-field-hpnum,
