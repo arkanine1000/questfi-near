@@ -1,10 +1,13 @@
 import { useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useLoader } from '@react-three/fiber';
-import { WEAPON_PALETTE_URL, loaderFor, weaponModelUrl, weaponSpecFor } from './weaponCatalog';
+import { loaderFor, weaponModelUrl, weaponSpecFor } from './weaponCatalog';
 import {
   bellowsIdleAngle, bellowsPlayAngle, pumpBellows, rigBellows,
 } from './weaponRigs';
+import { COLORS } from '../worldUtils';
+import { look } from '../look';
+import { holoFillMaterial, holoWireMaterial } from '../holo';
 
 // First-person weapon viewmodel: a lag-following group that trails the
 // camera (R3F's default camera lives outside the scene graph, so a
@@ -16,6 +19,7 @@ const HOLD_OFFSET = [0.56, -0.42, -0.62]; // right-low, clear of the thought toa
 const HOLD_ROTATION = [-0.3, -0.35, -0.12]; // pitch back, yaw inward, slight roll
 // Weapons may carry their own `hold` (see weaponCatalog); this is the blade default.
 const DEFAULT_HOLD = { offset: HOLD_OFFSET, rotation: HOLD_ROTATION };
+const WEAPON_FILL_BASE = 0.015; // lit base of the weapon's fill, see makeWeaponHolo
 
 function smoothstep(t) {
   const k = Math.min(Math.max(t, 0), 1);
@@ -70,6 +74,54 @@ function blockPose(p, out) {
   out.posZ = 0.06 * k;
 }
 
+/**
+ * The house hologram recipe in the agent's colour (the start app draws its
+ * agent figure the same way): a dark fill with a low emissive, and the
+ * bright wireframe over it. The weapon is the largest thing on screen, so
+ * both stay restrained (look.dungeonWeaponFill / dungeonWeaponWire) and it
+ * never blooms into a white blade. Without a tint it wears the house greens.
+ *
+ * The pack's weapons run 900 to 6,600 triangles, far under the wire limit,
+ * so every mesh gets the wire pass.
+ */
+function makeWeaponHolo(tint) {
+  // The agent's own light rides about a metre from the weapon, some fifteen
+  // times the light the start app's figure gets, so the fill's lit base is
+  // scaled down to match, and it is fully rough: a glossy blade facing a
+  // light at the camera turns into one specular flare.
+  const fill = holoFillMaterial(tint || COLORS.fill, {
+    intensity: look.dungeonWeaponFill,
+    base: WEAPON_FILL_BASE,
+  });
+  fill.roughness = 1;
+  fill.metalness = 0;
+  return {
+    fill,
+    wire: holoWireMaterial(tint || COLORS.wire, look.dungeonWeaponWire),
+  };
+}
+
+/** Give every mesh under `root` the fill, plus a wire copy riding on it. */
+function dressWeapon(root, holo) {
+  const meshes = [];
+  root.traverse((child) => {
+    if (child.isMesh) meshes.push(child);
+  });
+  // collected first: adding the wire children mid-traverse would visit them
+  for (const mesh of meshes) {
+    mesh.material = holo.fill;
+    const wire = new THREE.Mesh(mesh.geometry, holo.wire);
+    wire.frustumCulled = mesh.frustumCulled;
+    mesh.add(wire);
+  }
+}
+
+/** Follow the look store's weapon values; called every frame. */
+function syncWeaponHolo(holo) {
+  holo.fill.emissiveIntensity = look.dungeonWeaponFill;
+  holo.wire.opacity = look.dungeonWeaponWire;
+}
+
 /** Load a weapon spec's model, unwrapping whichever loader it needed. */
 function useWeaponModel(spec) {
   const asset = useLoader(loaderFor(spec), weaponModelUrl(spec));
@@ -79,45 +131,11 @@ function useWeaponModel(spec) {
 
 function WeaponModel({ spec, tint }) {
   const model = useWeaponModel(spec);
-  const palette = useLoader(THREE.TextureLoader, WEAPON_PALETTE_URL);
 
-  const template = useMemo(() => {
-    palette.colorSpace = THREE.SRGBColorSpace;
-    // Sandbox tint must be EXACT: the palette texture multiplies the color
-    // and ACES tone mapping shifts hues, so the tinted path drops both —
-    // an emissive-dominant, tone-mapping-exempt material reads as the
-    // agent's true color, with the darkened base catching torch light for
-    // form. The legacy holo-green path keeps the palette look untouched.
-    // Both paths render slightly translucent — a viewmodel that reads as a
-    // light-construct hologram, not a slab of opaque plastic. depthWrite
-    // stays ON so the weapon's own overlapping parts occlude correctly;
-    // only the world behind bleeds through.
-    const mat = tint
-      ? new THREE.MeshStandardMaterial({
-        color: new THREE.Color(tint).multiplyScalar(0.25),
-        emissive: new THREE.Color(tint),
-        emissiveIntensity: 0.9,
-        roughness: 0.6,
-        metalness: 0.1,
-        toneMapped: false,
-        transparent: true,
-        opacity: 0.72,
-      })
-      : new THREE.MeshStandardMaterial({
-        map: palette,
-        color: '#2a9e5c',
-        emissive: '#0f8f43',
-        emissiveMap: palette,
-        emissiveIntensity: 0.24, // a touch brighter to sell the holo look
-        roughness: 0.82,
-        metalness: 0.05,
-        transparent: true,
-        opacity: 0.78,
-      });
+  const { template, holo } = useMemo(() => {
+    const dress = makeWeaponHolo(tint);
     const root = model.clone(true);
-    root.traverse((child) => {
-      if (child.isMesh) child.material = mat;
-    });
+    dressWeapon(root, dress);
 
     // Normalize: dominant axis -> +Y, sized to spec.length, grip-ish origin
     const wrapper = new THREE.Group();
@@ -143,8 +161,10 @@ function WeaponModel({ spec, tint }) {
     // spin 90° CCW around the blade's own long axis so the crossguard
     // runs parallel to the camera plane (we see the flat of the blade)
     holder.rotation.y = Math.PI / 2;
-    return holder;
-  }, [model, palette, spec, tint]);
+    return { template: holder, holo: dress };
+  }, [model, spec, tint]);
+
+  useFrame(() => syncWeaponHolo(holo));
 
   return <primitive object={template} />;
 }
@@ -164,27 +184,29 @@ function RiggedWeaponModel({ spec, tint, queue, reducedMotion }) {
   // Object and rig are built together and returned together: the rig holds
   // references into this clone's vertex buffers, so anything that rebuilds
   // one has to rebuild the other or the deform drives a discarded model.
-  const { object, rig } = useMemo(() => {
-    const base = new THREE.Color(tint || '#c98a5b');
-    const mat = new THREE.MeshStandardMaterial({
-      color: base.clone().multiplyScalar(0.25),
-      emissive: base,
-      emissiveIntensity: 0.9,
-      roughness: 0.6,
-      metalness: 0.1,
-      toneMapped: false,
-      transparent: true,
-      opacity: 0.72,
-      side: THREE.DoubleSide, // the bellows fan is single-sided sheet geometry
-    });
+  const { object, rig, holo } = useMemo(() => {
+    // the holo fill is double-sided, which the bellows fan's single-sided
+    // sheet geometry needs
+    const dress = makeWeaponHolo(tint);
     const root = model.clone(true);
     root.traverse((child) => {
-      if (child.isMesh) child.material = mat;
+      if (child.isMesh) child.material = dress.fill;
     });
 
     // Rig before parenting: the deform rebases through inv(matrixWorld), so
     // it has to measure the model's own local frame, not the hold transform.
+    // Rig before dressing too: the rig clones each mesh's geometry and
+    // deforms the clone, and the wire passes must ride that same clone.
     const built = rigBellows(root);
+    const meshes = [];
+    root.traverse((child) => {
+      if (child.isMesh) meshes.push(child);
+    });
+    for (const mesh of meshes) {
+      const wire = new THREE.Mesh(mesh.geometry, dress.wire);
+      wire.frustumCulled = false; // the deform never updates the bounds
+      mesh.add(wire);
+    }
 
     const wrapper = new THREE.Group();
     wrapper.add(root);
@@ -195,10 +217,11 @@ function RiggedWeaponModel({ spec, tint, queue, reducedMotion }) {
       -(scaled.min.y + scaled.max.y) / 2,
       -(scaled.min.z + scaled.max.z) / 2,
     );
-    return { object: wrapper, rig: built };
+    return { object: wrapper, rig: built, holo: dress };
   }, [model, spec, tint]);
 
   useFrame(({ clock }) => {
+    syncWeaponHolo(holo);
     if (reducedMotion) {
       // Settle to rest once, then leave it alone.
       if (!settledRef.current) {

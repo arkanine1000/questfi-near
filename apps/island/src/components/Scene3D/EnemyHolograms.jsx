@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { useFrame, useLoader } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
@@ -8,6 +8,7 @@ import { axialToWorld, COLORS, TERRAIN_HEIGHT_SCALE } from './worldUtils';
 import { getActiveMapId } from '../../data/maps';
 import { BOOT, bootRamp } from './bootFx';
 import { publicUrl } from '../../services/publicUrl';
+import { holoFillMaterial, holoWireMaterial, holoRamp } from './holo';
 
 // Global miniaturization knob — hostiles are set dressing, not centerpieces
 const ENEMY_SCALE = 0.4;
@@ -16,10 +17,14 @@ const ENEMY_SCALE = 0.4;
 // they should read as units on the war table, not trophies.
 const BREATH_AMPLITUDE = 0.012;
 const SWAY_AMPLITUDE = 0.1;
-const SOLID_FILL = '#031c0e';
 
-const GREEN = new THREE.Color(COLORS.green);
-const CYAN = new THREE.Color(COLORS.cyan);
+// House hologram recipe: a weak emissive fill (small subjects, mostly black
+// land) under a bright wire; the wyvern's dense rig takes the house's
+// lighter wire
+const FILL_INTENSITY = 0.12;
+const WIRE_OPACITY = 0.8;
+const WYVERN_FILL_INTENSITY = 0.15;
+const WYVERN_WIRE_OPACITY = 0.35;
 
 const _up = new THREE.Vector3(0, 1, 0);
 const _dir = new THREE.Vector3();
@@ -148,9 +153,10 @@ function buildSpider() {
   return mergeParts(parts);
 }
 
+// `bright` moves the wire along the house ramp (green toward bright green)
 const ENEMY_TYPES = {
-  knight: { build: buildKnight, intensity: 0.9, cyan: 0.15 },
-  spider: { build: buildSpider, intensity: 0.85, cyan: 0.05 },
+  knight: { build: buildKnight, intensity: 0.9, bright: 0.15 },
+  spider: { build: buildSpider, intensity: 0.85, bright: 0.05 },
 };
 
 // One geometry per type, shared across every instance
@@ -186,10 +192,9 @@ const DEPLOYMENTS = {
 
 // Twilight Wyvern flight circuit — a perpetual lap around the landmass,
 // high above the peaks. Never lands; the table projects it mid-cruise.
-// The model is the questfi-lobby dragon (island/dragon/dragon.glb + palette,
-// Flying_loop) given the same two-pass holo dressing as the lobby's den:
-// palette base with a green emissive lift + a wire pass bound to the
-// skeleton so it deforms with the wingbeats.
+// The model is the questfi-lobby dragon (island/dragon/dragon.glb,
+// Flying_loop) in the house hologram dress: a dark emissive fill plus a wire
+// pass bound to the skeleton so it deforms with the wingbeats.
 const WYVERN = {
   size: 0.75, // world units, largest bind-pose dimension after fitting
   yawOffset: 0, // set to Math.PI if a model swap ever flies tail-first
@@ -203,7 +208,6 @@ const WYVERN = {
 };
 
 const WYVERN_MODEL = publicUrl('/island/dragon/dragon.glb');
-const WYVERN_PALETTE = publicUrl('/island/dragon/palette.png');
 const WYVERN_ANIM = 'Flying_loop';
 
 /**
@@ -234,34 +238,22 @@ function fitSkinnedToSize(model, size) {
   model.position.y -= center.y * scale; // pivot at volume center: it flies
 }
 
-function wireMaterialProps(def) {
-  return {
-    wireframe: true,
-    color: GREEN.clone().lerp(CYAN, def.cyan).multiplyScalar(def.intensity),
-    transparent: true,
-    opacity: 0.8,
-    depthWrite: false,
-    polygonOffset: true,
-    polygonOffsetFactor: -1,
-    polygonOffsetUnits: -1,
-    side: THREE.DoubleSide,
-    toneMapped: false,
-  };
-}
-
-/** Two-pass hologram mesh: near-black solid fill + additive-free wire pass.
-    Wires are the hologram itself — always on, independent of the terrain
-    wireframe toggle. */
+/** Two-pass hologram mesh: dark emissive fill + wire pass. Wires are the
+    hologram itself — always on, independent of the terrain wireframe
+    toggle. */
 function HoloMesh({ geometry, def }) {
-  const wireProps = useMemo(() => wireMaterialProps(def), [def]);
+  const fillMaterial = useMemo(
+    () => holoFillMaterial(COLORS.fill, { intensity: FILL_INTENSITY }),
+    [],
+  );
+  const wireMaterial = useMemo(
+    () => holoWireMaterial(holoRamp(def.bright, def.intensity), WIRE_OPACITY),
+    [def],
+  );
   return (
     <>
-      <mesh geometry={geometry} raycast={() => null}>
-        <meshBasicMaterial color={SOLID_FILL} side={THREE.DoubleSide} toneMapped={false} />
-      </mesh>
-      <mesh geometry={geometry} raycast={() => null}>
-        <meshBasicMaterial {...wireProps} />
-      </mesh>
+      <mesh geometry={geometry} material={fillMaterial} raycast={() => null} />
+      <mesh geometry={geometry} material={wireMaterial} raycast={() => null} />
     </>
   );
 }
@@ -280,10 +272,7 @@ function GroundedEnemy({ entry, index, reducedMotion }) {
       z: w.z + entry.offset[1] * 0.6,
     };
   }, [entry]);
-  const wireColor = useMemo(
-    () => GREEN.clone().lerp(CYAN, def.cyan).multiplyScalar(def.intensity),
-    [def],
-  );
+  const wireColor = useMemo(() => holoRamp(def.bright, def.intensity), [def]);
 
   const baseY = world.y + 0.01;
   const phase = index * 2.3;
@@ -345,32 +334,14 @@ function GroundedEnemy({ entry, index, reducedMotion }) {
 function TwilightWyvern({ reducedMotion }) {
   const groupRef = useRef();
   const { scene, animations } = useGLTF(WYVERN_MODEL);
-  const palette = useLoader(THREE.TextureLoader, WYVERN_PALETTE);
 
   const { model, mixer, action } = useMemo(() => {
     const root = cloneSkinned(scene);
     fitSkinnedToSize(root, WYVERN.size);
 
-    const palTex = palette.clone();
-    palTex.colorSpace = THREE.SRGBColorSpace;
-    palTex.flipY = false; // glTF UV convention
-    palTex.needsUpdate = true;
-
-    const baseMat = new THREE.MeshStandardMaterial({
-      map: palTex,
-      emissive: new THREE.Color(0x1fd465),
-      emissiveIntensity: 0.25,
-      roughness: 0.45,
-      metalness: 0.1,
-      side: THREE.DoubleSide, // wing membranes are single-sided surfaces
-    });
-    const wireMat = new THREE.MeshBasicMaterial({
-      color: GREEN.clone().lerp(CYAN, 0.55),
-      wireframe: true,
-      transparent: true,
-      opacity: 0.35,
-      toneMapped: false,
-    });
+    // double-sided fill: the wing membranes are single-sided surfaces
+    const baseMat = holoFillMaterial(COLORS.fill, { intensity: WYVERN_FILL_INTENSITY });
+    const wireMat = holoWireMaterial(holoRamp(0.55), WYVERN_WIRE_OPACITY);
 
     // Collect first, then dress — adding wire children mid-traverse would
     // make traverse() visit them too
@@ -397,7 +368,7 @@ function TwilightWyvern({ reducedMotion }) {
     const anim = new THREE.AnimationMixer(root);
     const clip = THREE.AnimationClip.findByName(animations, WYVERN_ANIM) ?? animations[0];
     return { model: root, mixer: anim, action: clip ? anim.clipAction(clip) : null };
-  }, [scene, animations, palette]);
+  }, [scene, animations]);
 
   // Start the wingbeat from the effect, not the memo: StrictMode's
   // mount -> cleanup -> remount cycle calls stopAllAction(), and a play()

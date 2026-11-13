@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { Instances, Instance } from '@react-three/drei';
 import { roomToWorld } from '../dungeonAdapter';
+import { COLORS } from '../worldUtils';
+import { look } from '../look';
 import {
   getCrawlerTexture, getWallTilesTexture, getWallTilesNormalTexture, getGlowDiscTexture,
 } from './crawlerTextures';
@@ -47,13 +49,81 @@ const tileGeo = new THREE.PlaneGeometry(CELL, CELL);
 const tintGeo = new THREE.PlaneGeometry(CELL * 0.94, CELL * 0.94);
 
 // Floor glow wash per special room type — the walk-in "what is this room"
-// cue (danger red, loot amber, boss crimson, entrance green)
+// cue (danger red, loot amber, the boss a stronger red, entrance bright
+// green)
 const TINT_COLORS = {
-  trap_room: '#ff4020',
-  treasure_room: '#ffb020',
-  boss_room: '#ff0048',
-  entrance: '#16ff60',
+  trap_room: COLORS.red,
+  treasure_room: COLORS.amber,
+  boss_room: COLORS.red,
+  entrance: COLORS.bright,
 };
+const TINT_STRENGTH = {
+  trap_room: 1,
+  treasure_room: 1,
+  boss_room: 1.6,
+  entrance: 1,
+};
+
+// Black first, lit by torches: the stone barely glows on its own, so away
+// from a light it falls to near black and near one it shows its relief.
+// Base tints are the house bright green scaled down; the look store scales
+// them again live (`dungeonWallTint`, `dungeonWallEmissive`).
+const WALL_BASE = new THREE.Color(COLORS.bright).multiplyScalar(0.45);
+const CEIL_BASE = new THREE.Color(COLORS.bright).multiplyScalar(0.18);
+const CEIL_EMISSIVE_SHARE = 0.5; // the ceiling glows half as much as the walls
+const FLOOR_LINE_INTENSITY = 0.35; // the floor grid's emissive at gain 1
+
+// Edge lines where a wall meets the floor and the ceiling, drawn in the wall
+// shader from the fragment's world height: EDGE_W thick, never thinner than
+// about a pixel, house green, fogged with distance like the stone.
+const EDGE_W = 0.035;
+
+function injectWallEdges(material, uniforms) {
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying float vEdgeY;')
+      .replace(
+        '#include <project_vertex>',
+        `#include <project_vertex>
+        {
+          // world height, computed here rather than through a worldpos chunk
+          // that may be compiled out: instance transform, then the mesh's own
+          vec4 edgeWorld = vec4(transformed, 1.0);
+          #ifdef USE_INSTANCING
+            edgeWorld = instanceMatrix * edgeWorld;
+          #endif
+          edgeWorld = modelMatrix * edgeWorld;
+          vEdgeY = edgeWorld.y;
+        }`,
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+        varying float vEdgeY;
+        uniform vec3 uEdgeColor;
+        uniform float uEdgeGain;`,
+      )
+      .replace(
+        '#include <emissivemap_fragment>',
+        `#include <emissivemap_fragment>
+        {
+          float edgeAa = max(fwidth(vEdgeY), 1e-4);
+          float edgeW = max(${EDGE_W.toFixed(4)}, 1.2 * edgeAa);
+          float foot = 1.0 - smoothstep(edgeW - 0.5 * edgeAa, edgeW + 0.5 * edgeAa, vEdgeY);
+          float top = smoothstep(
+            ${WALL_H.toFixed(4)} - edgeW - 0.5 * edgeAa,
+            ${WALL_H.toFixed(4)} - edgeW + 0.5 * edgeAa,
+            vEdgeY
+          );
+          totalEmissiveRadiance += uEdgeColor * max(foot, top) * uEdgeGain;
+        }`,
+      );
+  };
+  // onBeforeCompile changes require a distinct program cache entry
+  material.customProgramCacheKey = () => 'crawler-wall-edges';
+}
 
 /**
  * Dungeon shell from the shared adapter model: explored rooms only (fog of
@@ -72,11 +142,53 @@ export default function CrawlerMaze({ model, reducedMotion }) {
   const wallNormalTex = useMemo(() => getWallTilesNormalTexture('wall'), []);
   const ceilNormalTex = useMemo(() => getWallTilesNormalTexture('ceiling'), []);
 
+  // Floor, ceiling and wall materials; their brightness follows the look
+  // store every frame
+  const floorMat = useMemo(() => new THREE.MeshStandardMaterial({
+    map: floorTex,
+    emissive: COLORS.green,
+    emissiveMap: floorTex,
+    emissiveIntensity: FLOOR_LINE_INTENSITY * look.dungeonFloorLines,
+    color: COLORS.deep,
+    roughness: 0.85,
+    metalness: 0,
+  }), [floorTex]);
+  const ceilMat = useMemo(() => new THREE.MeshStandardMaterial({
+    map: ceilTex,
+    normalMap: ceilNormalTex,
+    normalScale: new THREE.Vector2(2.2, 2.2),
+    emissive: COLORS.green,
+    emissiveMap: ceilTex,
+    emissiveIntensity: look.dungeonWallEmissive * CEIL_EMISSIVE_SHARE,
+    color: CEIL_BASE.clone().multiplyScalar(look.dungeonWallTint),
+    roughness: 0.7,
+    metalness: 0,
+  }), [ceilTex, ceilNormalTex]);
+  const edgeUniforms = useMemo(() => ({
+    uEdgeColor: { value: new THREE.Color(COLORS.green) },
+    uEdgeGain: { value: look.dungeonEdgeLines },
+  }), []);
+  const wallMat = useMemo(() => {
+    const mat = new THREE.MeshStandardMaterial({
+      map: wallTex,
+      normalMap: wallNormalTex,
+      normalScale: new THREE.Vector2(2.2, 2.2),
+      emissive: COLORS.green,
+      emissiveMap: wallTex,
+      emissiveIntensity: look.dungeonWallEmissive,
+      color: WALL_BASE.clone().multiplyScalar(look.dungeonWallTint),
+      roughness: 0.55,
+      metalness: 0,
+    });
+    injectWallEdges(mat, edgeUniforms);
+    return mat;
+  }, [wallTex, wallNormalTex, edgeUniforms]);
+
   // Shared materials mutated in useFrame — every fog seal / tint pulses
   // in unison
   const fogMat = useMemo(
     () => new THREE.MeshBasicMaterial({
-      color: '#ff0040',
+      color: COLORS.red,
       transparent: true,
       opacity: 0.28,
       side: THREE.DoubleSide,
@@ -89,17 +201,21 @@ export default function CrawlerMaze({ model, reducedMotion }) {
   const tintMats = useMemo(() => {
     const map = new Map();
     for (const [type, color] of Object.entries(TINT_COLORS)) {
-      map.set(type, new THREE.MeshBasicMaterial({
+      const mat = new THREE.MeshBasicMaterial({
         map: getGlowDiscTexture(color),
         transparent: true,
-        opacity: 0.22,
+        opacity: 0.22 * TINT_STRENGTH[type],
         blending: THREE.AdditiveBlending,
         depthWrite: false,
         toneMapped: false,
-      }));
+      });
+      mat.userData.strength = TINT_STRENGTH[type];
+      map.set(type, mat);
     }
     return map;
   }, []);
+  // array copy for the frame loop: iterating the Map allocates an iterator
+  const tintList = useMemo(() => [...tintMats.values()], [tintMats]);
 
   const layout = useMemo(() => {
     const rooms = model.rooms.slice(0, MAX_CELLS);
@@ -162,71 +278,48 @@ export default function CrawlerMaze({ model, reducedMotion }) {
     return { tiles, walls: [...wallEdges.values()], fogWalls, tints };
   }, [model]);
 
-  // Faint life in the fog-seal/tint planes — the only animated materials
+  // Faint life in the fog-seal/tint planes — the only animated materials —
+  // and the surface brightness from the look store
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     fogMat.opacity = reducedMotion ? 0.3 : 0.24 + 0.1 * Math.sin(t * 2.1);
-    let i = 0;
-    for (const mat of tintMats.values()) {
-      i += 1;
-      mat.opacity = reducedMotion ? 0.22 : 0.19 + 0.07 * Math.sin(t * 1.7 + i);
+    for (let i = 0; i < tintList.length; i += 1) {
+      const mat = tintList[i];
+      const base = reducedMotion ? 0.22 : 0.19 + 0.07 * Math.sin(t * 1.7 + i + 1);
+      mat.opacity = base * mat.userData.strength;
     }
+    wallMat.color.copy(WALL_BASE).multiplyScalar(look.dungeonWallTint);
+    wallMat.emissiveIntensity = look.dungeonWallEmissive;
+    ceilMat.color.copy(CEIL_BASE).multiplyScalar(look.dungeonWallTint);
+    ceilMat.emissiveIntensity = look.dungeonWallEmissive * CEIL_EMISSIVE_SHARE;
+    floorMat.emissiveIntensity = FLOOR_LINE_INTENSITY * look.dungeonFloorLines;
+    edgeUniforms.uEdgeGain.value = look.dungeonEdgeLines;
   });
 
   return (
     <group>
-      {/* Floors */}
-      <Instances limit={MAX_CELLS} geometry={tileGeo} frustumCulled={false}>
-        <meshStandardMaterial
-          map={floorTex}
-          emissive="#2bff70"
-          emissiveMap={floorTex}
-          emissiveIntensity={0.5}
-          color="#123522"
-          roughness={0.85}
-          metalness={0}
-        />
+      {/* Floors — near-black tiles, the phosphor grid in house green */}
+      <Instances limit={MAX_CELLS} geometry={tileGeo} material={floorMat} frustumCulled={false}>
         {layout.tiles.map((tile) => (
           <Instance key={tile.key} position={[tile.x, 0, tile.z]} rotation={[-Math.PI / 2, 0, 0]} />
         ))}
       </Instances>
 
-      {/* Ceilings — brick, barely lit, so the space reads tall and dark */}
-      <Instances limit={MAX_CELLS} geometry={tileGeo} frustumCulled={false}>
-        <meshStandardMaterial
-          map={ceilTex}
-          normalMap={ceilNormalTex}
-          normalScale={[2.2, 2.2]}
-          emissive="#1d8f4a"
-          emissiveMap={ceilTex}
-          emissiveIntensity={0.06}
-          color="#3d6b50"
-          roughness={0.7}
-          metalness={0}
-        />
+      {/* Ceilings — brick, darker than the walls, so the space reads tall
+          and dark */}
+      <Instances limit={MAX_CELLS} geometry={tileGeo} material={ceilMat} frustumCulled={false}>
         {layout.tiles.map((tile) => (
           <Instance key={tile.key} position={[tile.x, WALL_H, tile.z]} rotation={[Math.PI / 2, 0, 0]} />
         ))}
       </Instances>
 
-      {/* Solid walls — brick masonry, torch-lit with a faint phosphor bleed.
-          The torch rides AT the camera, so diffuse N·L barely varies with
-          surface detail (L≈V ⇒ N·L≈1 head-on) — the relief has to read
-          through the specular sheen instead. That needs real roughness
-          headroom (0.9 left no lobe at all) and an overdriven normalScale
-          to survive the flat ambient + emissive base. */}
-      <Instances limit={MAX_WALLS} geometry={wallGeo} frustumCulled={false}>
-        <meshStandardMaterial
-          map={wallTex}
-          normalMap={wallNormalTex}
-          normalScale={[2.2, 2.2]}
-          emissive="#2bff70"
-          emissiveMap={wallTex}
-          emissiveIntensity={0.14}
-          color="#8fd9ae"
-          roughness={0.55}
-          metalness={0}
-        />
+      {/* Solid walls — brick masonry, near black until a torch finds it,
+          with bright edge lines at the foot and the top. The agent's light
+          rides AT the camera, so diffuse N·L barely varies with surface
+          detail (L≈V ⇒ N·L≈1 head-on) — the relief has to read through the
+          specular sheen instead. That needs real roughness headroom (0.9
+          left no lobe at all) and an overdriven normalScale. */}
+      <Instances limit={MAX_WALLS} geometry={wallGeo} material={wallMat} frustumCulled={false}>
         {layout.walls.map((wall) => (
           <Instance key={wall.key} position={[wall.x, WALL_H / 2, wall.z]} rotation={[0, wall.rotY, 0]} />
         ))}

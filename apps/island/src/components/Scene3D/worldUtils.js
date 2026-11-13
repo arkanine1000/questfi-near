@@ -26,16 +26,28 @@ export const HEX_WORLD_RADIUS = HEX_SIZE * WORLD_PER_PIXEL; // 0.46
 // pronounced relief that still reads top-down). The single tuning knob.
 export const TERRAIN_HEIGHT_SCALE = 1.9;
 
-// Brand palette — mirrors the CSS vars in styles/index.css
+// The house palette shared with the start app and Agent World: phosphor
+// green on near-black. Agent colours come from the server and are the only
+// other vivid hues in the scene.
 export const COLORS = {
-  green: '#00ff41',
-  greenBright: '#69ff8f',
-  amber: '#ffaa00',
-  red: '#ff0040',
-  cyan: '#00bfff',
-  terrain: '#021a08',
-  ocean: '#010d05',
-  flash: '#c8ffc8',
+  green: '#35ff7d',
+  greenBright: '#7dffb0',
+  bright: '#7dffb0',
+  deep: '#0a3d1e',
+  fill: '#1fd465', // hologram fill tint (emissive under the wireframe)
+  wire: '#49ff8c', // hologram wireframe tint
+  bg: '#010603',
+  fog: '#021207',
+  amber: '#ffd678', // money, the boss, treasure
+  red: '#ff5d5d', // combat, danger
+  ice: '#9be8ff',
+  cyan: '#9be8ff', // older name for ice
+  // terrain fill at sea level and at the peaks: near black, so the relief
+  // reads from the contour lines rather than from lit faces
+  terrain: '#020d07',
+  terrainHigh: '#06200f',
+  ocean: '#010603', // older name for bg
+  flash: '#dfffe8',
 };
 
 /** Normalized 0..1 elevation at a land hex center (0 for water). */

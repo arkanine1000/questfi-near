@@ -3,11 +3,12 @@ import { useLoader } from '@react-three/fiber';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { WEAPON_PALETTE_URL, loaderFor, weaponModelUrl, weaponSpecFor } from './weaponCatalog';
+import { loaderFor, weaponModelUrl, weaponSpecFor } from './weaponCatalog';
 import { getWallTilesTexture, getWallTilesNormalTexture } from './crawlerTextures';
 import { getSpriteSheetTexture } from './spriteSheet';
 import { whenTrackedLoadsSettle } from './loadTracker';
 import { publicUrl } from '../../../services/publicUrl';
+import { COLORS } from '../worldUtils';
 
 /**
  * The crawler's fixed asset manifest, plus the warm-up that pulls all of it
@@ -87,7 +88,7 @@ export const BOSS_SHEETS = {
     lift: 0.15, // perched and rearing, not airborne — the art has planted feet
     lunge: 0.45, // a heavy thing lunges less, and a 2.4-unit quad at full
     // lunge distance swallows the viewport
-    light: '#5bff6a', // green, to match the breath — the default boss red
+    light: COLORS.green, // green, to match the breath — the default boss red
     // fights it
   },
 };
@@ -126,7 +127,6 @@ export function preloadCrawlerAssets(weaponNames = []) {
   useLoader.preload(THREE.TextureLoader, CHEST_TEXTURE_URL);
   useLoader.preload(GLTFLoader, AGENT_MODEL_URL);
   useLoader.preload(THREE.TextureLoader, ENEMY_SPRITE_URLS);
-  useLoader.preload(THREE.TextureLoader, WEAPON_PALETTE_URL);
 
   const weaponSpecs = new Map(
     weaponNames.filter(Boolean).map((name) => {

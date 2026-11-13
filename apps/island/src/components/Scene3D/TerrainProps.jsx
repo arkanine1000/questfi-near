@@ -1,10 +1,11 @@
 import { useMemo, useRef, useLayoutEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { PROP_STRIDE } from '../../data/propMap';
 import { getActiveMap } from '../../data/maps';
 import { TERRAIN_HEIGHT_SCALE, COLORS, canUseBloom } from './worldUtils';
+import { look } from './look';
 
 // Degradation flags (applied automatically on low-end hardware via the same
 // capability gate as bloom): halve tree density, drop the flicker effect.
@@ -20,9 +21,13 @@ const FLICKER_MAX_CONCURRENT = 3;
 const _dummy = new THREE.Object3D();
 const _color = new THREE.Color();
 const GREEN = new THREE.Color(COLORS.green);
-const CYAN = new THREE.Color(COLORS.cyan);
+const BRIGHT = new THREE.Color(COLORS.bright);
 const AMBER = new THREE.Color(COLORS.amber);
-const SOLID_FILL = '#02140a';
+const SOLID_FILL = '#010904';
+
+// World-space thickness of the outline drawn around every prop (about one
+// pixel at the home framing)
+const EDGE_WORLD = 0.013;
 
 /** Deterministic per-instance hash for tilts / non-uniform scale. */
 function hash01(i) {
@@ -203,18 +208,18 @@ function buildAqueduct() {
 }
 
 // Visual hierarchy: terrain contours > hex outlines > props, so prop
-// wireframes stay dimmer than the grid. Canopy fills are a touch greener
-// than rock/crag so foliage reads as living mass. Structures are rigid
-// (uniform scale, no tilt) with a ghostly cyan drift — ancient monuments
-// on the tactical table.
+// lines stay dimmer than the grid. Fills are near black, so a prop reads as
+// a dark shape with a thin dim outline and forests never add up to a green
+// texture. Structures are rigid (uniform scale, no tilt) and drift toward
+// the bright end of the green ramp: ancient monuments on the tactical table.
 const TYPES = [
-  { key: 'treeA', build: buildTreeA, intensity: 0.45, tilt: 0.07, solidColor: '#04230f', halveOnLowEnd: true },
-  { key: 'treeB', build: buildTreeB, intensity: 0.50, tilt: 0.07, solidColor: '#04230f', halveOnLowEnd: true },
-  { key: 'rock', build: buildRock, intensity: 0.26, tilt: 0.12, solidColor: '#031a0c', halveOnLowEnd: false },
-  { key: 'crag', build: buildCrag, intensity: 0.45, tilt: 0.3, solidColor: '#02140a', halveOnLowEnd: false },
-  { key: 'pillar', build: buildPillar, intensity: 0.62, tilt: 0.06, solidColor: '#04241c', rigid: true, breakable: true, cyan: 0.3 },
-  { key: 'ruin', build: buildRuin, intensity: 0.62, tilt: 0, solidColor: '#04241c', rigid: true, cyan: 0.3 },
-  { key: 'aqueduct', build: buildAqueduct, intensity: 0.62, tilt: 0, solidColor: '#04241c', rigid: true, cyan: 0.3 },
+  { key: 'treeA', build: buildTreeA, intensity: 0.45, tilt: 0.07, solidColor: '#020f08', halveOnLowEnd: true },
+  { key: 'treeB', build: buildTreeB, intensity: 0.50, tilt: 0.07, solidColor: '#020f08', halveOnLowEnd: true },
+  { key: 'rock', build: buildRock, intensity: 0.26, tilt: 0.12, solidColor: '#020b06', halveOnLowEnd: false },
+  { key: 'crag', build: buildCrag, intensity: 0.45, tilt: 0.3, solidColor: '#010904', halveOnLowEnd: false },
+  { key: 'pillar', build: buildPillar, intensity: 0.62, tilt: 0.06, solidColor: '#020e09', rigid: true, breakable: true, bright: 0.3 },
+  { key: 'ruin', build: buildRuin, intensity: 0.62, tilt: 0, solidColor: '#020e09', rigid: true, bright: 0.3 },
+  { key: 'aqueduct', build: buildAqueduct, intensity: 0.62, tilt: 0, solidColor: '#020e09', rigid: true, bright: 0.3 },
 ];
 
 function wireColorFor(jitter, type, out) {
@@ -222,12 +227,42 @@ function wireColorFor(jitter, type, out) {
     // crater spikes — the only amber in the prop layer
     return out.copy(AMBER).multiplyScalar(0.5 + 0.1 * (jitter - 2));
   }
-  out.copy(GREEN).lerp(CYAN, type.cyan ?? 0.12 * Math.abs(jitter));
+  out.copy(GREEN).lerp(BRIGHT, type.bright ?? 0.12 * Math.abs(jitter));
   return out.multiplyScalar(type.intensity * (1 + 0.1 * jitter));
 }
 
-function PropType({ type, registerWire, unregisterWire, wireframe }) {
+/**
+ * The prop's shell pushed out along smoothed normals. Drawn with back faces
+ * only, it hides behind the dark fill everywhere except a thin band at the
+ * silhouette: an outline that stays one line however dense the mesh is.
+ */
+function makeEdgeShell(geometry, inflate) {
+  const g = geometry.clone();
+  // weld by position alone, so the normals average across the flat faces
+  g.deleteAttribute('normal');
+  g.deleteAttribute('uv');
+  const shell = mergeVertices(g, 1e-4);
+  g.dispose();
+  shell.computeVertexNormals();
+  const pos = shell.attributes.position;
+  const nor = shell.attributes.normal;
+  for (let i = 0; i < pos.count; i++) {
+    pos.setXYZ(
+      i,
+      pos.getX(i) + nor.getX(i) * inflate,
+      pos.getY(i) + nor.getY(i) * inflate,
+      pos.getZ(i) + nor.getZ(i) * inflate,
+    );
+  }
+  shell.computeBoundingSphere();
+  return shell;
+}
+
+function PropType({
+  type, edgeMaterial, registerWire, unregisterWire, wireframe,
+}) {
   const solidRef = useRef();
+  const edgeRef = useRef();
   const wireRef = useRef();
 
   const geometry = useMemo(type.build, []);
@@ -242,11 +277,22 @@ function PropType({ type, registerWire, unregisterWire, wireframe }) {
     return list;
   }, [type]);
 
+  // One shell per type, inflated so the outline is about EDGE_WORLD thick
+  // on a prop of this type's average size
+  const edgeGeometry = useMemo(() => {
+    const data = getActiveMap().props[type.key] ?? [];
+    let sum = 0;
+    for (const i of indices) sum += data[i * PROP_STRIDE + 3];
+    const meanScale = indices.length ? sum / indices.length : 0.15;
+    return makeEdgeShell(geometry, EDGE_WORLD / Math.max(meanScale, 0.02));
+  }, [geometry, indices, type]);
+
   // Static scene: matrices + colors set once on mount
   useLayoutEffect(() => {
     const solid = solidRef.current;
+    const edge = edgeRef.current;
     const wire = wireRef.current;
-    if (!solid) return;
+    if (!solid || !edge) return undefined;
     const data = getActiveMap().props[type.key] ?? [];
 
     for (let k = 0; k < indices.length; k++) {
@@ -273,18 +319,26 @@ function PropType({ type, registerWire, unregisterWire, wireframe }) {
       }
       _dummy.updateMatrix();
       solid.setMatrixAt(k, _dummy.matrix);
+      edge.setMatrixAt(k, _dummy.matrix);
+      edge.setColorAt(k, wireColorFor(jitter, type, _color));
       if (wire) {
         wire.setMatrixAt(k, _dummy.matrix);
         wire.setColorAt(k, wireColorFor(jitter, type, _color));
       }
     }
     solid.instanceMatrix.needsUpdate = true;
+    edge.instanceMatrix.needsUpdate = true;
+    if (edge.instanceColor) edge.instanceColor.needsUpdate = true;
+    registerWire(`${type.key}:edge`, edge, indices.length);
     if (wire) {
       wire.instanceMatrix.needsUpdate = true;
       if (wire.instanceColor) wire.instanceColor.needsUpdate = true;
-      registerWire(type.key, wire, indices.length);
+      registerWire(`${type.key}:wire`, wire, indices.length);
     }
-    return () => unregisterWire(type.key);
+    return () => {
+      unregisterWire(`${type.key}:edge`);
+      unregisterWire(`${type.key}:wire`);
+    };
   }, [type, indices, registerWire, unregisterWire, wireframe]);
 
   return (
@@ -297,6 +351,14 @@ function PropType({ type, registerWire, unregisterWire, wireframe }) {
       >
         <meshBasicMaterial color={type.solidColor ?? SOLID_FILL} toneMapped={false} />
       </instancedMesh>
+
+      {/* Outline pass — always on: the thin dim edge that makes a dark
+          prop readable on the dark land */}
+      <instancedMesh
+        ref={edgeRef}
+        args={[edgeGeometry, edgeMaterial, indices.length]}
+        raycast={() => null}
+      />
 
       {/* Emissive wireframe pass */}
       {wireframe && (
@@ -347,7 +409,14 @@ function CraterDisc({ crater }) {
  * raycasting, no game state — placement comes baked from propMap.js.
  */
 export default function TerrainProps({ reducedMotion, wireframe = true }) {
-  // Wire meshes registered per type for the flicker effect
+  // One outline material for every type: instance colours carry the hue,
+  // the material colour is the look store's gain
+  const edgeMaterial = useMemo(() => new THREE.MeshBasicMaterial({
+    side: THREE.BackSide,
+    toneMapped: false,
+  }), []);
+
+  // Outline and wire meshes registered per type for the flicker effect
   const wireMeshes = useRef({});
   const registerWire = useMemo(() => (key, mesh, count) => {
     wireMeshes.current[key] = { mesh, count };
@@ -365,7 +434,8 @@ export default function TerrainProps({ reducedMotion, wireframe = true }) {
   });
 
   useFrame(({ clock }) => {
-    if (reducedMotion || !FLICKER_ENABLED || !wireframe) return;
+    edgeMaterial.color.setScalar(look.propEdges);
+    if (reducedMotion || !FLICKER_ENABLED) return;
     const t = clock.elapsedTime;
     const state = flicker.current;
 
@@ -416,6 +486,7 @@ export default function TerrainProps({ reducedMotion, wireframe = true }) {
         <PropType
           key={type.key}
           type={type}
+          edgeMaterial={edgeMaterial}
           registerWire={registerWire}
           unregisterWire={unregisterWire}
           wireframe={wireframe}

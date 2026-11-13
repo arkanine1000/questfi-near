@@ -6,6 +6,7 @@ import { cellCenter } from './CrawlerMaze';
 import { getGlowDiscTexture } from './crawlerTextures';
 import { CHEST_MODEL_URL, CHEST_TEXTURE_URL } from './crawlerAssets';
 import { useRoomLight, LIGHT_PRIORITY } from './CrawlerLightPool';
+import { COLORS } from '../worldUtils';
 
 // Room dressing: the textured chest model for treasure rooms, trap warning
 // rings, NPC beacon markers, and additive glow-mote particles (a custom
@@ -25,7 +26,7 @@ const CHEST_TARGET_SIZE = 0.95; // longest dimension, world units
  * Additive rising glow motes. Each point loops up through the column with
  * its own phase; the disc texture + additive blending keeps them soft.
  */
-function GlowMotes({ position, count = 8, color = '#ffaa00', size = 0.15, area = [1.0, 1.1, 0.8], speed = 0.25 }) {
+function GlowMotes({ position, count = 8, color = COLORS.amber, size = 0.15, area = [1.0, 1.1, 0.8], speed = 0.25 }) {
   const pointsRef = useRef();
   const { positions, phases } = useMemo(() => {
     const pos = new Float32Array(count * 3);
@@ -79,8 +80,8 @@ function ChestModel({ x, z }) {
     chestTex.colorSpace = THREE.SRGBColorSpace;
     const mat = new THREE.MeshStandardMaterial({
       map: chestTex,
-      color: '#58d98c',
-      emissive: '#0d5a2b',
+      color: COLORS.bright,
+      emissive: COLORS.deep,
       emissiveMap: chestTex,
       emissiveIntensity: 0.25,
       roughness: 0.8,
@@ -109,7 +110,7 @@ function ChestModel({ x, z }) {
     x: x + 0.9,
     y: 0.8,
     z: z + 0.7,
-    color: '#ffaa00',
+    color: COLORS.amber,
     intensity: 2.4,
     distance: 4.5,
     decay: 2,
@@ -134,7 +135,7 @@ const trapRingGeo = (() => {
 function TrapRing({ x, z, isPlayerRoom, queue, reducedMotion }) {
   const matRef = useRef();
   useRoomLight({
-    x, y: 0.4, z, color: '#ff2038', intensity: 0.6, distance: 3, decay: 2,
+    x, y: 0.4, z, color: COLORS.red, intensity: 0.6, distance: 3, decay: 2,
     priority: LIGHT_PRIORITY.prop,
   });
   useFrame(({ clock }) => {
@@ -146,11 +147,11 @@ function TrapRing({ x, z, isPlayerRoom, queue, reducedMotion }) {
     if (firing) {
       // brighten hard while the trap beat plays
       mat.opacity = 0.9;
-      mat.color.setHex(0xff2038);
+      mat.color.set(COLORS.red);
     } else {
       // calm baseline — up close at fov 90 a hot ring dominates the frame
       mat.opacity = reducedMotion ? 0.35 : 0.26 + 0.1 * Math.sin(t * 2.4);
-      mat.color.setHex(0xff0040);
+      mat.color.set(COLORS.red);
     }
   });
   return (
@@ -158,7 +159,7 @@ function TrapRing({ x, z, isPlayerRoom, queue, reducedMotion }) {
       <mesh geometry={trapRingGeo} position={[0, 0.03, 0]}>
         <meshBasicMaterial
           ref={matRef}
-          color="#ff0040"
+          color={COLORS.red}
           transparent
           opacity={0.45}
           blending={THREE.AdditiveBlending}
@@ -172,15 +173,15 @@ function TrapRing({ x, z, isPlayerRoom, queue, reducedMotion }) {
 
 const npcDiscGeo = new THREE.PlaneGeometry(1.1, 1.1);
 
-/** NPC beacon: a soft cyan glow disc on the floor with a gentle pulse. */
+/** NPC beacon: a soft ice glow disc on the floor with a gentle pulse. */
 function NpcMarker({ x, z }) {
   const meshRef = useRef();
   useRoomLight({
-    x, y: 1.0, z, color: '#00bfff', intensity: 1.2, distance: 3.5, decay: 2,
+    x, y: 1.0, z, color: COLORS.ice, intensity: 1.2, distance: 3.5, decay: 2,
     priority: LIGHT_PRIORITY.prop,
   });
   const mat = useMemo(() => new THREE.MeshBasicMaterial({
-    map: getGlowDiscTexture('#7fdfff'),
+    map: getGlowDiscTexture(COLORS.ice),
     transparent: true,
     opacity: 0.5,
     blending: THREE.AdditiveBlending,
@@ -197,7 +198,7 @@ function NpcMarker({ x, z }) {
   return (
     <group position={[x, 0, z]}>
       <mesh ref={meshRef} geometry={npcDiscGeo} material={mat} position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} />
-      <GlowMotes position={[0, 0.1, 0]} count={5} color="#7fdfff" size={0.12} area={[0.6, 1.4, 0.6]} speed={0.18} />
+      <GlowMotes position={[0, 0.1, 0]} count={5} color={COLORS.ice} size={0.12} area={[0.6, 1.4, 0.6]} speed={0.18} />
     </group>
   );
 }
@@ -259,7 +260,7 @@ export default function CrawlerProps({ model, queue, activeBeat, reducedMotion }
         <GlowMotes
           position={[lootBurst.x, 0.2, lootBurst.z]}
           count={26}
-          color="#ffd75e"
+          color={COLORS.amber}
           size={0.11}
           area={[2.0, 2.2, 2.0]}
           speed={1.0}

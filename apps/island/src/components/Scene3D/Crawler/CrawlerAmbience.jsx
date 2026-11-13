@@ -12,6 +12,8 @@ import {
   FLAME_SHEET, TORCH_MODEL_URL, TORCH_TEXTURE_URLS, COBWEB_TEXTURE_URL,
 } from './crawlerAssets';
 import { useRoomLight, LIGHT_PRIORITY } from './CrawlerLightPool';
+import { COLORS } from '../worldUtils';
+import { look } from '../look';
 
 // Cosmetic set dressing: wall torches with an animated billboarded flame,
 // and cobwebs in wall corners. Nothing here reads or affects game state —
@@ -19,6 +21,9 @@ import { useRoomLight, LIGHT_PRIORITY } from './CrawlerLightPool';
 // identical every time it's rendered.
 
 const FLAME_FPS = 10;
+// Pooled torch light at look gain 1; brighter than before because the stone
+// no longer glows on its own, so the torches are what reveal it
+const TORCH_LIGHT = 9;
 const FLAME_SIZE = 0.62;
 const TORCH_HEIGHT = 1.05; // bracket only, world units — reads at 4m room scale
 // Mount point. The head lands at 2.40 — above EYE (1.7) so the flame reads
@@ -45,6 +50,7 @@ const FLAME_STANDOFF = FLAME_SIZE * 0.5 + 0.04;
 // (3.0), past which the corner offset inverts and it would overhang.
 const COBWEB_SIZE = 2.25; // ~56% of the 4-wide face, 75% of the 3-tall one
 const COBWEB_OPACITY = 0.35;
+const COBWEB_GLOW = 0.08; // the strands' own faint glow, away from any light
 
 const TORCH_CHANCE = 0.5;
 // Torches only ever claim E/W walls, so a room's N/S walls are always free
@@ -170,6 +176,8 @@ function Torch({ placement, template, reducedMotion }) {
   const frameRef = useRef(-1);
 
   useFrame(({ clock }) => {
+    // the pool reads the live spec every frame
+    torchLight.intensity = TORCH_LIGHT * look.dungeonTorch;
     const frame = reducedMotion
       ? 1 // hold the mid frame — a lit torch, just not a moving one
       : pingPongFrame(clock.elapsedTime + phase, FLAME_SHEET.columns, FLAME_FPS);
@@ -196,12 +204,12 @@ function Torch({ placement, template, reducedMotion }) {
     return [x + ax * c + az * s, TORCH_Y + ay, z - ax * s + az * c];
   }, [template, rotY, x, z]);
 
-  useRoomLight({
+  const torchLight = useRoomLight({
     x: flameWorld[0],
     y: flameWorld[1] + FLAME_SIZE * 0.4, // sit the light in the flame itself
     z: flameWorld[2],
-    color: '#4dff8c',
-    intensity: 7,
+    color: COLORS.bright,
+    intensity: TORCH_LIGHT,
     distance: CELL * 2.4,
     decay: 2,
     priority: LIGHT_PRIORITY.ambience,
@@ -260,7 +268,7 @@ export default function CrawlerAmbience({ model, reducedMotion }) {
       roughnessMap: orm, // ORM: roughness in G, metalness in B
       metalnessMap: orm,
       color: new THREE.Color(1.75, 2.45, 2.0),
-      emissive: '#2bcc6a',
+      emissive: COLORS.fill,
       emissiveMap: baseColor,
       emissiveIntensity: 1.15,
       roughness: 0.62, // some specular headroom so the relief catches light
@@ -323,10 +331,15 @@ export default function CrawlerAmbience({ model, reducedMotion }) {
     cobwebTex.colorSpace = THREE.SRGBColorSpace;
     // The one prop in the scene that must NOT be additive: a cobweb
     // occludes the brick behind it, it doesn't glow. Additive would make it
-    // read as light and vanish against the dark walls.
+    // read as light and vanish against the dark walls. The stone is near
+    // black away from a torch now, so the strands carry a faint glow of
+    // their own to stay visible there.
     return new THREE.MeshStandardMaterial({
       map: cobwebTex,
-      color: '#9fbfae',
+      color: COLORS.bright,
+      emissive: COLORS.green,
+      emissiveMap: cobwebTex,
+      emissiveIntensity: COBWEB_GLOW,
       transparent: true,
       opacity: COBWEB_OPACITY,
       depthWrite: false,
