@@ -62,7 +62,7 @@
   --agent-ink: color-mix(in srgb, var(--agent) 78%, var(--qf-ink-hi));
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 30px;
+  grid-template-columns: minmax(0, 1fr) 26px;
   border-left: 2px solid transparent;
   animation: qf-rise 0.4s var(--qf-ease) both;
   transition: background 0.15s, border-color 0.15s;
@@ -204,20 +204,22 @@ button.qf-field-main:hover { background: rgba(var(--qf-green-rgb), 0.06); }
   text-overflow: ellipsis;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--qf-red);
   text-shadow: 0 0 8px rgba(var(--qf-red-rgb), 0.6);
   animation: qf-rec 1.1s steps(2) infinite;
 }
 
-/* the price */
+/* the price: one width on every row, so the names line up; the viewer's
+   stake, when there is one, spills left into the space under the status
+   line instead of widening the column */
 .qf-field-price {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 3px;
-  min-width: 40px;
+  width: 56px;
   text-align: right;
 }
 .qf-field-prob {
@@ -300,6 +302,7 @@ button.qf-field-main:hover { background: rgba(var(--qf-green-rgb), 0.06); }
 .qf-shell[data-tv] .qf-field-kills { font-size: 17px; }
 .qf-shell[data-tv] .qf-field-where { font-size: 11.5px; }
 .qf-shell[data-tv] .qf-field-prob { font-size: 26px; }
+.qf-shell[data-tv] .qf-field-price { width: 66px; }
 .qf-shell[data-tv] .qf-field-odds { font-size: 12.5px; }
 .qf-shell[data-tv] .qf-field-title { font-size: 13.5px; }
 
