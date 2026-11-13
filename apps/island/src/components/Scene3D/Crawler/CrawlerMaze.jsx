@@ -214,6 +214,8 @@ export default function CrawlerMaze({ model, reducedMotion }) {
     }
     return map;
   }, []);
+  // array copy for the frame loop: iterating the Map allocates an iterator
+  const tintList = useMemo(() => [...tintMats.values()], [tintMats]);
 
   const layout = useMemo(() => {
     const rooms = model.rooms.slice(0, MAX_CELLS);
@@ -281,10 +283,9 @@ export default function CrawlerMaze({ model, reducedMotion }) {
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     fogMat.opacity = reducedMotion ? 0.3 : 0.24 + 0.1 * Math.sin(t * 2.1);
-    let i = 0;
-    for (const mat of tintMats.values()) {
-      i += 1;
-      const base = reducedMotion ? 0.22 : 0.19 + 0.07 * Math.sin(t * 1.7 + i);
+    for (let i = 0; i < tintList.length; i += 1) {
+      const mat = tintList[i];
+      const base = reducedMotion ? 0.22 : 0.19 + 0.07 * Math.sin(t * 1.7 + i + 1);
       mat.opacity = base * mat.userData.strength;
     }
     wallMat.color.copy(WALL_BASE).multiplyScalar(look.dungeonWallTint);
