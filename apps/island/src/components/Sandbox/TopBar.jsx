@@ -38,27 +38,13 @@ const shortSeason = (id) => {
 /**
  * The visitor's NEAR test account, when the market runs on chain: its id
  * and spendable balance, or the offer to make one. Absent without a contract.
- * What happened last (the account made, or an error) hangs under the bar's
- * right end as a toast. The news of a new account clears itself after a
- * while, since it hangs over the market dock's head; an error stays until
- * dismissed.
  */
-const MADE_TOAST_MS = 10000;
-
 function AccountControl({ compact }) {
   const near = useNear();
-  const [seenTx, setSeenTx] = useState(null);
-  const {
-    status, accountId, balance, error, createdTx, createTestAccount, dismissError,
-  } = near;
-  const made = near.enabled && createdTx && status === 'ready' && seenTx !== createdTx.txHash ? createdTx : null;
-  const madeHash = made?.txHash ?? null;
-  useEffect(() => {
-    if (!madeHash) return undefined;
-    const t = setTimeout(() => setSeenTx(madeHash), MADE_TOAST_MS);
-    return () => clearTimeout(t);
-  }, [madeHash]);
   if (!near.enabled) return null;
+  const {
+    status, accountId, balance, createTestAccount,
+  } = near;
 
   return (
     <>
@@ -90,33 +76,60 @@ function AccountControl({ compact }) {
           {status === 'creating' ? 'Creating test account…' : 'Play with a test account'}
         </button>
       )}
-      {(error || made) && (
-        <div className="qf-top-toasts">
-          {made && (
-            <div className="qf-toast qf-top-toast qf-top-toast--ice" role="status">
-              <a href={explorerTx(made.txHash)} target="_blank" rel="noreferrer">
-                <span className="qf-top-toast-label">Test account created</span>
-                {made.grant ? ` with ${made.grant} NEAR` : ''}
-                {' · tx '}
-                {shortHash(made.txHash)}
-                <IconExternal size={12} />
-              </a>
-              <button type="button" className="qf-x" onClick={() => setSeenTx(made.txHash)} aria-label="Dismiss">
-                <IconClose size={13} />
-              </button>
-            </div>
-          )}
-          {error && (
-            <div className="qf-toast qf-top-toast qf-top-toast--bad" role="alert">
-              <span>{error}</span>
-              <button type="button" className="qf-x" onClick={dismissError} aria-label="Dismiss">
-                <IconClose size={13} />
-              </button>
-            </div>
-          )}
+    </>
+  );
+}
+
+/**
+ * What last happened to the account (a new one made, or an error), as
+ * toasts at the top-right of the stage: never over a column, and below the
+ * follow controls while someone is followed. The news of a new account
+ * clears itself after a while; an error stays until dismissed.
+ */
+const MADE_TOAST_MS = 10000;
+
+function AccountToasts() {
+  const near = useNear();
+  const [seenTx, setSeenTx] = useState(null);
+  const {
+    status, error, createdTx, dismissError,
+  } = near;
+  const made = near.enabled && createdTx && status === 'ready' && seenTx !== createdTx.txHash ? createdTx : null;
+  const madeHash = made?.txHash ?? null;
+  useEffect(() => {
+    if (!madeHash) return undefined;
+    const t = setTimeout(() => setSeenTx(madeHash), MADE_TOAST_MS);
+    return () => clearTimeout(t);
+  }, [madeHash]);
+  if (!near.enabled || !(error || made)) return null;
+
+  return (
+    <div className="qf-top-toasts">
+      {made && (
+        <div className="qf-toast qf-top-toast qf-top-toast--ice" role="status">
+          <a href={explorerTx(made.txHash)} target="_blank" rel="noreferrer">
+            <span className="qf-top-toast-label">Test account created</span>
+            {made.grant ? ` with ${made.grant} NEAR` : ''}
+            {' · '}
+            <span className="qf-top-toast-tx">
+              tx {shortHash(made.txHash)}
+              <IconExternal size={12} />
+            </span>
+          </a>
+          <button type="button" className="qf-x" onClick={() => setSeenTx(made.txHash)} aria-label="Dismiss">
+            <IconClose size={13} />
+          </button>
         </div>
       )}
-    </>
+      {error && (
+        <div className="qf-toast qf-top-toast qf-top-toast--bad" role="alert">
+          <span>{error}</span>
+          <button type="button" className="qf-x" onClick={dismissError} aria-label="Dismiss">
+            <IconClose size={13} />
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -173,136 +186,140 @@ export default function TopBar({ directorOn = false, onToggleDirector }) {
   const quietBack = embedded || compact;
 
   return (
-    <header className="qf-top">
-      <div className="qf-top-left">
-        {tv && (
-          <span className="qf-top-brand">
-            <img src={publicUrl('/brand/quest-logo.png')} alt="" />
-            <span>QUESTFI<span className="qf-top-brand-sub"> <i>//</i> AGENT ISLAND</span></span>
+    <>
+      <header className="qf-top">
+        <div className="qf-top-left">
+          {tv && (
+            <span className="qf-top-brand">
+              <img src={publicUrl('/brand/quest-logo.png')} alt="" />
+              <span>QUESTFI<span className="qf-top-brand-sub"> <i>//</i> AGENT ISLAND</span></span>
+            </span>
+          )}
+          {!tv && !quietBack && (
+            // the wordmark is the way back to every other season
+            <button type="button" className="qf-top-brand" onClick={detachWorld} title="All seasons">
+              <img src={publicUrl('/brand/quest-logo.png')} alt="" />
+              <span>QUESTFI<span className="qf-top-brand-sub"> <i>//</i> AGENT ISLAND</span></span>
+            </button>
+          )}
+          {!tv && quietBack && (
+            <button
+              type="button"
+              className="qf-btn qf-btn--small qf-btn--quiet qf-top-back"
+              onClick={detachWorld}
+              aria-label="Back to all seasons"
+            >
+              <IconLeft size={14} />Seasons
+            </button>
+          )}
+          <span className="qf-pill qf-top-season" title={`Season ${world.world_id}`}>
+            <span className="qf-top-season-label">Season</span>
+            <span className="qf-top-season-id">{shortSeason(world.world_id)}</span>
           </span>
-        )}
-        {!tv && !quietBack && (
-          // the wordmark is the way back to every other season
-          <button type="button" className="qf-top-brand" onClick={detachWorld} title="All seasons">
-            <img src={publicUrl('/brand/quest-logo.png')} alt="" />
-            <span>QUESTFI<span className="qf-top-brand-sub"> <i>//</i> AGENT ISLAND</span></span>
-          </button>
-        )}
-        {!tv && quietBack && (
-          <button
-            type="button"
-            className="qf-btn qf-btn--small qf-btn--quiet qf-top-back"
-            onClick={detachWorld}
-            aria-label="Back to all seasons"
-          >
-            <IconLeft size={14} />Seasons
-          </button>
-        )}
-        <span className="qf-pill qf-top-season" title={`Season ${world.world_id}`}>
-          <span className="qf-top-season-label">Season</span>
-          <span className="qf-top-season-id">{shortSeason(world.world_id)}</span>
-        </span>
-        <PhasePill phase={phase} running={autoRunning} />
-      </div>
+          <PhasePill phase={phase} running={autoRunning} />
+        </div>
 
-      <div
-        className="qf-top-clock"
-        role="timer"
-        aria-label={`${lastTick ? `Tick ${tick} of ${lastTick}` : `Tick ${tick}`}${lockAt != null ? `; betting locks at tick ${lockTick}` : ''}`}
-      >
-        <span className="qf-top-clock-label" aria-hidden>Tick</span>
-        <span className="qf-top-tick" aria-hidden>{String(tick).padStart(3, '0')}</span>
-        {lastTick && <span className="qf-top-of" aria-hidden>/ {lastTick}</span>}
-      </div>
+        <div
+          className="qf-top-clock"
+          role="timer"
+          aria-label={`${lastTick ? `Tick ${tick} of ${lastTick}` : `Tick ${tick}`}${lockAt != null ? `; betting locks at tick ${lockTick}` : ''}`}
+        >
+          <span className="qf-top-clock-label" aria-hidden>Tick</span>
+          <span className="qf-top-tick" aria-hidden>{String(tick).padStart(3, '0')}</span>
+          {lastTick && <span className="qf-top-of" aria-hidden>/ {lastTick}</span>}
+        </div>
 
-      {!tv && (
-        <div className="qf-top-right">
-          {phase === 'lobby' && canControl && (
-            <button type="button" className="qf-btn qf-btn--small qf-btn--primary qf-top-begin" onClick={startSeason}>
-              Begin game
-            </button>
-          )}
-          <AccountControl compact={compact} />
-          {/* the auto-director: the camera cuts itself between fights and
-              heroes while every control stays live; any click outranks it
-              for a while */}
-          {phase === 'running' && onToggleDirector && (
+        {!tv && (
+          <div className="qf-top-right">
+            {phase === 'lobby' && canControl && (
+              <button type="button" className="qf-btn qf-btn--small qf-btn--primary qf-top-begin" onClick={startSeason}>
+                Begin game
+              </button>
+            )}
+            <AccountControl compact={compact} />
+            {/* the auto-director: the camera cuts itself between fights and
+                heroes while every control stays live; any click outranks it
+                for a while */}
+            {phase === 'running' && onToggleDirector && (
+              <button
+                type="button"
+                className={`qf-btn qf-btn--icon qf-btn--quiet qf-top-icon${directorOn ? ' is-on' : ''}`}
+                onClick={onToggleDirector}
+                aria-pressed={directorOn}
+                aria-label="Auto-director"
+                title={directorOn
+                  ? 'Auto-director on: the camera cuts itself. Click anything to overrule it.'
+                  : 'Auto-director: let the camera cut between fights and heroes'}
+              >
+                <IconDirector />
+              </button>
+            )}
+            {/* shown whenever the browser can cast, dimmed until a TV is
+                found: the system picker is the ground truth when the
+                availability monitor is conservative */}
+            {cast.supported && (
+              <button
+                type="button"
+                className={`qf-btn qf-btn--icon qf-btn--quiet qf-top-icon${cast.casting ? ' is-on' : ''}${!cast.casting && !cast.available ? ' is-idle' : ''}`}
+                onClick={() => {
+                  if (cast.casting) stopCast();
+                  else startCast(world.world_id).catch(() => { /* picker dismissed */ });
+                }}
+                aria-pressed={cast.casting}
+                aria-label={cast.casting ? 'Stop casting' : 'Cast to a TV'}
+                title={cast.casting ? 'Stop casting'
+                  : cast.available ? 'Cast to a TV'
+                    : 'Cast to a TV (none found on this network yet)'}
+              >
+                <IconCast />
+              </button>
+            )}
             <button
               type="button"
-              className={`qf-btn qf-btn--icon qf-btn--quiet qf-top-icon${directorOn ? ' is-on' : ''}`}
-              onClick={onToggleDirector}
-              aria-pressed={directorOn}
-              aria-label="Auto-director"
-              title={directorOn
-                ? 'Auto-director on: the camera cuts itself. Click anything to overrule it.'
-                : 'Auto-director: let the camera cut between fights and heroes'}
+              className="qf-btn qf-btn--icon qf-btn--quiet qf-top-icon"
+              onClick={() => setSfxOff(!sfxMuted)}
+              aria-pressed={!sfxMuted}
+              aria-label="Sound effects"
+              title={sfxMuted ? 'Sound effects are off' : 'Sound effects are on'}
             >
-              <IconDirector />
+              {sfxMuted ? <IconSoundOff /> : <IconSoundOn />}
             </button>
-          )}
-          {/* shown whenever the browser can cast, dimmed until a TV is
-              found: the system picker is the ground truth when the
-              availability monitor is conservative */}
-          {cast.supported && (
             <button
               type="button"
-              className={`qf-btn qf-btn--icon qf-btn--quiet qf-top-icon${cast.casting ? ' is-on' : ''}${!cast.casting && !cast.available ? ' is-idle' : ''}`}
-              onClick={() => {
-                if (cast.casting) stopCast();
-                else startCast(world.world_id).catch(() => { /* picker dismissed */ });
-              }}
-              aria-pressed={cast.casting}
-              aria-label={cast.casting ? 'Stop casting' : 'Cast to a TV'}
-              title={cast.casting ? 'Stop casting'
-                : cast.available ? 'Cast to a TV'
-                  : 'Cast to a TV (none found on this network yet)'}
+              className="qf-btn qf-btn--icon qf-btn--quiet qf-top-icon"
+              onClick={() => setShowBooth(true)}
+              aria-haspopup="dialog"
+              aria-label="Booth settings"
+              title="Booth: clock, sound and view"
             >
-              <IconCast />
+              <IconSettings />
             </button>
-          )}
-          <button
-            type="button"
-            className="qf-btn qf-btn--icon qf-btn--quiet qf-top-icon"
-            onClick={() => setSfxOff(!sfxMuted)}
-            aria-pressed={!sfxMuted}
-            aria-label="Sound effects"
-            title={sfxMuted ? 'Sound effects are off' : 'Sound effects are on'}
-          >
-            {sfxMuted ? <IconSoundOff /> : <IconSoundOn />}
-          </button>
-          <button
-            type="button"
-            className="qf-btn qf-btn--icon qf-btn--quiet qf-top-icon"
-            onClick={() => setShowBooth(true)}
-            aria-haspopup="dialog"
-            aria-label="Booth settings"
-            title="Booth: clock, sound and view"
-          >
-            <IconSettings />
-          </button>
-        </div>
-      )}
+          </div>
+        )}
 
-      {progress != null && (
-        <div className="qf-top-timeline" aria-hidden>
-          <i style={{ width: `${progress * 100}%` }} />
-          {lockAt != null && (
-            <span
-              className={`qf-top-lock${tick >= lockTick ? ' is-past' : ''}`}
-              style={{ left: `${lockAt * 100}%` }}
-              title={`Betting locks at tick ${lockTick}`}
-            />
-          )}
-        </div>
-      )}
+        {progress != null && (
+          <div className="qf-top-timeline" aria-hidden>
+            <i style={{ width: `${progress * 100}%` }} />
+            {lockAt != null && (
+              <span
+                className={`qf-top-lock${tick >= lockTick ? ' is-past' : ''}`}
+                style={{ left: `${lockAt * 100}%` }}
+                title={`Betting locks at tick ${lockTick}`}
+              />
+            )}
+          </div>
+        )}
 
-      {showBooth && !tv && (
-        <SettingsPanel
-          onClose={() => setShowBooth(false)}
-          directorOn={directorOn}
-          onToggleDirector={onToggleDirector}
-        />
-      )}
-    </header>
+        {showBooth && !tv && (
+          <SettingsPanel
+            onClose={() => setShowBooth(false)}
+            directorOn={directorOn}
+            onToggleDirector={onToggleDirector}
+          />
+        )}
+      </header>
+      {/* outside the bar, whose slide-in would otherwise hold them */}
+      {!tv && <AccountToasts />}
+    </>
   );
 }
