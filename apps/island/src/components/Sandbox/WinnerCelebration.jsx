@@ -110,6 +110,8 @@ function TrophyMesh() {
 }
 
 export function WinnerTrophy() {
+  // Preview mode (dev only, src/dev/preview) puts a DOM placeholder here: no canvas.
+  if (import.meta.env.DEV && window.__questfiPreview) return window.__questfiPreview.standIn('trophy');
   return (
     <div className="sbx-winner__trophy" aria-hidden>
       <Canvas
@@ -177,6 +179,7 @@ export function WinnerConfetti() {
   useEffect(() => {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
     const canvas = canvasRef.current;
+    if (!canvas) return undefined; // preview mode renders no canvas
     const ctx = canvas.getContext('2d');
     let w = (canvas.width = canvas.offsetWidth);
     let h = (canvas.height = canvas.offsetHeight);
@@ -231,5 +234,6 @@ export function WinnerConfetti() {
     };
   }, []);
 
+  if (import.meta.env.DEV && window.__questfiPreview) return window.__questfiPreview.standIn('confetti');
   return <canvas ref={canvasRef} className="sbx-winner__confetti" aria-hidden />;
 }

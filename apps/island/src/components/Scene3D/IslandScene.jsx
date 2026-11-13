@@ -82,6 +82,9 @@ export default function IslandScene({
   const dpr = IS_TV || !interactive ? 1
     : bloomEnabled && isTouchDevice() ? [1, 1.5] : [1, 2];
 
+  // Preview mode (dev only, src/dev/preview) puts a DOM backdrop here: no canvas.
+  if (import.meta.env.DEV && window.__questfiPreview) return window.__questfiPreview.standIn('island', { onSelectHex });
+
   return (
     <div
       className="island-scene"

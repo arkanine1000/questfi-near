@@ -106,6 +106,9 @@ export default function InviteQr({ text }) {
     }
   }, [text]);
 
+  // Preview mode (dev only, src/dev/preview) shows the same drawing as an image: no canvas.
+  if (import.meta.env.DEV && window.__questfiPreview) return window.__questfiPreview.standIn('qr', { text, draw, size: SIZE });
+
   return (
     <div className="qf-inviteqr">
       <canvas

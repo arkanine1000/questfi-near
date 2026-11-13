@@ -1,0 +1,1 @@
+{"source":"GET /world on the public game server","listing":{"worlds":[{"world_id":"w-0778fc26","phase":"finished","tick":38,"joined":6,"pool_size":6,"winner_name":"Kell","can_control":false},{"world_id":"w-fbde68ac","phase":"lobby","tick":0,"joined":0,"pool_size":6,"winner_name":null,"can_control":false}],"can_create":false,"operator_only":true}}
