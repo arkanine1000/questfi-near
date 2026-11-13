@@ -28,7 +28,7 @@
   width: 100%;
   padding-left: 18px;
   padding-right: 18px;
-  white-space: nowrap;
+  text-align: center;
 }
 .qf-onb__hero svg { flex: none; }
 
@@ -115,7 +115,7 @@
 }
 
 /* narrow dialogs: one column, the QR under the copy */
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .qf-onb { grid-template-columns: minmax(0, 1fr); }
   .qf-onb__qr { justify-self: center; }
 }
