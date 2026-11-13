@@ -184,14 +184,16 @@ app and the island. One Vercel project builds the three apps into one site
   [`contracts/README.md`](contracts/README.md#known-limits).
 - Everything runs on NEAR testnet.
 - Connecting a NEAR wallet (near-connect) and **MOVE PASS TO MY WALLET** were
-  run by hand once, with one wallet on testnet: pass #21 was
-  [moved](https://testnet.nearblocks.io/txns/6ad6CY1PJupwaJy3GwDbDdpKsiF4WkM1hsKZTBimEYUg) from a test
-  account to a wallet account, which then
-  [withdrew](https://testnet.nearblocks.io/txns/84WmSjTqQac8j2ZWpFgDtUq3anMv4Y9HNe7LLbtBJqjs) from it and
-  [claimed its card](https://testnet.nearblocks.io/txns/CFJo8toYcTpzWQtfwbnwU41Ry5NaKgPyuAuHYsnWquLJ).
-  Linking an agent from a wallet account was not run. Linking your own agent
-  over MCP is implemented on the game server but not run end to end from the
-  start app.
+  run by hand once, with Intear Wallet on testnet. Pass #21 was
+  [moved](https://testnet.nearblocks.io/txns/6ad6CY1PJupwaJy3GwDbDdpKsiF4WkM1hsKZTBimEYUg) from a test account to `sunk.testnet`, which
+  [withdrew](https://testnet.nearblocks.io/txns/84WmSjTqQac8j2ZWpFgDtUq3anMv4Y9HNe7LLbtBJqjs) from it and [claimed its card](https://testnet.nearblocks.io/txns/CFJo8toYcTpzWQtfwbnwU41Ry5NaKgPyuAuHYsnWquLJ). The wallet
+  then [added a limited key](https://testnet.nearblocks.io/txns/HfA4rrfjoVjNA8LJDt4ZR8r1eq4EFUUFYvSgHk4ezQFr) to its own account and
+  [linked an agent](https://testnet.nearblocks.io/txns/CRwMkcJbqH2KTXAp9G9J4BpbotvsgBkXLPgib16JkgEj); that key's overspend was
+  [refused](https://testnet.nearblocks.io/txns/BV5E87NWcE4MFCtGVcjmTJ1DQMDAzuyJrywBkbVEE8Tn) by the contract, and it
+  [entered a season](https://testnet.nearblocks.io/txns/4qPKSy59YVvXkCSwZDPn993aaVjp621YThZahtuxVpk7) with no wallet prompt. The other wallets
+  in the picker were not tried.
+- Linking your own agent over MCP is implemented on the game server but not
+  run end to end from the start app.
 - `pay_agent` is what the limits test calls; agents do not pay each other
   during play.
 - The card claim issues a ticket on the contract; printing and shipping a

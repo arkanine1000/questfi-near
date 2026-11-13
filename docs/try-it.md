@@ -537,27 +537,34 @@ the pass, and the agent link is cleared. From then on the owner's actions
 are approved in the wallet. **CONNECT A NEAR WALLET** starts from a wallet
 account instead of a test account.
 
-This was run by hand once, with one wallet on testnet. Pass #21 was moved to
-a wallet account, which withdrew 0.05 NEAR from it and claimed its card:
+This was run by hand once, with Intear Wallet on testnet and the wallet
+account `sunk.testnet`:
+
+| What happened | Signed by | Transaction |
+|---|---|---|
+| The test account sends pass #21 to the wallet account | the test account's key | [`6ad6CY1P…`](https://testnet.nearblocks.io/txns/6ad6CY1PJupwaJy3GwDbDdpKsiF4WkM1hsKZTBimEYUg) |
+| The wallet account withdraws 0.05 NEAR from the pass | the wallet | [`84WmSjTq…`](https://testnet.nearblocks.io/txns/84WmSjTqQac8j2ZWpFgDtUq3anMv4Y9HNe7LLbtBJqjs) |
+| It claims the card | the wallet | [`CFJo8toY…`](https://testnet.nearblocks.io/txns/CFJo8toYcTpzWQtfwbnwU41Ry5NaKgPyuAuHYsnWquLJ) |
+| It adds the agent's limited key to its own account | the wallet | [`HfA4rrfj…`](https://testnet.nearblocks.io/txns/HfA4rrfjoVjNA8LJDt4ZR8r1eq4EFUUFYvSgHk4ezQFr) |
+| It links MIMIR to the pass, for 0.04 NEAR | the wallet | [`CRwMkcJb…`](https://testnet.nearblocks.io/txns/CRwMkcJbqH2KTXAp9G9J4BpbotvsgBkXLPgib16JkgEj) |
+| The agent's key tries to spend over the cap, and the contract refuses | the agent's key | [`BV5E87NW…`](https://testnet.nearblocks.io/txns/BV5E87NWcE4MFCtGVcjmTJ1DQMDAzuyJrywBkbVEE8Tn) |
+| The agent's key enters a season, with no wallet prompt | the agent's key | [`4qPKSy59…`](https://testnet.nearblocks.io/txns/4qPKSy59YVvXkCSwZDPn993aaVjp621YThZahtuxVpk7) |
+
+The wallet account's keys, read with the `ask` helper of A7, were its own
+full-access key and the agent's key for `enter_season` and `pay_agent`:
 
 ```bash
-view get_activity '{"pass_id":"21","from_index":0,"limit":10}' | jq -r '.[] | .kind'
+RUN=sunk.testnet
+ask $RPC query '{"request_type":"view_access_key_list","finality":"final","account_id":"'$RUN'"}' |
+  jq -c '.keys[] | {key: .public_key, may: (.access_key.permission | if type == "string" then . else .FunctionCall | {receiver_id, method_names} end)}'
 ```
 
-```text
-card
-withdraw
-transfer
-unlink
-enter
-link
-mint
+```json
+{"key":"ed25519:2eQQh4P7zLC5wUzCinytSLpe7WTqCWu1wtVqZYKraJMr","may":"FullAccess"}
+{"key":"ed25519:DHDmXmugGNubgnzHsZTffHptkwxjLutdVJMxyf1LkH4K","may":{"receiver_id":"pass.questfi.testnet","method_names":["enter_season","pay_agent"]}}
 ```
 
-Newest first: the claim and the withdrawal by the wallet account, the
-transfer, the agent link it cleared, and before them the test account's
-season entry, link and mint. Linking an agent from a wallet account, which
-adds the limited key through the wallet, was not run.
+The other wallets in the picker were not tried.
 
 ## C. From a clone
 
