@@ -59,7 +59,7 @@
 .qf-follow-slot > *,
 .qf-follow-plate { pointer-events: auto; }
 
-.qf-follow-step {
+.qf-shell .qf-follow-step {
   --agent: var(--qf-green);
   display: inline-flex;
   align-items: center;
@@ -71,7 +71,7 @@
   background: var(--qf-panel);
   border-color: color-mix(in srgb, var(--agent) 40%, transparent);
 }
-.qf-follow-step:hover:not(:disabled) { border-color: color-mix(in srgb, var(--agent) 75%, transparent); background: color-mix(in srgb, var(--agent) 12%, var(--qf-panel)); }
+.qf-shell .qf-follow-step:hover:not(:disabled) { border-color: color-mix(in srgb, var(--agent) 75%, transparent); background: color-mix(in srgb, var(--agent) 12%, var(--qf-panel)); }
 .qf-follow-step svg { flex: none; color: color-mix(in srgb, var(--agent) 70%, var(--qf-ink-hi)); }
 .qf-follow-step-name {
   min-width: 0;
@@ -83,7 +83,7 @@
   color: color-mix(in srgb, var(--agent) 78%, var(--qf-ink-hi));
 }
 
-.qf-follow-plate {
+.qf-shell .qf-follow-plate {
   --agent: var(--qf-green);
   display: flex;
   align-items: center;
@@ -129,8 +129,8 @@
   color: color-mix(in srgb, var(--agent) 78%, var(--qf-ink-hi));
   text-shadow: 0 0 8px color-mix(in srgb, var(--agent) 50%, transparent);
 }
-.qf-follow-esc { height: 22px; min-width: 34px; font-size: 10px; cursor: pointer; transition: background 0.15s; }
-.qf-follow-esc:hover { background: var(--qf-wash-hi); }
+.qf-shell .qf-follow-esc { height: 22px; min-width: 34px; font-size: 10px; cursor: pointer; transition: background 0.15s; }
+.qf-shell .qf-follow-esc:hover { background: var(--qf-wash-hi); }
 .qf-follow-esc:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: 2px; }
 .qf-follow-close { margin-left: -4px; }
 
@@ -197,7 +197,7 @@
   gap: 6px;
   pointer-events: none;
 }
-.qf-thought {
+.qf-shell .qf-thought {
   padding: 10px 14px 11px;
   border-color: var(--qf-line-soft);
   border-left: 2px solid var(--agent);
@@ -259,7 +259,7 @@
 }
 
 /* her camera: a bracketed square, head and shoulders */
-.qf-caster-cam {
+.qf-shell .qf-caster-cam {
   --frame-len: 12px;
   flex: none;
   width: 118px;
@@ -269,7 +269,7 @@
   opacity: 0.6;
   transition: opacity 0.5s ease;
 }
-.qf-caster.is-live .qf-caster-cam { opacity: 1; }
+.qf-shell .qf-caster.is-live .qf-caster-cam { opacity: 1; }
 /* the brackets over the picture, not under it */
 .qf-caster-cam::before { z-index: 2; }
 .qf-caster-cam img {
@@ -303,7 +303,7 @@
 .qf-caster-live .qf-dot { width: 6px; height: 6px; }
 
 /* her caption */
-.qf-caster-caption {
+.qf-shell .qf-caster-caption {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -316,7 +316,7 @@
   translate: 0 6px;
   transition: opacity 0.4s ease, translate 0.4s var(--qf-ease), visibility 0s linear 0.4s;
 }
-.qf-caster.is-live .qf-caster-caption {
+.qf-shell .qf-caster.is-live .qf-caster-caption {
   opacity: 1;
   visibility: visible;
   translate: 0 0;
@@ -388,7 +388,7 @@
     background: none;
     opacity: 0.7;
   }
-  .qf-shell:not([data-cam]):not([data-compact]) .qf-caster.is-live .qf-caster-cam { opacity: 1; }
+  .qf-shell:not([data-cam]):not([data-compact]) .qf-shell .qf-caster.is-live .qf-caster-cam { opacity: 1; }
   .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-cam::before { display: none; }
   .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-cam img { width: 100%; left: 0; top: 0; }
   .qf-shell:not([data-cam]):not([data-compact]) .qf-caster-live { left: auto; right: 18px; bottom: 22px; }

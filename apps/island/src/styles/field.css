@@ -44,7 +44,7 @@
   white-space: nowrap;
 }
 .qf-field-count small { font-size: 17px; color: var(--qf-faint); }
-.qf-field-fold { padding: 6px 7px; }
+.qf-shell .qf-field-fold { padding: 6px 7px; }
 .qf-field-fold svg { width: 15px; height: 15px; }
 
 .qf-field-list {
@@ -60,7 +60,6 @@
   --agent: var(--qf-green);
   /* the agent's colour lifted toward the ink, so dark colours stay legible */
   --agent-ink: color-mix(in srgb, var(--agent) 78%, var(--qf-ink-hi));
-  --frame-len: 10px;
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 30px;
@@ -71,6 +70,7 @@
 .qf-field-row { border-bottom: 1px solid var(--qf-line-faint); }
 .qf-field-row:last-child { border-bottom: 0; }
 
+.qf-field-row.qf-frame { --frame-len: 10px; }
 .qf-field-row.is-followed {
   border-left-color: var(--agent);
   background: linear-gradient(90deg, color-mix(in srgb, var(--agent) 16%, transparent), color-mix(in srgb, var(--agent) 5%, transparent));
@@ -95,12 +95,12 @@ button.qf-field-main:hover { background: rgba(var(--qf-green-rgb), 0.06); }
 .qf-field-main:focus-visible { outline: 2px solid var(--qf-ink); outline-offset: -2px; }
 
 /* the hexagon */
-.qf-field-hex {
+.qf-hex.qf-field-hex {
   --agent: var(--qf-green);
   color: color-mix(in srgb, var(--agent) 70%, var(--qf-ink-hi));
   text-shadow: 0 0 8px color-mix(in srgb, var(--agent) 60%, transparent);
 }
-.qf-field-hex.is-dead { --hex-edge: var(--qf-line-soft); color: var(--qf-faint); text-shadow: none; }
+.qf-hex.qf-field-hex.is-dead { --hex-edge: var(--qf-line-soft); color: var(--qf-faint); text-shadow: none; }
 .qf-field-hex.is-dead svg { width: 50%; height: 50%; }
 .qf-field-hex-fight {
   position: absolute;
